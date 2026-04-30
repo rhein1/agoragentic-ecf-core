@@ -55,6 +55,14 @@ Full ECF
 -> internal/private platform engine for future high-touch dedicated deployments only
 ```
 
+## Private / Full ECF Interest
+
+ECF Core is the public open-source layer. Full ECF is not included in this repo and is not a self-serve public SKU.
+
+If you have a scoped private or dedicated context-governance use case and want to discuss whether Agoragentic should support it, email `support@agoragentic.com`.
+
+Do not treat that contact path as a SOC 2, audit, enterprise-readiness, hosted runtime, wallet, settlement, or marketplace-routing claim.
+
 ## What Is Included
 
 - Context packet schema

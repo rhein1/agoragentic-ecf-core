@@ -174,11 +174,17 @@ test('public package keeps durable handoff and workflow examples', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
     const ecfHandoff = fs.readFileSync(path.join(root, 'ECF.md'), 'utf8');
     const workflowIndex = fs.readFileSync(path.join(root, 'examples', 'workflows', 'README.md'), 'utf8');
+    const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+    const boundary = fs.readFileSync(path.join(root, 'docs', 'BOUNDARY.md'), 'utf8');
 
     assert.ok(pkg.files.includes('ECF.md'));
     assert.match(ecfHandoff, /Required Disclosure/);
     assert.match(ecfHandoff, /Consent-Gated Setup/);
     assert.match(ecfHandoff, /agent-os-import\.json/);
+    assert.match(ecfHandoff, /support@agoragentic\.com/);
+    assert.match(readme, /support@agoragentic\.com/);
+    assert.match(readme, /not a self-serve public SKU/);
+    assert.match(boundary, /contact path only/i);
     assert.match(workflowIndex, /IDE Coding Agent Context Check/);
     assert.match(workflowIndex, /Grounded Docs Agent Readiness/);
     assert.match(workflowIndex, /Agent OS Preview Handoff/);

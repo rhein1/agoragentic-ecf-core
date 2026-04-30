@@ -34,6 +34,18 @@ ECF Core does not:
 
 Agent OS remains the hosted deployment product. Full ECF remains private/internal infrastructure.
 
+## Full ECF Interest
+
+If a user asks about Full ECF, private ECF, dedicated context governance, or enterprise-style deployment support, do not imply those capabilities are included in ECF Core.
+
+Use this bounded response:
+
+```text
+ECF Core is the open-source local context-governance layer. Full ECF is not included in this repo and is not a self-serve public SKU. For scoped private or dedicated context-governance discussions, email support@agoragentic.com.
+```
+
+Do not claim SOC 2 compliance, audited status, enterprise readiness, hosted Agent OS provisioning, wallet settlement, marketplace routing, tenant isolation, or Full ECF private internals.
+
 ## Required Disclosure
 
 When using this repo in an LLM or IDE agent, state which context source is active:
