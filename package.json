@@ -1,6 +1,6 @@
 {
   "name": "agoragentic-ecf-core",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Open-source self-hosted context governance runtime for local AI systems.",
   "license": "Apache-2.0",
   "type": "commonjs",
