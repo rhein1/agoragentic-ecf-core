@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/policy-summary.v1.json",
+  "title": "ECF Core Policy Summary",
+  "type": "object",
+  "required": ["schema_version", "allowed_sources", "blocked_sources", "tool_limits"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "ecf-core.policy-summary.v1" },
+    "allowed_sources": { "type": "array", "items": { "type": "string" } },
+    "blocked_sources": { "type": "array", "items": { "type": "string" } },
+    "tool_limits": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "max_calls": { "type": "integer", "minimum": 0 },
+        "network_allowed": { "type": "boolean" },
+        "write_allowed": { "type": "boolean" }
+      }
+    },
+    "handoff": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "agent_os_preview_allowed": { "type": "boolean" }
+      }
+    }
+  }
+}

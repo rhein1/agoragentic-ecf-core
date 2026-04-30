@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/source-map.v1.json",
+  "title": "ECF Core Source Map",
+  "type": "object",
+  "required": ["schema_version", "sources"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "ecf-core.source-map.v1" },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "hash", "classification"],
+        "additionalProperties": true,
+        "properties": {
+          "id": { "type": "string" },
+          "path": { "type": "string" },
+          "hash": { "type": "string" },
+          "classification": { "type": "string", "enum": ["allowed", "blocked", "review_required"] },
+          "reason": { "type": "string" }
+        }
+      }
+    }
+  }
+}

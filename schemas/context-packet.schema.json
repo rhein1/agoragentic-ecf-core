@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/context-packet.v1.json",
+  "title": "ECF Core Context Packet",
+  "type": "object",
+  "required": ["schema_version", "packet_id", "scope", "sources", "citations", "policy"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "ecf-core.context-packet.v1" },
+    "packet_id": { "type": "string", "minLength": 3 },
+    "scope": { "type": "string", "enum": ["local_project", "self_hosted_workspace", "agent_os_preview"] },
+    "created_at": { "type": "string" },
+    "sources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "citations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/citation" }
+    },
+    "policy": {
+      "type": "object",
+      "required": ["allowed_context", "blocked_context"],
+      "additionalProperties": true,
+      "properties": {
+        "allowed_context": { "type": "array", "items": { "type": "string" } },
+        "blocked_context": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "required": ["id", "path", "type", "hash"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string" },
+        "path": { "type": "string" },
+        "type": { "type": "string" },
+        "hash": { "type": "string" },
+        "summary": { "type": "string" }
+      }
+    },
+    "citation": {
+      "type": "object",
+      "required": ["source_id", "label"],
+      "additionalProperties": true,
+      "properties": {
+        "source_id": { "type": "string" },
+        "label": { "type": "string" },
+        "path": { "type": "string" },
+        "heading": { "type": "string" }
+      }
+    }
+  }
+}

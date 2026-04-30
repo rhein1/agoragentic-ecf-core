@@ -1,0 +1,40 @@
+# Secrets and environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.secret
+
+# Runtime data
+*.db
+*.sqlite
+*.sqlite3
+data/
+logs/
+tmp/
+.tmp/
+
+# Dependencies
+node_modules/
+.venv/
+.deps*/
+__pycache__/
+*.pyc
+
+# Build and coverage
+dist/
+build/
+coverage/
+*.log
+
+# Local agent artifacts
+.micro-ecf/
+MICRO_ECF_LLM_BOOTSTRAP.md
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

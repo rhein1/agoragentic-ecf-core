@@ -1,0 +1,32 @@
+{
+  "schema_version": "ecf-core.local-config.v1",
+  "project_name": "example-local-agent",
+  "scope": "local_project",
+  "allow": [
+    "README.md",
+    "docs/**",
+    "src/**",
+    "schemas/**"
+  ],
+  "block": [
+    ".env",
+    ".env.*",
+    "secrets/**",
+    "**/*.pem",
+    "**/*.key",
+    "node_modules/**",
+    ".git/**",
+    "*.db",
+    "*.sqlite",
+    "*.sqlite3"
+  ],
+  "tool_limits": {
+    "max_calls": 10,
+    "network_allowed": false,
+    "write_allowed": false
+  },
+  "handoff": {
+    "agent_os_preview_allowed": true,
+    "live_deploy_allowed": false
+  }
+}
