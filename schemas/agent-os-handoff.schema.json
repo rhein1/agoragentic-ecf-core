@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/agent-os-handoff.v1.json",
+  "title": "ECF Core Agent OS Handoff",
+  "type": "object",
+  "required": ["schema_version", "context_packet", "source_map", "policy_summary", "agent_os_preview", "boundary"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "ecf-core.agent-os-handoff.v1" },
+    "context_packet": { "type": "string" },
+    "source_map": { "type": "string" },
+    "policy_summary": { "type": "string" },
+    "agent_os_preview": {
+      "type": "object",
+      "required": ["allowed", "live_deploy_allowed", "recommended_next_step"],
+      "additionalProperties": true,
+      "properties": {
+        "allowed": { "type": "boolean" },
+        "live_deploy_allowed": { "const": false },
+        "recommended_next_step": { "type": "string" }
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "required": ["includes_hosted_runtime", "includes_wallet_or_settlement", "includes_full_ecf_private_internals"],
+      "additionalProperties": false,
+      "properties": {
+        "includes_hosted_runtime": { "const": false },
+        "includes_wallet_or_settlement": { "const": false },
+        "includes_full_ecf_private_internals": { "const": false }
+      }
+    }
+  }
+}

@@ -39,6 +39,8 @@ Full ECF
 - Provenance and citation contract
 - Local/self-hosted runtime boundary
 - Connector adapter contracts
+- Dependency-free local compiler
+- `ecf-core` CLI
 - Evaluation and evidence roadmap
 - Safe examples for local projects
 
@@ -83,23 +85,78 @@ ECF Core can prepare context and policy evidence for Agent OS, but it does not d
 
 ## Current Status
 
-This repository is the public boundary scaffold for ECF Core.
+This repository now includes the first dependency-free ECF Core package surface.
 
-The first release should stay intentionally small:
+The first release is intentionally small:
 
 1. schemas
 2. local examples
 3. adapter contracts
 4. basic context compiler
-5. deterministic eval harness
+5. deterministic tests
+6. local CLI
 
 Do not copy the private `agoragentic-enterprise/` runtime into this repo.
 
 ## Install
 
-No package is published yet.
+No npm package is published yet. Install from GitHub:
 
-For now, use this repository as the public specification and contribution target for ECF Core.
+```bash
+npm install -g github:rhein1/agoragentic-ecf-core
+```
+
+Or run directly with `npx`:
+
+```bash
+npx github:rhein1/agoragentic-ecf-core init .
+npx github:rhein1/agoragentic-ecf-core compile . --agent-os
+```
+
+## Quick Start
+
+```bash
+ecf-core init .
+ecf-core compile . --agent-os
+ecf-core validate .ecf-core
+```
+
+The compiler writes:
+
+```text
+.ecf-core/
+  context-packet.json
+  source-map.json
+  policy-summary.json
+  manifest.json
+  agent-os-handoff.json
+```
+
+Review `ecf.config.json` before compiling sensitive repositories.
+
+## CLI
+
+```text
+ecf-core init [project] [--force]
+ecf-core compile [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--agent-os]
+ecf-core validate [artifact-dir]
+ecf-core version
+```
+
+## Development
+
+```bash
+npm test
+npm run check
+npm run pack:dry
+```
+
+## Docs
+
+- [Install](docs/INSTALL.md)
+- [Adapter Contracts](docs/ADAPTERS.md)
+- [LLM-Assisted Install](docs/LLM_INSTALL.md)
+- [Release Checklist](docs/RELEASE.md)
 
 ## License
 

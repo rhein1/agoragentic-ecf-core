@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/local-config.v1.json",
+  "title": "ECF Core Local Config",
+  "type": "object",
+  "required": ["schema_version", "project_name", "scope", "allow", "block", "tool_limits", "handoff"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "const": "ecf-core.local-config.v1" },
+    "project_name": { "type": "string", "minLength": 1 },
+    "scope": { "type": "string", "enum": ["local_project", "self_hosted_workspace", "agent_os_preview"] },
+    "allow": { "type": "array", "items": { "type": "string" } },
+    "block": { "type": "array", "items": { "type": "string" } },
+    "max_file_bytes": { "type": "integer", "minimum": 1024 },
+    "tool_limits": {
+      "type": "object",
+      "required": ["max_calls", "network_allowed", "write_allowed"],
+      "additionalProperties": true,
+      "properties": {
+        "max_calls": { "type": "integer", "minimum": 0 },
+        "network_allowed": { "type": "boolean" },
+        "write_allowed": { "type": "boolean" }
+      }
+    },
+    "handoff": {
+      "type": "object",
+      "required": ["agent_os_preview_allowed", "live_deploy_allowed"],
+      "additionalProperties": true,
+      "properties": {
+        "agent_os_preview_allowed": { "type": "boolean" },
+        "live_deploy_allowed": { "const": false }
+      }
+    }
+  }
+}

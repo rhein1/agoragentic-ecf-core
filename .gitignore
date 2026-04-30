@@ -29,6 +29,7 @@ coverage/
 *.log
 
 # Local agent artifacts
+.ecf-core/
 .micro-ecf/
 MICRO_ECF_LLM_BOOTSTRAP.md
 

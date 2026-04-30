@@ -2,33 +2,36 @@
 
 ## Phase 0: Public Boundary
 
-- README
-- license
-- contribution rules
-- boundary documentation
-- schema stubs
-- local example
+- [x] README
+- [x] license
+- [x] contribution rules
+- [x] boundary documentation
+- [x] schema stubs
+- [x] local example
 
 ## Phase 1: Schemas
 
-- context packet schema
-- source map schema
-- policy summary schema
-- connector adapter schema
-- Agent OS handoff schema
+- [x] context packet schema
+- [x] source map schema
+- [x] policy summary schema
+- [ ] connector adapter schema
+- [x] Agent OS handoff schema
+- [x] local config schema
 
 ## Phase 2: Local Compiler
 
-- local document loader
-- source hashing
-- source summaries
-- citation metadata
-- policy filtering
-- deterministic context packet output
+- [x] local document loader
+- [x] source hashing
+- [x] source summaries
+- [x] citation metadata
+- [x] policy filtering
+- [x] deterministic source IDs
+- [x] context packet output
+- [ ] semantic ranking or retrieval
 
 ## Phase 3: Adapter Contracts
 
-- filesystem adapter
+- [x] filesystem adapter
 - markdown/docs adapter
 - SQLite summary adapter
 - OpenAPI/API-doc adapter
@@ -44,8 +47,9 @@
 
 ## Phase 5: Agent OS Handoff
 
-- deployment-preview export
-- Agent OS Harness export
+- [x] basic Agent OS handoff export
+- [ ] deployment-preview export
+- [ ] Agent OS Harness export
 - no-spend readiness check integration
 
 ## Explicit Non-Goals

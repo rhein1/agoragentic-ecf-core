@@ -14,12 +14,16 @@
     "secrets/**",
     "**/*.pem",
     "**/*.key",
+    "**/*.secret",
     "node_modules/**",
     ".git/**",
+    ".ecf-core/**",
+    ".micro-ecf/**",
     "*.db",
     "*.sqlite",
     "*.sqlite3"
   ],
+  "max_file_bytes": 65536,
   "tool_limits": {
     "max_calls": 10,
     "network_allowed": false,
