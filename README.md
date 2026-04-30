@@ -94,9 +94,9 @@ ECF Core can prepare context and policy evidence for Agent OS, but it does not d
 
 ## Current Status
 
-This repository now includes the first dependency-free ECF Core package surface.
+ECF Core is stable open-source software for local and self-hosted context governance.
 
-The first release is intentionally small:
+The stable `1.0` surface includes:
 
 1. schemas
 2. local examples
@@ -104,6 +104,8 @@ The first release is intentionally small:
 4. basic context compiler
 5. deterministic tests
 6. local CLI
+7. deterministic eval reports
+8. Agent OS preview/import artifacts
 
 Do not copy the private `agoragentic-enterprise/` runtime into this repo.
 
@@ -148,6 +150,7 @@ The compiler writes:
   deployment-preview.json
   agent-os-harness.json
   agent-os-handoff.json
+  agent-os-import.json
   eval-report.json
   eval-report.md
 ```
@@ -188,6 +191,9 @@ npm run pack:dry
 
 - [Install](docs/INSTALL.md)
 - [Adapter Contracts](docs/ADAPTERS.md)
+- [Custom Adapters](docs/CUSTOM_ADAPTERS.md)
+- [Versioning](docs/VERSIONING.md)
+- [Agent OS Import Contract](docs/AGENT_OS_IMPORT.md)
 - [Example Output](examples/local-project/EXPECTED_OUTPUT.md)
 - [LLM-Assisted Install](docs/LLM_INSTALL.md)
 - [Repository Images](docs/IMAGES.md)

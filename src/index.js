@@ -4,6 +4,7 @@ const {
     compileProject,
     buildAgentOsHarness,
     buildAgentOsHandoff,
+    buildAgentOsImport,
     buildDeploymentPreview,
     validateCompiledArtifacts,
 } = require('./compile');
@@ -50,6 +51,7 @@ module.exports = {
     SqliteSummaryAdapter,
     buildAgentOsHarness,
     buildAgentOsHandoff,
+    buildAgentOsImport,
     buildDeploymentPreview,
     classifyPath,
     compileProject,

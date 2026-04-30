@@ -117,6 +117,28 @@ function buildAgentOsHarness({ deploymentPreview }) {
     };
 }
 
+function buildAgentOsImport({ deploymentPreview }) {
+    return {
+        schema_version: 'ecf-core.agent-os-import.v1',
+        import_mode: 'preview_only',
+        live_deploy_allowed: false,
+        required_files: [
+            'context-packet.json',
+            'source-map.json',
+            'policy-summary.json',
+            'deployment-preview.json',
+            'agent-os-harness.json',
+            'agent-os-handoff.json',
+        ],
+        acceptance_checks: deploymentPreview.checks.map((check) => ({
+            id: check.id,
+            required_status: check.id === 'citation_coverage' ? ['pass', 'warn'] : ['pass'],
+        })),
+        boundary: baseBoundary(),
+        next_step: 'agent_os_preview_import',
+    };
+}
+
 function buildAgentOsHandoff({ contextPacketPath, sourceMapPath, policySummaryPath, deploymentPreviewPath, agentOsHarnessPath, config }) {
     return {
         schema_version: 'ecf-core.agent-os-handoff.v1',
@@ -254,11 +276,14 @@ async function compileProject(options = {}) {
     let agentOsHandoff = null;
     let deploymentPreview = null;
     let agentOsHarness = null;
+    let agentOsImport = null;
     if (options.emitAgentOs) {
         deploymentPreview = buildDeploymentPreview({ contextPacket, sourceMap, config });
         agentOsHarness = buildAgentOsHarness({ deploymentPreview });
+        agentOsImport = buildAgentOsImport({ deploymentPreview });
         writeJson(path.join(outDir, 'deployment-preview.json'), deploymentPreview);
         writeJson(path.join(outDir, 'agent-os-harness.json'), agentOsHarness);
+        writeJson(path.join(outDir, 'agent-os-import.json'), agentOsImport);
         agentOsHandoff = buildAgentOsHandoff({
             contextPacketPath: 'context-packet.json',
             sourceMapPath: 'source-map.json',
@@ -282,6 +307,7 @@ async function compileProject(options = {}) {
             agent_os_handoff: agentOsHandoff ? relativeArtifact(projectRoot, outDir, 'agent-os-handoff.json') : null,
             deployment_preview: deploymentPreview ? relativeArtifact(projectRoot, outDir, 'deployment-preview.json') : null,
             agent_os_harness: agentOsHarness ? relativeArtifact(projectRoot, outDir, 'agent-os-harness.json') : null,
+            agent_os_import: agentOsImport ? relativeArtifact(projectRoot, outDir, 'agent-os-import.json') : null,
         },
         counts: {
             total_sources: records.length,
@@ -301,6 +327,7 @@ async function compileProject(options = {}) {
         agentOsHandoff,
         deploymentPreview,
         agentOsHarness,
+        agentOsImport,
         manifest,
         records,
     };
@@ -309,6 +336,7 @@ async function compileProject(options = {}) {
 module.exports = {
     buildAgentOsHarness,
     buildAgentOsHandoff,
+    buildAgentOsImport,
     buildDeploymentPreview,
     compileProject,
     validateCompiledArtifacts,

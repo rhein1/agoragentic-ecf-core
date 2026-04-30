@@ -19,6 +19,7 @@ creates:
   deployment-preview.json
   agent-os-harness.json
   agent-os-handoff.json
+  agent-os-import.json
   eval-report.json
   eval-report.md
 ```

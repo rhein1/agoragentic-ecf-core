@@ -41,6 +41,10 @@ Good future public adapters:
 
 - local code graph adapter
 
+## Custom Adapters
+
+See [Custom Adapters](CUSTOM_ADAPTERS.md) for the extension contract and a minimal example.
+
 Adapters that belong outside this repo:
 
 - private customer connectors

@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/agent-os-import.v1.json",
+  "title": "ECF Core Agent OS Import Contract",
+  "type": "object",
+  "required": ["schema_version", "import_mode", "live_deploy_allowed", "required_files", "acceptance_checks", "boundary", "next_step"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "ecf-core.agent-os-import.v1" },
+    "import_mode": { "const": "preview_only" },
+    "live_deploy_allowed": { "const": false },
+    "required_files": { "type": "array", "items": { "type": "string" } },
+    "acceptance_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "required_status"],
+        "additionalProperties": true,
+        "properties": {
+          "id": { "type": "string" },
+          "required_status": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "required": ["includes_hosted_runtime", "includes_wallet_or_settlement", "includes_full_ecf_private_internals", "includes_marketplace_routing"],
+      "additionalProperties": false,
+      "properties": {
+        "includes_hosted_runtime": { "const": false },
+        "includes_wallet_or_settlement": { "const": false },
+        "includes_full_ecf_private_internals": { "const": false },
+        "includes_marketplace_routing": { "const": false }
+      }
+    },
+    "next_step": { "type": "string" }
+  }
+}

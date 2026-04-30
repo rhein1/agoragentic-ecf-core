@@ -52,6 +52,15 @@
 - [x] Agent OS Harness export
 - [x] no-spend readiness check integration
 
+## Phase 6: Stable OSS Release
+
+- [x] npm publication
+- [x] stable schema/versioning policy
+- [x] Agent OS import contract
+- [x] adapter extension example
+- [x] broader fixture coverage
+- [ ] compression experiment fixture
+
 ## Explicit Non-Goals
 
 - enterprise tenant isolation

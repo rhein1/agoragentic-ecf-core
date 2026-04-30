@@ -20,7 +20,7 @@ npm run release:dry
 
 ## Versioning
 
-Use `0.x` while the compiler and adapter contracts are stabilizing.
+Use semantic versioning. See [Versioning And Compatibility](VERSIONING.md).
 
 ## Publishing Boundary
 
@@ -30,6 +30,6 @@ Publishing this package does not publish Agent OS, Router, marketplace, settleme
 
 ```bash
 npm publish --access public
-git tag v0.1.0
-git push origin v0.1.0
+git tag v1.0.0
+git push origin v1.0.0
 ```

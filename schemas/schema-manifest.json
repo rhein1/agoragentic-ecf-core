@@ -1,0 +1,22 @@
+{
+  "schema_version": "ecf-core.schema-manifest.v1",
+  "package_major": 1,
+  "stability": "stable",
+  "schemas": [
+    "ecf-core.context-packet.v1",
+    "ecf-core.source-map.v1",
+    "ecf-core.policy-summary.v1",
+    "ecf-core.local-config.v1",
+    "ecf-core.connector-adapter.v1",
+    "ecf-core.agent-os-handoff.v1",
+    "ecf-core.agent-os-harness.v1",
+    "ecf-core.deployment-preview.v1",
+    "ecf-core.eval-report.v1",
+    "ecf-core.agent-os-import.v1"
+  ],
+  "compatibility": {
+    "required_fields_stable_within_major": true,
+    "minor_releases_may_add_optional_fields": true,
+    "breaking_changes_require_major": true
+  }
+}

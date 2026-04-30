@@ -1,0 +1,41 @@
+# Versioning And Compatibility
+
+ECF Core uses semantic versioning.
+
+## Package Versions
+
+- Patch releases fix bugs without changing artifact shape.
+- Minor releases add optional fields, adapters, commands, or reports.
+- Major releases may change required fields or remove deprecated fields.
+
+## Stable 1.0 Contract
+
+Starting with `1.0.0`, these artifact schemas are stable:
+
+- `ecf-core.context-packet.v1`
+- `ecf-core.source-map.v1`
+- `ecf-core.policy-summary.v1`
+- `ecf-core.local-config.v1`
+- `ecf-core.connector-adapter.v1`
+- `ecf-core.agent-os-handoff.v1`
+- `ecf-core.agent-os-harness.v1`
+- `ecf-core.deployment-preview.v1`
+- `ecf-core.eval-report.v1`
+- `ecf-core.agent-os-import.v1`
+
+Stable means existing required fields remain compatible within the same major package line. New optional fields may be added in minor releases.
+
+## Migration Policy
+
+When a future artifact version is introduced:
+
+1. The previous version remains readable for at least one major release.
+2. A migration note is added to this file.
+3. `ecf-core validate` continues to report clear schema-version failures.
+4. Breaking changes require a major package version.
+
+## Boundary
+
+Version stability applies to local/self-hosted ECF Core artifacts only.
+
+It does not imply hosted Agent OS runtime access, wallet settlement, marketplace routing, Full ECF private internals, SOC 2 compliance, or an enterprise support contract.

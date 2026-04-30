@@ -11,6 +11,7 @@ const {
     compileProject,
     validateCompiledArtifacts,
 } = require('../src');
+const { CustomKeywordAdapter } = require('../examples/custom-adapter/custom-keyword-adapter');
 
 function makeProject() {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ecf-core-test-'));
@@ -60,8 +61,10 @@ test('compileProject emits source map, context packet, policy summary, and hando
     assert.equal(result.agentOsHandoff.schema_version, 'ecf-core.agent-os-handoff.v1');
     assert.equal(result.deploymentPreview.schema_version, 'ecf-core.deployment-preview.v1');
     assert.equal(result.agentOsHarness.schema_version, 'ecf-core.agent-os-harness.v1');
+    assert.equal(result.agentOsImport.schema_version, 'ecf-core.agent-os-import.v1');
     assert.equal(result.agentOsHandoff.boundary.includes_wallet_or_settlement, false);
     assert.equal(result.agentOsHarness.boundary.includes_hosted_runtime, false);
+    assert.equal(result.agentOsImport.live_deploy_allowed, false);
 
     const sourcePaths = result.contextPacket.sources.map((source) => source.path).sort();
     assert.ok(sourcePaths.includes('README.md'));
@@ -123,4 +126,53 @@ test('CLI eval writes deterministic JSON and Markdown reports', () => {
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'eval-report.md')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'agent-os-harness.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'deployment-preview.json')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'agent-os-import.json')));
+});
+
+test('custom adapters can extend context without changing core compiler', async () => {
+    const root = makeProject();
+    const result = await compileProject({
+        projectRoot: root,
+        emitAgentOs: true,
+        adapters: [new CustomKeywordAdapter(['external user validation fixture'])],
+    });
+
+    const custom = result.contextPacket.sources.find((source) => source.type === 'custom_keyword');
+    assert.ok(custom);
+    assert.equal(custom.provenance.adapter, 'custom_keyword_adapter');
+});
+
+test('stable schema manifest lists every generated artifact contract', () => {
+    const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'schemas', 'schema-manifest.json'), 'utf8'));
+    const expected = [
+        'ecf-core.context-packet.v1',
+        'ecf-core.source-map.v1',
+        'ecf-core.policy-summary.v1',
+        'ecf-core.local-config.v1',
+        'ecf-core.connector-adapter.v1',
+        'ecf-core.agent-os-handoff.v1',
+        'ecf-core.agent-os-harness.v1',
+        'ecf-core.deployment-preview.v1',
+        'ecf-core.eval-report.v1',
+        'ecf-core.agent-os-import.v1',
+    ];
+    assert.equal(manifest.stability, 'stable');
+    assert.deepEqual(manifest.schemas.sort(), expected.sort());
+});
+
+test('example project exercises docs sqlite openapi mcp and Agent OS import outputs', () => {
+    const root = path.join(__dirname, '..', 'examples', 'local-project');
+    const cli = path.join(__dirname, '..', 'bin', 'ecf-core.js');
+    const output = execFileSync(process.execPath, [cli, 'eval', root, '--json'], { encoding: 'utf8' });
+    const summary = JSON.parse(output);
+    const contextPacket = JSON.parse(fs.readFileSync(path.join(root, '.ecf-core', 'context-packet.json'), 'utf8'));
+
+    assert.equal(summary.verdict, 'pass');
+    assert.ok(contextPacket.sources.some((source) => source.type === 'markdown_section'));
+    assert.ok(contextPacket.sources.some((source) => source.type === 'sqlite_schema_summary'));
+    assert.ok(contextPacket.sources.some((source) => source.type === 'openapi_summary'));
+    assert.ok(contextPacket.sources.some((source) => source.type === 'mcp_context_summary'));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'agent-os-import.json')));
+
+    fs.rmSync(path.join(root, '.ecf-core'), { recursive: true, force: true });
 });
