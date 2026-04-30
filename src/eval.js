@@ -3,9 +3,10 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { evaluateCompressionExperiment } = require('./compression');
-const { compileProject } = require('./compile');
+const { applyGroundingEvidence, compileProject } = require('./compile');
 const { matchesAny } = require('./core/policy');
 const { topK } = require('./core/ranking');
+const { groundingMarkdown, runGroundingEval } = require('./grounding');
 
 function writeJson(filePath, value) {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -39,6 +40,10 @@ function markdownReport(summary) {
         `- Compression experiment verdict: ${summary.metrics.compression_experiment.verdict}`,
         `- Compression median ratio: ${summary.metrics.compression_experiment.median_compression_ratio}`,
         `- Compression citation survival: ${summary.metrics.compression_experiment.citation_survival}`,
+        ...(summary.metrics.grounding_eval ? [
+            `- Grounding eval verdict: ${summary.metrics.grounding_eval.verdict}`,
+            `- Grounded queries: ${summary.metrics.grounding_eval.summary.grounded}/${summary.metrics.grounding_eval.summary.queries}`,
+        ] : []),
         '',
         '## Queries',
         '',
@@ -164,6 +169,19 @@ async function runEvaluation(options = {}) {
         ? Math.max(1, Number(result.config.eval.top_k))
         : 3;
     const summary = evaluateCompiled({ result, topKSize });
+    let grounding = null;
+    if (options.grounding || result.config.eval?.grounding_enabled) {
+        grounding = runGroundingEval({ result, topKSize });
+        summary.metrics.grounding_eval = {
+            verdict: grounding.verdict,
+            summary: grounding.summary,
+            file: 'grounding-eval.json',
+        };
+        summary.files.grounding_eval = 'grounding-eval.json';
+        writeJson(path.join(outDir, 'grounding-eval.json'), grounding);
+        writeText(path.join(outDir, 'grounding-eval.md'), groundingMarkdown(grounding));
+        applyGroundingEvidence({ outDir, grounding });
+    }
     const jsonPath = path.join(outDir, 'eval-report.json');
     const markdownPath = path.join(outDir, 'eval-report.md');
     writeJson(jsonPath, summary);
@@ -173,11 +191,14 @@ async function runEvaluation(options = {}) {
         files: {
             json: jsonPath,
             markdown: markdownPath,
+            grounding_json: grounding ? path.join(outDir, 'grounding-eval.json') : null,
+            grounding_markdown: grounding ? path.join(outDir, 'grounding-eval.md') : null,
         },
     };
 }
 
 module.exports = {
     evaluateCompiled,
+    runGroundingEval,
     runEvaluation,
 };

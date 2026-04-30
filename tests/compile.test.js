@@ -20,6 +20,7 @@ function makeProject() {
     fs.mkdirSync(path.join(root, 'node_modules', 'ignored'), { recursive: true });
     fs.writeFileSync(path.join(root, 'README.md'), '# Test Project\n\nA local agent fixture.\n');
     fs.writeFileSync(path.join(root, 'docs', 'guide.md'), '# Guide\n\nUse safe local context.\n');
+    fs.writeFileSync(path.join(root, 'docs', 'billing.md'), '# Billing\n\nPayment disputes are reviewed by the billing owner.\n');
     fs.writeFileSync(path.join(root, 'src', 'app.js'), 'export function run() { return "ok"; }\n');
     fs.writeFileSync(path.join(root, 'schema.sql'), 'CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT, created_at TEXT);\n');
     fs.writeFileSync(path.join(root, 'openapi.yaml'), 'openapi: 3.1.0\npaths:\n  /agents:\n    get:\n      summary: List agents\n');
@@ -162,9 +163,74 @@ test('stable schema manifest lists every generated artifact contract', () => {
         'ecf-core.eval-report.v1',
         'ecf-core.agent-os-import.v1',
         'ecf-core.agent-os-preview-check.v1',
+        'ecf-core.grounding-eval.v1',
     ];
     assert.equal(manifest.stability, 'stable');
     assert.deepEqual(manifest.schemas.sort(), expected.sort());
+});
+
+test('grounding eval grounds supported queries and fails closed for unsupported context', () => {
+    const root = makeProject();
+    const config = JSON.parse(fs.readFileSync(path.join(root, 'ecf.config.json'), 'utf8'));
+    config.eval = {
+        queries: ['safe local context'],
+        grounding_queries: [
+            {
+                question: 'How are refund disputes handled? billing payment',
+                expected_sources: ['docs/billing.md#billing'],
+            },
+            'Can the agent read payment refunds?',
+        ],
+        top_k: 3,
+        max_retries: 1,
+        rewrite_enabled: true,
+        grounding_required: true,
+        unsupported_response: "I don't know based on the allowed context.",
+    };
+    fs.writeFileSync(path.join(root, 'ecf.config.json'), JSON.stringify(config, null, 2));
+    const cli = path.join(__dirname, '..', 'bin', 'ecf-core.js');
+    const output = execFileSync(process.execPath, [cli, 'eval', root, '--json', '--grounding'], { encoding: 'utf8' });
+    const summary = JSON.parse(output);
+    const grounding = JSON.parse(fs.readFileSync(path.join(root, '.ecf-core', 'grounding-eval.json'), 'utf8'));
+
+    assert.equal(summary.metrics.grounding_eval.verdict, 'warn');
+    assert.equal(grounding.summary.grounded, 1);
+    assert.equal(grounding.summary.unsupported, 1);
+    assert.equal(grounding.questions[0].status, 'grounded');
+    assert.equal(grounding.questions[0].citations.includes('docs/billing.md#billing'), true);
+    assert.equal(grounding.questions[1].status, 'unsupported');
+    assert.equal(grounding.questions[1].final_response, "I don't know based on the allowed context.");
+    assert.equal(grounding.questions[1].retries, 1);
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'grounding-eval.md')));
+
+    const preview = JSON.parse(execFileSync(process.execPath, [cli, 'agent-os-preview', path.join(root, '.ecf-core'), '--json'], { encoding: 'utf8' }));
+    assert.equal(preview.ok, true);
+    assert.equal(preview.grounding_eval.verdict, 'warn');
+
+    const validation = validateCompiledArtifacts(path.join(root, '.ecf-core'));
+    assert.equal(validation.ok, true);
+});
+
+test('grounding eval blocks queries aimed at blocked sources and enforces max retries', () => {
+    const root = makeProject();
+    const config = JSON.parse(fs.readFileSync(path.join(root, 'ecf.config.json'), 'utf8'));
+    config.eval = {
+        queries: ['env secret'],
+        grounding_queries: ['What does .env say about secrets?'],
+        top_k: 2,
+        max_retries: 0,
+        rewrite_enabled: true,
+        grounding_required: true,
+    };
+    fs.writeFileSync(path.join(root, 'ecf.config.json'), JSON.stringify(config, null, 2));
+    const cli = path.join(__dirname, '..', 'bin', 'ecf-core.js');
+    execFileSync(process.execPath, [cli, 'eval', root, '--grounding'], { stdio: 'pipe' });
+    const grounding = JSON.parse(fs.readFileSync(path.join(root, '.ecf-core', 'grounding-eval.json'), 'utf8'));
+
+    assert.equal(grounding.summary.blocked, 1);
+    assert.equal(grounding.questions[0].status, 'blocked');
+    assert.equal(grounding.questions[0].attempts[0].retrieved_paths.includes('.env'), false);
+    assert.equal(grounding.questions[0].retries, 0);
 });
 
 test('example project exercises docs sqlite openapi mcp and Agent OS import outputs', () => {

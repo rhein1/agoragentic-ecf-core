@@ -21,12 +21,17 @@ function inspectAgentOsPreview(artifactDir) {
     const errors = [];
     const agentOsImport = readJson(path.join(resolvedDir, 'agent-os-import.json'), errors);
     const deploymentPreview = readJson(path.join(resolvedDir, 'deployment-preview.json'), errors);
+    const groundingEvalPath = path.join(resolvedDir, 'grounding-eval.json');
+    const groundingEval = fs.existsSync(groundingEvalPath) ? readJson(groundingEvalPath, errors) : null;
 
     if (agentOsImport && agentOsImport.schema_version !== 'ecf-core.agent-os-import.v1') {
         errors.push('agent-os-import.json has unsupported schema_version');
     }
     if (deploymentPreview && deploymentPreview.schema_version !== 'ecf-core.deployment-preview.v1') {
         errors.push('deployment-preview.json has unsupported schema_version');
+    }
+    if (groundingEval && groundingEval.schema_version !== 'ecf-core.grounding-eval.v1') {
+        errors.push('grounding-eval.json has unsupported schema_version');
     }
 
     const requiredFiles = Array.isArray(agentOsImport?.required_files) ? agentOsImport.required_files : [];
@@ -65,6 +70,10 @@ function inspectAgentOsPreview(artifactDir) {
         required_files: requiredFiles,
         missing_files: missingFiles,
         acceptance_checks: acceptance,
+        grounding_eval: groundingEval ? {
+            verdict: groundingEval.verdict,
+            summary: groundingEval.summary,
+        } : null,
         boundary_safe: boundarySafe,
         next_step: errors.length === 0
             ? 'send_artifact_dir_to_agent_os_preview_import'

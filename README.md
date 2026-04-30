@@ -70,6 +70,7 @@ Full ECF
 - Dependency-free local compiler
 - `ecf-core` CLI
 - Deterministic eval reports
+- Grounding eval loop for local fail-closed answer checks
 - Semantic-lite retrieval preservation scoring
 - Deterministic compression experiment metrics
 - Agent OS Harness and deployment-preview exports
@@ -131,6 +132,7 @@ Local flow:
 ecf-core init .
 ecf-core compile . --agent-os
 ecf-core eval .
+ecf-core eval . --grounding
 ecf-core agent-os-preview .ecf-core
 ecf-core validate .ecf-core
 ```
@@ -207,18 +209,20 @@ The compiler writes:
   agent-os-import.json
   eval-report.json
   eval-report.md
+  grounding-eval.json
+  grounding-eval.md
 ```
 
 Review `ecf.config.json` before compiling sensitive repositories.
 
-Run `ecf-core eval`, `ecf-core agent-os-preview`, and `ecf-core validate` before importing artifacts into Agent OS preview.
+Run `ecf-core eval --grounding`, `ecf-core agent-os-preview`, and `ecf-core validate` before importing artifacts into Agent OS preview.
 
 ## CLI
 
 ```text
 ecf-core init [project] [--force]
 ecf-core compile [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--agent-os]
-ecf-core eval [project] [--config ecf.config.json] [--out .ecf-core] [--json]
+ecf-core eval [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--grounding]
 ecf-core agent-os-preview [artifact-dir] [--json]
 ecf-core validate [artifact-dir]
 ecf-core version

@@ -15,7 +15,7 @@ Then run:
 ```bash
 ecf-core init .
 ecf-core compile . --agent-os
-ecf-core eval .
+ecf-core eval . --grounding
 ecf-core agent-os-preview .ecf-core
 ecf-core validate .ecf-core
 ```
@@ -31,7 +31,7 @@ Then run:
 ```bash
 ecf-core init .
 ecf-core compile . --agent-os
-ecf-core eval .
+ecf-core eval . --grounding
 ecf-core agent-os-preview .ecf-core
 ecf-core validate .ecf-core
 ```

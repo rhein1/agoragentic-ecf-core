@@ -76,8 +76,16 @@ function buildReadinessChecks({ contextPacket, sourceMap, config }) {
     ];
 }
 
-function buildDeploymentPreview({ contextPacket, sourceMap, config }) {
+function buildDeploymentPreview({ contextPacket, sourceMap, config, groundingSummary = null }) {
     const checks = buildReadinessChecks({ contextPacket, sourceMap, config });
+    if (groundingSummary) {
+        checks.push({
+            id: 'grounding_eval',
+            status: groundingSummary.verdict === 'pass' ? 'pass' : 'warn',
+            detail: `${groundingSummary.summary.grounded}/${groundingSummary.summary.queries} grounding queries passed.`,
+            hallucination_risk: groundingSummary.summary.hallucination_risk,
+        });
+    }
     return {
         schema_version: 'ecf-core.deployment-preview.v1',
         mode: 'agent_os_preview',
@@ -87,6 +95,7 @@ function buildDeploymentPreview({ contextPacket, sourceMap, config }) {
             context_packet: 'context-packet.json',
             source_map: 'source-map.json',
             policy_summary: 'policy-summary.json',
+            grounding_eval: groundingSummary ? 'grounding-eval.json' : null,
         },
         next_step: checks.every((check) => check.status !== 'fail')
             ? 'review_agent_os_preview'
@@ -104,6 +113,7 @@ function buildAgentOsHarness({ deploymentPreview }) {
             source_map: 'source-map.json',
             policy_summary: 'policy-summary.json',
             deployment_preview: 'deployment-preview.json',
+            grounding_eval: deploymentPreview.artifacts.grounding_eval,
         },
         boundary: baseBoundary(),
         readiness: {
@@ -118,23 +128,28 @@ function buildAgentOsHarness({ deploymentPreview }) {
 }
 
 function buildAgentOsImport({ deploymentPreview }) {
+    const requiredFiles = [
+        'context-packet.json',
+        'source-map.json',
+        'policy-summary.json',
+        'deployment-preview.json',
+        'agent-os-harness.json',
+        'agent-os-handoff.json',
+    ];
+    if (deploymentPreview.artifacts.grounding_eval) requiredFiles.push(deploymentPreview.artifacts.grounding_eval);
     return {
         schema_version: 'ecf-core.agent-os-import.v1',
         import_mode: 'preview_only',
         live_deploy_allowed: false,
-        required_files: [
-            'context-packet.json',
-            'source-map.json',
-            'policy-summary.json',
-            'deployment-preview.json',
-            'agent-os-harness.json',
-            'agent-os-handoff.json',
-        ],
+        required_files: requiredFiles,
         acceptance_checks: deploymentPreview.checks.map((check) => ({
             id: check.id,
             required_status: check.id === 'citation_coverage' ? ['pass', 'warn'] : ['pass'],
         })),
         boundary: baseBoundary(),
+        evidence: {
+            grounding_eval: deploymentPreview.artifacts.grounding_eval,
+        },
         next_step: 'agent_os_preview_import',
     };
 }
@@ -154,6 +169,50 @@ function buildAgentOsHandoff({ contextPacketPath, sourceMapPath, policySummaryPa
         },
         boundary: baseBoundary(),
     };
+}
+
+function applyGroundingEvidence({ outDir, grounding }) {
+    const deploymentPreviewPath = path.join(outDir, 'deployment-preview.json');
+    const agentOsHarnessPath = path.join(outDir, 'agent-os-harness.json');
+    const agentOsImportPath = path.join(outDir, 'agent-os-import.json');
+    const manifestPath = path.join(outDir, 'manifest.json');
+    if (!fs.existsSync(deploymentPreviewPath) || !fs.existsSync(agentOsHarnessPath) || !fs.existsSync(agentOsImportPath)) {
+        return;
+    }
+    const deploymentPreview = JSON.parse(fs.readFileSync(deploymentPreviewPath, 'utf8'));
+    const agentOsHarness = JSON.parse(fs.readFileSync(agentOsHarnessPath, 'utf8'));
+    const agentOsImport = JSON.parse(fs.readFileSync(agentOsImportPath, 'utf8'));
+    const check = {
+        id: 'grounding_eval',
+        status: grounding.verdict === 'pass' ? 'pass' : 'warn',
+        detail: `${grounding.summary.grounded}/${grounding.summary.queries} grounding queries passed.`,
+        hallucination_risk: grounding.summary.hallucination_risk,
+    };
+    deploymentPreview.artifacts.grounding_eval = 'grounding-eval.json';
+    deploymentPreview.checks = [
+        ...deploymentPreview.checks.filter((item) => item.id !== 'grounding_eval'),
+        check,
+    ];
+    agentOsHarness.artifacts.grounding_eval = 'grounding-eval.json';
+    agentOsHarness.readiness.checks = [
+        ...agentOsHarness.readiness.checks.filter((item) => item.id !== 'grounding_eval'),
+        check,
+    ];
+    if (!agentOsImport.required_files.includes('grounding-eval.json')) {
+        agentOsImport.required_files.push('grounding-eval.json');
+    }
+    agentOsImport.evidence = {
+        ...(agentOsImport.evidence || {}),
+        grounding_eval: 'grounding-eval.json',
+    };
+    writeJson(deploymentPreviewPath, deploymentPreview);
+    writeJson(agentOsHarnessPath, agentOsHarness);
+    writeJson(agentOsImportPath, agentOsImport);
+    if (fs.existsSync(manifestPath)) {
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        manifest.files.grounding_eval = 'grounding-eval.json';
+        writeJson(manifestPath, manifest);
+    }
 }
 
 function validateSchemaVersion(value, expected, fileName, errors) {
@@ -180,6 +239,7 @@ function validateCompiledArtifacts(artifactDir) {
     const contextPacket = readJsonIfPresent(path.join(artifactDir, 'context-packet.json'), errors);
     const sourceMap = readJsonIfPresent(path.join(artifactDir, 'source-map.json'), errors);
     const policySummary = readJsonIfPresent(path.join(artifactDir, 'policy-summary.json'), errors);
+    const groundingEvalPath = path.join(artifactDir, 'grounding-eval.json');
 
     validateSchemaVersion(contextPacket, 'ecf-core.context-packet.v1', 'context-packet.json', errors);
     validateSchemaVersion(sourceMap, 'ecf-core.source-map.v1', 'source-map.json', errors);
@@ -190,6 +250,12 @@ function validateCompiledArtifacts(artifactDir) {
     if (sourceMap && !Array.isArray(sourceMap.sources)) errors.push('source-map.json sources must be an array');
     if (policySummary && !Array.isArray(policySummary.allowed_sources)) errors.push('policy-summary.json allowed_sources must be an array');
     if (policySummary && !Array.isArray(policySummary.blocked_sources)) errors.push('policy-summary.json blocked_sources must be an array');
+    if (fs.existsSync(groundingEvalPath)) {
+        const groundingEval = readJsonIfPresent(groundingEvalPath, errors);
+        validateSchemaVersion(groundingEval, 'ecf-core.grounding-eval.v1', 'grounding-eval.json', errors);
+        if (groundingEval && !Array.isArray(groundingEval.questions)) errors.push('grounding-eval.json questions must be an array');
+        if (groundingEval && !groundingEval.summary) errors.push('grounding-eval.json summary is required');
+    }
 
     return {
         ok: errors.length === 0,
@@ -339,5 +405,6 @@ module.exports = {
     buildAgentOsImport,
     buildDeploymentPreview,
     compileProject,
+    applyGroundingEvidence,
     validateCompiledArtifacts,
 };

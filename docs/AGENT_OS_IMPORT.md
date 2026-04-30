@@ -21,6 +21,7 @@ ECF Core writes:
   agent-os-harness.json
   agent-os-handoff.json
   agent-os-import.json
+  grounding-eval.json       # when eval --grounding is run
 ```
 
 ## Import Boundary
@@ -52,6 +53,7 @@ The check verifies:
 - `agent-os-import.json` uses the stable preview-only schema
 - every required artifact file exists
 - deployment-preview checks satisfy import acceptance checks
+- optional grounding evidence is readable when present
 - the boundary flags still prove there is no hosted runtime, wallet/settlement authority, marketplace routing, or Full ECF private internals
 
 Machine-readable output is available with:

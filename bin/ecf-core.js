@@ -18,7 +18,7 @@ function printHelp() {
 Usage:
   ecf-core init [project] [--force]
   ecf-core compile [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--agent-os]
-  ecf-core eval [project] [--config ecf.config.json] [--out .ecf-core] [--json]
+  ecf-core eval [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--grounding]
   ecf-core agent-os-preview [artifact-dir] [--json]
   ecf-core validate [artifact-dir]
   ecf-core version
@@ -78,6 +78,7 @@ async function main() {
             projectRoot,
             configPath: configPath && configPath !== true ? path.resolve(configPath) : null,
             outDir: path.resolve(projectRoot, outDir),
+            grounding: args.includes('--grounding'),
         });
         if (args.includes('--json')) {
             console.log(JSON.stringify(report.summary, null, 2));

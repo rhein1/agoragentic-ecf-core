@@ -27,6 +27,10 @@
         }
       }
     },
+    "grounding_eval": {
+      "type": ["object", "null"],
+      "additionalProperties": true
+    },
     "boundary_safe": { "type": "boolean" },
     "next_step": { "type": "string" },
     "errors": { "type": "array", "items": { "type": "string" } }

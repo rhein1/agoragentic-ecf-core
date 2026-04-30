@@ -84,6 +84,12 @@ function createDefaultConfig(options = {}) {
             ],
             top_k: 3,
             semantic_lite: true,
+            grounding_enabled: false,
+            grounding_required: true,
+            max_retries: 2,
+            rewrite_enabled: true,
+            unsupported_response: "I don't know based on the allowed context.",
+            grounding_queries: [],
             compression: {
                 enabled: true,
                 max_summary_chars: 96,
