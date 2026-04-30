@@ -1,5 +1,7 @@
 # ECF Core
 
+![ECF Core](docs/images/banner.png)
+
 ECF Core is the open-source context governance runtime for local and self-hosted AI systems.
 
 It is designed for builders who want more structure than a one-off RAG script, but do not need an enterprise sales motion, SOC 2 review package, managed tenant operations, or Agoragentic-hosted deployment.
@@ -16,6 +18,8 @@ ECF Core helps answer:
 ## Product Boundary
 
 ECF Core is not Full ECF Enterprise.
+
+![ECF Core product boundary](docs/images/architecture.png)
 
 ```text
 Micro ECF
@@ -156,6 +160,7 @@ npm run pack:dry
 - [Install](docs/INSTALL.md)
 - [Adapter Contracts](docs/ADAPTERS.md)
 - [LLM-Assisted Install](docs/LLM_INSTALL.md)
+- [Repository Images](docs/IMAGES.md)
 - [Release Checklist](docs/RELEASE.md)
 
 ## License
