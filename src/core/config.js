@@ -10,6 +10,16 @@ const DEFAULT_ALLOW = [
     'schemas/**',
     'examples/**',
     'package.json',
+    'schema.sql',
+    '*.schema.sql',
+    'openapi.json',
+    'openapi.yaml',
+    'openapi.yml',
+    'swagger.json',
+    'swagger.yaml',
+    'swagger.yml',
+    'mcp.json',
+    '.mcp.json',
     '*.md',
     '*.json',
     '*.yaml',
@@ -58,6 +68,22 @@ function createDefaultConfig(options = {}) {
         allow: [...DEFAULT_ALLOW],
         block: [...DEFAULT_BLOCK],
         max_file_bytes: 65536,
+        adapters: {
+            filesystem: { enabled: true },
+            markdown_docs: { enabled: true },
+            sqlite_summary: { enabled: true },
+            openapi: { enabled: true },
+            mcp_context: { enabled: true },
+        },
+        eval: {
+            queries: [
+                'context policy',
+                'agent os handoff',
+                'openapi',
+                'sqlite schema',
+            ],
+            top_k: 3,
+        },
         tool_limits: {
             max_calls: 10,
             network_allowed: false,
@@ -80,6 +106,14 @@ function normalizeConfig(raw = {}, options = {}) {
         tool_limits: {
             ...defaults.tool_limits,
             ...(raw.tool_limits || {}),
+        },
+        adapters: {
+            ...defaults.adapters,
+            ...(raw.adapters || {}),
+        },
+        eval: {
+            ...defaults.eval,
+            ...(raw.eval || {}),
         },
         handoff: {
             ...defaults.handoff,

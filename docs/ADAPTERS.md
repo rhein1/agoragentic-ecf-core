@@ -28,14 +28,17 @@ Adapters return source records with:
 
 It does not read blocked files into context. Blocked source hashes are metadata hashes so secrets are not copied into ECF artifacts.
 
+## Included Summary Adapters
+
+- `MarkdownDocsAdapter` extracts heading-level sections from allowed Markdown files.
+- `SqliteSummaryAdapter` summarizes allowed SQLite schema exports such as `.sql` files; it does not read live `.sqlite` database files.
+- `OpenApiAdapter` summarizes allowed OpenAPI/Swagger JSON or YAML files.
+- `McpContextProviderAdapter` summarizes allowed MCP descriptor JSON files.
+
 ## Future Adapters
 
-Good public adapters:
+Good future public adapters:
 
-- Markdown/docs loader
-- SQLite schema summary adapter
-- OpenAPI/API-doc adapter
-- generic MCP context-provider adapter
 - local code graph adapter
 
 Adapters that belong outside this repo:

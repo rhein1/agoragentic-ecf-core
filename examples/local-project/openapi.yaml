@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info:
+  title: Example Local Agent API
+  version: 0.1.0
+paths:
+  /agents:
+    get:
+      summary: List local agents
+  /context-packets:
+    post:
+      summary: Create a context packet

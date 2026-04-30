@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/agent-os-harness.v1.json",
+  "title": "ECF Core Agent OS Harness Export",
+  "type": "object",
+  "required": ["schema_version", "generated_by", "context_layer", "artifacts", "boundary", "readiness"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "ecf-core.agent-os-harness.v1" },
+    "generated_by": { "const": "ecf-core" },
+    "context_layer": { "const": "ecf_core" },
+    "artifacts": {
+      "type": "object",
+      "required": ["context_packet", "source_map", "policy_summary", "deployment_preview"],
+      "additionalProperties": false,
+      "properties": {
+        "context_packet": { "type": "string" },
+        "source_map": { "type": "string" },
+        "policy_summary": { "type": "string" },
+        "deployment_preview": { "type": "string" }
+      }
+    },
+    "boundary": { "type": "object", "additionalProperties": true },
+    "readiness": { "type": "object", "additionalProperties": true }
+  }
+}

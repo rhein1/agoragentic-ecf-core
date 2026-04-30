@@ -20,13 +20,21 @@ function makeProject() {
     fs.writeFileSync(path.join(root, 'README.md'), '# Test Project\n\nA local agent fixture.\n');
     fs.writeFileSync(path.join(root, 'docs', 'guide.md'), '# Guide\n\nUse safe local context.\n');
     fs.writeFileSync(path.join(root, 'src', 'app.js'), 'export function run() { return "ok"; }\n');
+    fs.writeFileSync(path.join(root, 'schema.sql'), 'CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT, created_at TEXT);\n');
+    fs.writeFileSync(path.join(root, 'openapi.yaml'), 'openapi: 3.1.0\npaths:\n  /agents:\n    get:\n      summary: List agents\n');
+    fs.writeFileSync(path.join(root, 'mcp.json'), JSON.stringify({
+        mcpServers: {
+            local: { command: 'node', args: ['server.js'] },
+        },
+        tools: [{ name: 'search_context' }],
+    }, null, 2));
     fs.writeFileSync(path.join(root, '.env'), 'SECRET=do-not-read\n');
     fs.writeFileSync(path.join(root, 'node_modules', 'ignored', 'index.js'), 'module.exports = "ignored";\n');
     fs.writeFileSync(path.join(root, 'ecf.config.json'), JSON.stringify({
         schema_version: 'ecf-core.local-config.v1',
         project_name: 'fixture',
         scope: 'local_project',
-        allow: ['README.md', 'docs/**', 'src/**'],
+        allow: ['README.md', 'docs/**', 'src/**', 'schema.sql', 'openapi.yaml', 'mcp.json'],
         block: ['.env', 'node_modules/**'],
         tool_limits: {
             max_calls: 4,
@@ -50,11 +58,19 @@ test('compileProject emits source map, context packet, policy summary, and hando
     assert.equal(result.sourceMap.schema_version, 'ecf-core.source-map.v1');
     assert.equal(result.policySummary.schema_version, 'ecf-core.policy-summary.v1');
     assert.equal(result.agentOsHandoff.schema_version, 'ecf-core.agent-os-handoff.v1');
+    assert.equal(result.deploymentPreview.schema_version, 'ecf-core.deployment-preview.v1');
+    assert.equal(result.agentOsHarness.schema_version, 'ecf-core.agent-os-harness.v1');
     assert.equal(result.agentOsHandoff.boundary.includes_wallet_or_settlement, false);
+    assert.equal(result.agentOsHarness.boundary.includes_hosted_runtime, false);
 
     const sourcePaths = result.contextPacket.sources.map((source) => source.path).sort();
-    assert.deepEqual(sourcePaths, ['README.md', 'docs/guide.md', 'src/app.js']);
-    assert.equal(result.contextPacket.citations.length, 3);
+    assert.ok(sourcePaths.includes('README.md'));
+    assert.ok(sourcePaths.includes('README.md#test-project'));
+    assert.ok(sourcePaths.includes('docs/guide.md#guide'));
+    assert.ok(sourcePaths.includes('schema.sql#sqlite-schema-summary'));
+    assert.ok(sourcePaths.includes('openapi.yaml#openapi-summary'));
+    assert.ok(sourcePaths.includes('mcp.json#mcp-context-summary'));
+    assert.equal(result.contextPacket.citations.length, result.contextPacket.sources.length);
     assert.ok(result.sourceMap.sources.some((source) => source.path === '.env' && source.classification === 'blocked'));
     assert.ok(!result.contextPacket.sources.some((source) => source.path.includes('node_modules')));
 
@@ -91,4 +107,20 @@ test('CLI init compile and validate work without runtime dependencies', () => {
 
     const validation = execFileSync(process.execPath, [cli, 'validate', path.join(root, '.ecf-core')], { encoding: 'utf8' });
     assert.equal(JSON.parse(validation).ok, true);
+});
+
+test('CLI eval writes deterministic JSON and Markdown reports', () => {
+    const root = makeProject();
+    const cli = path.join(__dirname, '..', 'bin', 'ecf-core.js');
+    const output = execFileSync(process.execPath, [cli, 'eval', root, '--json'], { encoding: 'utf8' });
+    const summary = JSON.parse(output);
+
+    assert.equal(summary.schema_version, 'ecf-core.eval-report.v1');
+    assert.equal(summary.verdict, 'pass');
+    assert.equal(summary.metrics.policy_block.pass, true);
+    assert.equal(summary.metrics.citation_survival.coverage, 1);
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'eval-report.json')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'eval-report.md')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'agent-os-harness.json')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'deployment-preview.json')));
 });

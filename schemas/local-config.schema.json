@@ -12,6 +12,25 @@
     "allow": { "type": "array", "items": { "type": "string" } },
     "block": { "type": "array", "items": { "type": "string" } },
     "max_file_bytes": { "type": "integer", "minimum": 1024 },
+    "adapters": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "filesystem": { "$ref": "#/$defs/adapterToggle" },
+        "markdown_docs": { "$ref": "#/$defs/adapterToggle" },
+        "sqlite_summary": { "$ref": "#/$defs/adapterToggle" },
+        "openapi": { "$ref": "#/$defs/adapterToggle" },
+        "mcp_context": { "$ref": "#/$defs/adapterToggle" }
+      }
+    },
+    "eval": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "queries": { "type": "array", "items": { "type": "string" } },
+        "top_k": { "type": "integer", "minimum": 1 }
+      }
+    },
     "tool_limits": {
       "type": "object",
       "required": ["max_calls", "network_allowed", "write_allowed"],
@@ -29,6 +48,15 @@
       "properties": {
         "agent_os_preview_allowed": { "type": "boolean" },
         "live_deploy_allowed": { "const": false }
+      }
+    }
+  },
+  "$defs": {
+    "adapterToggle": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" }
       }
     }
   }

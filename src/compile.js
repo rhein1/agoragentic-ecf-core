@@ -4,6 +4,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { AdapterRegistry } = require('./adapters/base');
 const { FilesystemAdapter } = require('./adapters/filesystem');
+const { MarkdownDocsAdapter } = require('./adapters/markdown-docs');
+const { McpContextProviderAdapter } = require('./adapters/mcp-context');
+const { OpenApiAdapter } = require('./adapters/openapi');
+const { SqliteSummaryAdapter } = require('./adapters/sqlite-summary');
 const { loadConfig } = require('./core/config');
 const { sha256 } = require('./core/hash');
 
@@ -30,22 +34,103 @@ function buildPolicySummary(config) {
     };
 }
 
-function buildAgentOsHandoff({ contextPacketPath, sourceMapPath, policySummaryPath, config }) {
+function baseBoundary() {
+    return {
+        includes_hosted_runtime: false,
+        includes_wallet_or_settlement: false,
+        includes_full_ecf_private_internals: false,
+        includes_marketplace_routing: false,
+    };
+}
+
+function buildReadinessChecks({ contextPacket, sourceMap, config }) {
+    const sourceIds = new Set(contextPacket.sources.map((source) => source.id));
+    const citationIds = new Set(contextPacket.citations.map((citation) => citation.source_id));
+    const missingCitationIds = [...sourceIds].filter((id) => !citationIds.has(id));
+    const blockedInPacket = contextPacket.sources.filter((source) => (
+        sourceMap.sources.some((mapped) => mapped.id === source.id && mapped.classification === 'blocked')
+    ));
+    return [
+        {
+            id: 'no_spend_or_settlement',
+            status: 'pass',
+            detail: 'ECF Core exports are preview-only and do not authorize wallet, x402, or settlement actions.',
+        },
+        {
+            id: 'live_deploy_disabled',
+            status: config.handoff.live_deploy_allowed === false ? 'pass' : 'fail',
+            detail: 'ECF Core can prepare Agent OS preview artifacts, but live deploy remains disabled.',
+        },
+        {
+            id: 'citation_coverage',
+            status: missingCitationIds.length === 0 ? 'pass' : 'warn',
+            detail: `${contextPacket.citations.length}/${contextPacket.sources.length} sources have citations.`,
+            missing_source_ids: missingCitationIds,
+        },
+        {
+            id: 'blocked_sources_excluded',
+            status: blockedInPacket.length === 0 ? 'pass' : 'fail',
+            detail: `${blockedInPacket.length} blocked sources appeared in the context packet.`,
+            blocked_source_ids: blockedInPacket.map((source) => source.id),
+        },
+    ];
+}
+
+function buildDeploymentPreview({ contextPacket, sourceMap, config }) {
+    const checks = buildReadinessChecks({ contextPacket, sourceMap, config });
+    return {
+        schema_version: 'ecf-core.deployment-preview.v1',
+        mode: 'agent_os_preview',
+        live_deploy_allowed: false,
+        checks,
+        artifacts: {
+            context_packet: 'context-packet.json',
+            source_map: 'source-map.json',
+            policy_summary: 'policy-summary.json',
+        },
+        next_step: checks.every((check) => check.status !== 'fail')
+            ? 'review_agent_os_preview'
+            : 'fix_failed_checks_before_preview',
+    };
+}
+
+function buildAgentOsHarness({ deploymentPreview }) {
+    return {
+        schema_version: 'ecf-core.agent-os-harness.v1',
+        generated_by: 'ecf-core',
+        context_layer: 'ecf_core',
+        artifacts: {
+            context_packet: 'context-packet.json',
+            source_map: 'source-map.json',
+            policy_summary: 'policy-summary.json',
+            deployment_preview: 'deployment-preview.json',
+        },
+        boundary: baseBoundary(),
+        readiness: {
+            live_deploy_allowed: false,
+            checks: deploymentPreview.checks,
+        },
+        agent_os_preview: {
+            allowed: deploymentPreview.checks.every((check) => check.status !== 'fail'),
+            requires_user_review: true,
+        },
+    };
+}
+
+function buildAgentOsHandoff({ contextPacketPath, sourceMapPath, policySummaryPath, deploymentPreviewPath, agentOsHarnessPath, config }) {
     return {
         schema_version: 'ecf-core.agent-os-handoff.v1',
         context_packet: contextPacketPath,
         source_map: sourceMapPath,
         policy_summary: policySummaryPath,
+        deployment_preview: deploymentPreviewPath,
+        agent_os_harness: agentOsHarnessPath,
         agent_os_preview: {
             allowed: Boolean(config.handoff.agent_os_preview_allowed),
             live_deploy_allowed: false,
             recommended_next_step: 'review_in_agent_os_preview',
         },
-        boundary: {
-            includes_hosted_runtime: false,
-            includes_wallet_or_settlement: false,
-            includes_full_ecf_private_internals: false,
-        },
+        boundary: baseBoundary(),
     };
 }
 
@@ -99,6 +184,10 @@ async function compileProject(options = {}) {
 
     const registry = new AdapterRegistry();
     registry.register(new FilesystemAdapter());
+    registry.register(new MarkdownDocsAdapter());
+    registry.register(new SqliteSummaryAdapter());
+    registry.register(new OpenApiAdapter());
+    registry.register(new McpContextProviderAdapter());
     for (const adapter of options.adapters || []) registry.register(adapter);
 
     const records = await registry.discoverAll({ projectRoot, config });
@@ -163,11 +252,19 @@ async function compileProject(options = {}) {
     writeJson(policySummaryPath, policySummary);
 
     let agentOsHandoff = null;
+    let deploymentPreview = null;
+    let agentOsHarness = null;
     if (options.emitAgentOs) {
+        deploymentPreview = buildDeploymentPreview({ contextPacket, sourceMap, config });
+        agentOsHarness = buildAgentOsHarness({ deploymentPreview });
+        writeJson(path.join(outDir, 'deployment-preview.json'), deploymentPreview);
+        writeJson(path.join(outDir, 'agent-os-harness.json'), agentOsHarness);
         agentOsHandoff = buildAgentOsHandoff({
             contextPacketPath: 'context-packet.json',
             sourceMapPath: 'source-map.json',
             policySummaryPath: 'policy-summary.json',
+            deploymentPreviewPath: 'deployment-preview.json',
+            agentOsHarnessPath: 'agent-os-harness.json',
             config,
         });
         writeJson(path.join(outDir, 'agent-os-handoff.json'), agentOsHandoff);
@@ -183,6 +280,8 @@ async function compileProject(options = {}) {
             source_map: relativeArtifact(projectRoot, outDir, 'source-map.json'),
             policy_summary: relativeArtifact(projectRoot, outDir, 'policy-summary.json'),
             agent_os_handoff: agentOsHandoff ? relativeArtifact(projectRoot, outDir, 'agent-os-handoff.json') : null,
+            deployment_preview: deploymentPreview ? relativeArtifact(projectRoot, outDir, 'deployment-preview.json') : null,
+            agent_os_harness: agentOsHarness ? relativeArtifact(projectRoot, outDir, 'agent-os-harness.json') : null,
         },
         counts: {
             total_sources: records.length,
@@ -200,12 +299,17 @@ async function compileProject(options = {}) {
         sourceMap,
         policySummary,
         agentOsHandoff,
+        deploymentPreview,
+        agentOsHarness,
         manifest,
+        records,
     };
 }
 
 module.exports = {
+    buildAgentOsHarness,
     buildAgentOsHandoff,
+    buildDeploymentPreview,
     compileProject,
     validateCompiledArtifacts,
 };

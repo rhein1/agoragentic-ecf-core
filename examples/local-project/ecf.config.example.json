@@ -6,7 +6,10 @@
     "README.md",
     "docs/**",
     "src/**",
-    "schemas/**"
+    "schemas/**",
+    "schema.sql",
+    "openapi.yaml",
+    "mcp.json"
   ],
   "block": [
     ".env",
@@ -24,6 +27,22 @@
     "*.sqlite3"
   ],
   "max_file_bytes": 65536,
+  "adapters": {
+    "filesystem": { "enabled": true },
+    "markdown_docs": { "enabled": true },
+    "sqlite_summary": { "enabled": true },
+    "openapi": { "enabled": true },
+    "mcp_context": { "enabled": true }
+  },
+  "eval": {
+    "queries": [
+      "context policy",
+      "agent os handoff",
+      "openapi",
+      "sqlite schema"
+    ],
+    "top_k": 3
+  },
   "tool_limits": {
     "max_calls": 10,
     "network_allowed": false,

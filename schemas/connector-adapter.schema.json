@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/connector-adapter.v1.json",
+  "title": "ECF Core Connector Adapter",
+  "type": "object",
+  "required": ["schema_version", "name", "capabilities", "records"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "ecf-core.connector-adapter.v1" },
+    "name": { "type": "string", "minLength": 1 },
+    "capabilities": { "type": "array", "items": { "type": "string" } },
+    "records": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/record" }
+    }
+  },
+  "$defs": {
+    "record": {
+      "type": "object",
+      "required": ["id", "path", "type", "hash", "classification", "reason", "summary", "provenance"],
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string" },
+        "path": { "type": "string" },
+        "type": { "type": "string" },
+        "hash": { "type": "string" },
+        "classification": { "type": "string", "enum": ["allowed", "blocked", "review_required"] },
+        "reason": { "type": "string" },
+        "summary": { "type": "string" },
+        "provenance": {
+          "type": "object",
+          "required": ["adapter", "source_kind"],
+          "additionalProperties": true,
+          "properties": {
+            "adapter": { "type": "string" },
+            "source_kind": { "type": "string" },
+            "parent_path": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

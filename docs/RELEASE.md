@@ -1,6 +1,6 @@
 # Release Checklist
 
-ECF Core is not published to npm yet. Use this checklist before any tagged release or package publication.
+Use this checklist before any tagged release or package publication.
 
 ## Required Checks
 
@@ -8,6 +8,7 @@ ECF Core is not published to npm yet. Use this checklist before any tagged relea
 npm test
 npm run check
 npm run pack:dry
+npm run release:dry
 ```
 
 ## Manual Review
@@ -24,3 +25,11 @@ Use `0.x` while the compiler and adapter contracts are stabilizing.
 ## Publishing Boundary
 
 Publishing this package does not publish Agent OS, Router, marketplace, settlement, or Full ECF private infrastructure.
+
+## Publish
+
+```bash
+npm publish --access public
+git tag v0.1.0
+git push origin v0.1.0
+```

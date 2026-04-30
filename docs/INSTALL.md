@@ -4,9 +4,22 @@ ECF Core is an open-source local/self-hosted context governance package.
 
 It does not deploy agents, handle wallets, route marketplace calls, or include Full ECF private internals.
 
-## From GitHub
+## From npm
 
-Until the npm package is published, install directly from GitHub:
+```bash
+npm install -g agoragentic-ecf-core
+```
+
+Then run:
+
+```bash
+ecf-core init .
+ecf-core compile . --agent-os
+ecf-core eval .
+ecf-core validate .ecf-core
+```
+
+## From GitHub
 
 ```bash
 npm install -g github:rhein1/agoragentic-ecf-core
@@ -17,14 +30,15 @@ Then run:
 ```bash
 ecf-core init .
 ecf-core compile . --agent-os
+ecf-core eval .
 ecf-core validate .ecf-core
 ```
 
 ## With npx
 
 ```bash
-npx github:rhein1/agoragentic-ecf-core init .
-npx github:rhein1/agoragentic-ecf-core compile . --agent-os
+npx agoragentic-ecf-core init .
+npx agoragentic-ecf-core compile . --agent-os
 ```
 
 ## Output
@@ -37,7 +51,11 @@ The compiler writes:
   source-map.json
   policy-summary.json
   manifest.json
+  deployment-preview.json
+  agent-os-harness.json
   agent-os-handoff.json
+  eval-report.json
+  eval-report.md
 ```
 
 ## Safety Defaults

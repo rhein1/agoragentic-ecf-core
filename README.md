@@ -43,9 +43,14 @@ Full ECF
 - Provenance and citation contract
 - Local/self-hosted runtime boundary
 - Connector adapter contracts
+- Markdown/docs section adapter
+- SQLite schema summary adapter
+- OpenAPI summary adapter
+- MCP context-provider summary adapter
 - Dependency-free local compiler
 - `ecf-core` CLI
-- Evaluation and evidence roadmap
+- Deterministic eval reports
+- Agent OS Harness and deployment-preview exports
 - Safe examples for local projects
 
 ## What Is Not Included
@@ -104,17 +109,23 @@ Do not copy the private `agoragentic-enterprise/` runtime into this repo.
 
 ## Install
 
-No npm package is published yet. Install from GitHub:
+Install from npm:
+
+```bash
+npm install -g agoragentic-ecf-core
+```
+
+Or run directly with `npx` after package publication:
+
+```bash
+npx agoragentic-ecf-core init .
+npx agoragentic-ecf-core compile . --agent-os
+```
+
+GitHub install also works:
 
 ```bash
 npm install -g github:rhein1/agoragentic-ecf-core
-```
-
-Or run directly with `npx`:
-
-```bash
-npx github:rhein1/agoragentic-ecf-core init .
-npx github:rhein1/agoragentic-ecf-core compile . --agent-os
 ```
 
 ## Quick Start
@@ -122,6 +133,7 @@ npx github:rhein1/agoragentic-ecf-core compile . --agent-os
 ```bash
 ecf-core init .
 ecf-core compile . --agent-os
+ecf-core eval .
 ecf-core validate .ecf-core
 ```
 
@@ -133,7 +145,11 @@ The compiler writes:
   source-map.json
   policy-summary.json
   manifest.json
+  deployment-preview.json
+  agent-os-harness.json
   agent-os-handoff.json
+  eval-report.json
+  eval-report.md
 ```
 
 Review `ecf.config.json` before compiling sensitive repositories.
@@ -143,8 +159,21 @@ Review `ecf.config.json` before compiling sensitive repositories.
 ```text
 ecf-core init [project] [--force]
 ecf-core compile [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--agent-os]
+ecf-core eval [project] [--config ecf.config.json] [--out .ecf-core] [--json]
 ecf-core validate [artifact-dir]
 ecf-core version
+```
+
+## Paste Into Your IDE LLM
+
+```text
+Install ECF Core from https://github.com/rhein1/agoragentic-ecf-core for this local repo.
+
+Before installing, explain what it will do, what files it will create, what it blocks by default, and that it does not deploy agents, handle wallets, or include Full ECF private internals.
+
+Only proceed after I approve.
+
+After approval, install it, run ecf-core init, show me ecf.config.json for review, then run ecf-core compile --agent-os, ecf-core eval, and ecf-core validate.
 ```
 
 ## Development
@@ -159,6 +188,7 @@ npm run pack:dry
 
 - [Install](docs/INSTALL.md)
 - [Adapter Contracts](docs/ADAPTERS.md)
+- [Example Output](examples/local-project/EXPECTED_OUTPUT.md)
 - [LLM-Assisted Install](docs/LLM_INSTALL.md)
 - [Repository Images](docs/IMAGES.md)
 - [Release Checklist](docs/RELEASE.md)

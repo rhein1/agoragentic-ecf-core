@@ -18,12 +18,13 @@ Before installing, explain:
 Only proceed after I approve.
 
 After approval:
-1. run npm install -g github:rhein1/agoragentic-ecf-core
+1. run npm install -g agoragentic-ecf-core
 2. run ecf-core init .
 3. show me ecf.config.json for review
 4. run ecf-core compile . --agent-os
-5. run ecf-core validate .ecf-core
-6. summarize the generated artifacts
+5. run ecf-core eval .
+6. run ecf-core validate .ecf-core
+7. summarize the generated artifacts and eval verdict
 ```
 
 ## Required Consent Gate

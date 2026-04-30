@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/eval-report.v1.json",
+  "title": "ECF Core Evaluation Report",
+  "type": "object",
+  "required": ["schema_version", "verdict", "metrics", "files"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "ecf-core.eval-report.v1" },
+    "verdict": { "type": "string", "enum": ["pass", "review"] },
+    "metrics": {
+      "type": "object",
+      "required": ["policy_block", "citation_survival", "structural_preservation", "retrieval_preservation"],
+      "additionalProperties": true,
+      "properties": {
+        "policy_block": { "type": "object", "additionalProperties": true },
+        "citation_survival": { "type": "object", "additionalProperties": true },
+        "structural_preservation": { "type": "object", "additionalProperties": true },
+        "retrieval_preservation": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "files": { "type": "object", "additionalProperties": true }
+  }
+}

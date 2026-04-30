@@ -1,0 +1,7 @@
+.ecf-core/
+**/.ecf-core/
+*.tgz
+npm-debug.log*
+.env
+.env.*
+secrets/

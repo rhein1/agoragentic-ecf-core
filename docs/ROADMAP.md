@@ -14,7 +14,7 @@
 - [x] context packet schema
 - [x] source map schema
 - [x] policy summary schema
-- [ ] connector adapter schema
+- [x] connector adapter schema
 - [x] Agent OS handoff schema
 - [x] local config schema
 
@@ -27,30 +27,30 @@
 - [x] policy filtering
 - [x] deterministic source IDs
 - [x] context packet output
-- [ ] semantic ranking or retrieval
+- [ ] semantic ranking or retrieval beyond deterministic eval scoring
 
 ## Phase 3: Adapter Contracts
 
 - [x] filesystem adapter
-- markdown/docs adapter
-- SQLite summary adapter
-- OpenAPI/API-doc adapter
-- generic MCP context-provider adapter
+- [x] markdown/docs adapter
+- [x] SQLite summary adapter
+- [x] OpenAPI/API-doc adapter
+- [x] generic MCP context-provider adapter
 
 ## Phase 4: Evaluation
 
-- retrieval preservation fixture
-- citation survival fixture
-- policy-block fixture
-- compression experiment fixture
-- JSON and Markdown reports
+- [x] retrieval preservation fixture
+- [x] citation survival fixture
+- [x] policy-block fixture
+- [ ] compression experiment fixture
+- [x] JSON and Markdown reports
 
 ## Phase 5: Agent OS Handoff
 
 - [x] basic Agent OS handoff export
-- [ ] deployment-preview export
-- [ ] Agent OS Harness export
-- no-spend readiness check integration
+- [x] deployment-preview export
+- [x] Agent OS Harness export
+- [x] no-spend readiness check integration
 
 ## Explicit Non-Goals
 

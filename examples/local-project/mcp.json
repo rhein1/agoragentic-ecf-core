@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "example-context": {
+      "command": "node",
+      "args": ["server.js"]
+    }
+  },
+  "tools": [
+    { "name": "search_context" },
+    { "name": "get_source" }
+  ]
+}

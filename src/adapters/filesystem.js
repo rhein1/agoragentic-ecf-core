@@ -177,4 +177,6 @@ module.exports = {
     FilesystemAdapter,
     fileType,
     isTextFile,
+    summarizeText,
+    walkFiles,
 };

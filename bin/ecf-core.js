@@ -7,6 +7,7 @@ const {
     compileProject,
     createDefaultConfig,
     loadConfig,
+    runEvaluation,
     validateCompiledArtifacts,
 } = require('../src');
 
@@ -16,12 +17,14 @@ function printHelp() {
 Usage:
   ecf-core init [project] [--force]
   ecf-core compile [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--agent-os]
+  ecf-core eval [project] [--config ecf.config.json] [--out .ecf-core] [--json]
   ecf-core validate [artifact-dir]
   ecf-core version
 
 Commands:
   init      Write a safe starter ecf.config.json.
   compile   Build context-packet, source-map, and policy-summary artifacts.
+  eval      Compile and write deterministic JSON/Markdown evaluation reports.
   validate  Validate required compiled artifacts exist and have expected schema versions.
   version   Print package version.
 `);
@@ -38,7 +41,7 @@ function readFlag(args, name, fallback = null) {
 function positional(args) {
     return args.filter((arg, index) => {
         if (arg.startsWith('--')) return false;
-        const previous = args[index - 1];
+            const previous = args[index - 1];
         return !(previous && previous.startsWith('--') && previous !== '--json' && previous !== '--agent-os' && previous !== '--force');
     });
 }
@@ -59,6 +62,26 @@ async function main() {
 
     if (command === 'help' || command === '--help' || command === '-h') {
         printHelp();
+        return;
+    }
+
+    if (command === 'eval') {
+        const [projectArg = '.'] = positional(args);
+        const projectRoot = path.resolve(projectArg);
+        const configPath = readFlag(args, '--config');
+        const outDir = readFlag(args, '--out', '.ecf-core');
+        const report = await runEvaluation({
+            projectRoot,
+            configPath: configPath && configPath !== true ? path.resolve(configPath) : null,
+            outDir: path.resolve(projectRoot, outDir),
+        });
+        if (args.includes('--json')) {
+            console.log(JSON.stringify(report.summary, null, 2));
+        } else {
+            console.log(`ECF Core eval verdict: ${report.summary.verdict}`);
+            console.log(`JSON report: ${report.files.json}`);
+            console.log(`Markdown report: ${report.files.markdown}`);
+        }
         return;
     }
 
