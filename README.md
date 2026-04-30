@@ -2,9 +2,11 @@
 
 ![ECF Core](docs/images/banner.png)
 
-ECF Core is the open-source context governance runtime for local and self-hosted AI systems.
+ECF Core is the open-source Micro ECF runtime: a local-first context and policy layer for safer agents.
 
-It is designed for builders who want more structure than a one-off RAG script, but do not need an enterprise sales motion, SOC 2 review package, managed tenant operations, or Agoragentic-hosted deployment.
+It helps builders compile local repos, docs, and small data sources into citation-ready context packets, source maps, policy summaries, and Agent OS preview artifacts.
+
+It does not deploy agents, handle wallets, route marketplace calls, or include Full ECF enterprise internals.
 
 ECF Core helps answer:
 
@@ -18,6 +20,24 @@ ECF Core helps answer:
 ## Product Boundary
 
 ECF Core is not Full ECF Enterprise.
+
+ECF Core is:
+
+- local-first
+- open-source
+- context and policy packet generation
+- source-map and citation aware
+- Agent OS preview export
+- useful for small builders and teams
+
+ECF Core is not:
+
+- hosted Agent OS
+- Full ECF Enterprise
+- wallet or x402 settlement
+- marketplace ranking
+- tenant-isolated enterprise runtime
+- SOC 2 certified or audited software
 
 ![ECF Core product boundary](docs/images/architecture.png)
 
@@ -95,6 +115,34 @@ Use Agent OS when you need:
 
 ECF Core can prepare context and policy evidence for Agent OS, but it does not deploy agents or handle money.
 
+## Why Use ECF Core?
+
+Use ECF Core when you want an agent to know what it can safely read, cite, summarize, and export before you deploy it into Agent OS.
+
+Before deploying an agent, compile its context boundary.
+
+If you want the agent to run live, hold a budget, expose APIs, sell services, earn through the marketplace, or use x402 monetization, import the output into Agent OS and complete a separate owner-reviewed launch flow.
+
+## From ECF Core To Agent OS
+
+Local flow:
+
+```bash
+ecf-core init .
+ecf-core compile . --agent-os
+ecf-core eval .
+ecf-core agent-os-preview .ecf-core
+ecf-core validate .ecf-core
+```
+
+Intended Agent OS flow:
+
+```bash
+agoragentic-os preview .ecf-core/agent-os-import.json
+```
+
+Agent OS preview import is the intended next step; live deployment requires a separate Agent OS launch flow with owner review, policy checks, runtime provisioning, and billing/spend authorization.
+
 ## Current Status
 
 ECF Core is stable open-source software for local and self-hosted context governance.
@@ -163,6 +211,8 @@ The compiler writes:
 
 Review `ecf.config.json` before compiling sensitive repositories.
 
+Run `ecf-core eval`, `ecf-core agent-os-preview`, and `ecf-core validate` before importing artifacts into Agent OS preview.
+
 ## CLI
 
 ```text
@@ -172,6 +222,13 @@ ecf-core eval [project] [--config ecf.config.json] [--out .ecf-core] [--json]
 ecf-core agent-os-preview [artifact-dir] [--json]
 ecf-core validate [artifact-dir]
 ecf-core version
+```
+
+The package also exposes `micro-ecf` as a CLI alias for the same local tool:
+
+```bash
+micro-ecf init .
+micro-ecf compile . --agent-os
 ```
 
 ## Paste Into Your IDE LLM
