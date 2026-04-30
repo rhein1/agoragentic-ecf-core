@@ -162,6 +162,8 @@ The stable `1.0` surface includes:
 
 The `1.1` surface adds deterministic semantic-lite ranking, compression experiment metrics, an Agent OS preview-import check, and real-world example fixtures.
 
+The `1.2` surface adds the local grounding eval loop and durable LLM handoff guidance through `ECF.md`.
+
 Do not copy the private `agoragentic-enterprise/` runtime into this repo.
 
 ## Install
@@ -237,6 +239,8 @@ micro-ecf compile . --agent-os
 
 ## Paste Into Your IDE LLM
 
+For a durable assistant handoff, point the IDE assistant at [`ECF.md`](ECF.md) first.
+
 ```text
 Install ECF Core from https://github.com/rhein1/agoragentic-ecf-core for this local repo.
 
@@ -244,7 +248,7 @@ Before installing, explain what it will do, what files it will create, what it b
 
 Only proceed after I approve.
 
-After approval, install it, run ecf-core init, show me ecf.config.json for review, then run ecf-core compile --agent-os, ecf-core eval, and ecf-core validate.
+After approval, install it, run ecf-core init, show me ecf.config.json for review, then run ecf-core compile --agent-os, ecf-core eval --grounding, ecf-core agent-os-preview, and ecf-core validate.
 ```
 
 ## Development
@@ -263,6 +267,8 @@ npm run pack:dry
 - [Evaluation](docs/EVALUATION.md)
 - [Versioning](docs/VERSIONING.md)
 - [Agent OS Import Contract](docs/AGENT_OS_IMPORT.md)
+- [Durable LLM Handoff](ECF.md)
+- [Workflow Examples](examples/workflows/README.md)
 - [Example Output](examples/local-project/EXPECTED_OUTPUT.md)
 - [Real-World Examples](examples/real-world/README.md)
 - [LLM-Assisted Install](docs/LLM_INSTALL.md)

@@ -1,0 +1,136 @@
+# ECF Core LLM Handoff
+
+This file is the durable handoff for IDE assistants, coding agents, and local LLM chats using this repository.
+
+## What ECF Core Is
+
+ECF Core is the open-source Micro ECF runtime for local context governance.
+
+It compiles a local repo, docs folder, or small data source into:
+
+- `.ecf-core/context-packet.json`
+- `.ecf-core/source-map.json`
+- `.ecf-core/policy-summary.json`
+- `.ecf-core/deployment-preview.json`
+- `.ecf-core/agent-os-harness.json`
+- `.ecf-core/agent-os-import.json`
+- `.ecf-core/eval-report.json`
+- `.ecf-core/grounding-eval.json` when `eval --grounding` is run
+
+Use it to answer: what can this agent safely know, cite, and export before deployment?
+
+## What ECF Core Is Not
+
+ECF Core does not:
+
+- deploy agents
+- run hosted Agent OS
+- handle wallets
+- run x402 settlement
+- route marketplace calls
+- expose router ranking or trust/fraud internals
+- include Full ECF private infrastructure
+- make SOC 2, audit, or enterprise-readiness claims
+
+Agent OS remains the hosted deployment product. Full ECF remains private/internal infrastructure.
+
+## Required Disclosure
+
+When using this repo in an LLM or IDE agent, state which context source is active:
+
+- `ECF Core artifacts`: you read `.ecf-core/*` outputs.
+- `Direct repo reads`: you inspected local files directly.
+- `Both`: you used generated artifacts plus direct file reads.
+- `Not active`: ECF Core is installed but no artifacts were read in this chat.
+
+Do not imply ECF Core is being used unless you actually inspected the generated artifacts.
+
+## Consent-Gated Setup
+
+Before installing or compiling a developer's repo, explain what will happen and wait for approval.
+
+Recommended prompt:
+
+```text
+Install ECF Core from https://github.com/rhein1/agoragentic-ecf-core for this local repo.
+
+Before installing, explain what it is, what files it creates, what it blocks by default, and that it does not deploy agents, handle wallets, or include Full ECF private internals.
+
+Only proceed after I approve.
+
+After approval:
+1. install or run ECF Core
+2. run ecf-core init .
+3. show me ecf.config.json for review
+4. run ecf-core compile . --agent-os
+5. run ecf-core eval . --grounding
+6. run ecf-core agent-os-preview .ecf-core
+7. run ecf-core validate .ecf-core
+8. summarize what context is allowed, blocked, cited, unsupported, and ready for Agent OS preview
+```
+
+## Standard Local Workflow
+
+```bash
+npx agoragentic-ecf-core init .
+# Review ecf.config.json before compiling.
+npx agoragentic-ecf-core compile . --agent-os
+npx agoragentic-ecf-core eval . --grounding
+npx agoragentic-ecf-core agent-os-preview .ecf-core
+npx agoragentic-ecf-core validate .ecf-core
+```
+
+If installed globally:
+
+```bash
+ecf-core init .
+ecf-core compile . --agent-os
+ecf-core eval . --grounding
+ecf-core agent-os-preview .ecf-core
+ecf-core validate .ecf-core
+```
+
+## When To Use ECF Core
+
+Use ECF Core when:
+
+- the task depends on repo/docs/db context across multiple files
+- citations or source maps matter
+- you need to know which files are blocked
+- you are preparing an Agent OS preview handoff
+- you want a local grounding eval before letting an agent answer from project context
+
+You do not need ECF Core for:
+
+- one-file edits
+- obvious local syntax fixes
+- tasks where direct file inspection is faster and safer
+- live deployment, wallet, or marketplace execution
+
+## Safety Rules
+
+- Review `ecf.config.json` before compile.
+- Keep `.env`, keys, secrets, local databases, binaries, and generated artifacts blocked unless explicitly needed.
+- Treat unsupported grounding questions as context gaps.
+- Fail closed with "I don't know based on the allowed context" when sources do not support an answer.
+- Never treat `agent-os-import.json` as permission to deploy. It is preview evidence only.
+
+## Agent OS Handoff
+
+ECF Core can prepare preview evidence for Agent OS:
+
+```bash
+ecf-core compile . --agent-os
+ecf-core eval . --grounding
+ecf-core agent-os-preview .ecf-core
+```
+
+The generated `.ecf-core/agent-os-import.json` is only a preview artifact. A real Agent OS deployment still requires owner review, policy checks, runtime provisioning, and billing/spend authorization.
+
+## Workflow Examples
+
+See `examples/workflows/` for practical flows:
+
+- IDE coding agent context check
+- grounded docs/support agent readiness
+- Agent OS preview handoff

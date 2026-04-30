@@ -45,7 +45,7 @@ npx agoragentic-ecf-core compile . --agent-os
 
 ## Output
 
-The compiler writes:
+The compile/eval flow writes:
 
 ```text
 .ecf-core/
@@ -59,6 +59,8 @@ The compiler writes:
   agent-os-import.json
   eval-report.json
   eval-report.md
+  grounding-eval.json
+  grounding-eval.md
 ```
 
 ## Safety Defaults
@@ -66,3 +68,5 @@ The compiler writes:
 By default ECF Core blocks `.env`, private keys, local databases, `node_modules`, build output, binaries, and generated ECF artifacts.
 
 Review `ecf.config.json` before compiling a sensitive repository.
+
+For IDE assistants or LLM chats, start with the durable handoff in [`../ECF.md`](../ECF.md).

@@ -32,8 +32,8 @@ Publishing this package does not publish Agent OS, Router, marketplace, settleme
 
 ```bash
 npm publish --access public
-git tag v1.1.0
-git push origin v1.1.0
+git tag vX.Y.Z
+git push origin vX.Y.Z
 ```
 
 If publishing from GitHub Actions with trusted publishing enabled, prefer:

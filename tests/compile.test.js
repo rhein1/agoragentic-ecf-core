@@ -169,6 +169,21 @@ test('stable schema manifest lists every generated artifact contract', () => {
     assert.deepEqual(manifest.schemas.sort(), expected.sort());
 });
 
+test('public package keeps durable handoff and workflow examples', () => {
+    const root = path.join(__dirname, '..');
+    const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+    const ecfHandoff = fs.readFileSync(path.join(root, 'ECF.md'), 'utf8');
+    const workflowIndex = fs.readFileSync(path.join(root, 'examples', 'workflows', 'README.md'), 'utf8');
+
+    assert.ok(pkg.files.includes('ECF.md'));
+    assert.match(ecfHandoff, /Required Disclosure/);
+    assert.match(ecfHandoff, /Consent-Gated Setup/);
+    assert.match(ecfHandoff, /agent-os-import\.json/);
+    assert.match(workflowIndex, /IDE Coding Agent Context Check/);
+    assert.match(workflowIndex, /Grounded Docs Agent Readiness/);
+    assert.match(workflowIndex, /Agent OS Preview Handoff/);
+});
+
 test('grounding eval grounds supported queries and fails closed for unsupported context', () => {
     const root = makeProject();
     const config = JSON.parse(fs.readFileSync(path.join(root, 'ecf.config.json'), 'utf8'));
