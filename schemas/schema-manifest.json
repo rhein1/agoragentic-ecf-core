@@ -12,7 +12,8 @@
     "ecf-core.agent-os-harness.v1",
     "ecf-core.deployment-preview.v1",
     "ecf-core.eval-report.v1",
-    "ecf-core.agent-os-import.v1"
+    "ecf-core.agent-os-import.v1",
+    "ecf-core.agent-os-preview-check.v1"
   ],
   "compatibility": {
     "required_fields_stable_within_major": true,

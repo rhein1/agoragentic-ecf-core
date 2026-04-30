@@ -22,8 +22,13 @@ Starting with `1.0.0`, these artifact schemas are stable:
 - `ecf-core.deployment-preview.v1`
 - `ecf-core.eval-report.v1`
 - `ecf-core.agent-os-import.v1`
+- `ecf-core.agent-os-preview-check.v1`
 
 Stable means existing required fields remain compatible within the same major package line. New optional fields may be added in minor releases.
+
+## 1.1 Additions
+
+`1.1.x` adds optional semantic-lite retrieval scoring, compression experiment metrics, and the `ecf-core agent-os-preview` readiness command. These additions do not change existing required fields in the stable `v1` artifact schemas.
 
 ## Migration Policy
 

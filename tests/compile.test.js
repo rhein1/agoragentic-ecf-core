@@ -122,11 +122,17 @@ test('CLI eval writes deterministic JSON and Markdown reports', () => {
     assert.equal(summary.verdict, 'pass');
     assert.equal(summary.metrics.policy_block.pass, true);
     assert.equal(summary.metrics.citation_survival.coverage, 1);
+    assert.equal(summary.metrics.retrieval_preservation.ranking_mode, 'semantic_lite');
+    assert.equal(summary.metrics.compression_experiment.dependency_status, 'baseline_only');
+    assert.equal(summary.metrics.compression_experiment.verdict, 'pass');
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'eval-report.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'eval-report.md')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'agent-os-harness.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'deployment-preview.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'agent-os-import.json')));
+
+    const preview = execFileSync(process.execPath, [cli, 'agent-os-preview', path.join(root, '.ecf-core'), '--json'], { encoding: 'utf8' });
+    assert.equal(JSON.parse(preview).ok, true);
 });
 
 test('custom adapters can extend context without changing core compiler', async () => {
@@ -155,6 +161,7 @@ test('stable schema manifest lists every generated artifact contract', () => {
         'ecf-core.deployment-preview.v1',
         'ecf-core.eval-report.v1',
         'ecf-core.agent-os-import.v1',
+        'ecf-core.agent-os-preview-check.v1',
     ];
     assert.equal(manifest.stability, 'stable');
     assert.deepEqual(manifest.schemas.sort(), expected.sort());
@@ -175,4 +182,26 @@ test('example project exercises docs sqlite openapi mcp and Agent OS import outp
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'agent-os-import.json')));
 
     fs.rmSync(path.join(root, '.ecf-core'), { recursive: true, force: true });
+});
+
+test('real-world examples compile and keep preview imports bounded', () => {
+    const examples = [
+        path.join(__dirname, '..', 'examples', 'real-world', 'docs-knowledge-base'),
+        path.join(__dirname, '..', 'examples', 'real-world', 'api-service'),
+        path.join(__dirname, '..', 'examples', 'real-world', 'sqlite-app'),
+    ];
+    const cli = path.join(__dirname, '..', 'bin', 'ecf-core.js');
+
+    for (const root of examples) {
+        const output = execFileSync(process.execPath, [cli, 'eval', root, '--json'], { encoding: 'utf8' });
+        const summary = JSON.parse(output);
+        assert.equal(summary.verdict, 'pass');
+        assert.equal(summary.metrics.compression_experiment.dependency_status, 'baseline_only');
+
+        const preview = JSON.parse(execFileSync(process.execPath, [cli, 'agent-os-preview', path.join(root, '.ecf-core'), '--json'], { encoding: 'utf8' }));
+        assert.equal(preview.ok, true);
+        assert.equal(preview.live_deploy_allowed, false);
+        assert.equal(preview.boundary_safe, true);
+        fs.rmSync(path.join(root, '.ecf-core'), { recursive: true, force: true });
+    }
 });

@@ -2,8 +2,10 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const { evaluateCompressionExperiment } = require('./compression');
 const { compileProject } = require('./compile');
 const { matchesAny } = require('./core/policy');
+const { topK } = require('./core/ranking');
 
 function writeJson(filePath, value) {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -13,29 +15,6 @@ function writeJson(filePath, value) {
 function writeText(filePath, value) {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, value);
-}
-
-function tokenize(value) {
-    return new Set(String(value || '').toLowerCase().split(/[^a-z0-9_/-]+/).filter((token) => token.length > 1));
-}
-
-function scoreRecord(query, record) {
-    const queryTokens = tokenize(query);
-    if (queryTokens.size === 0) return 0;
-    const haystack = tokenize(`${record.path} ${record.type} ${record.summary || ''} ${record.heading || ''}`);
-    let matches = 0;
-    for (const token of queryTokens) {
-        if (haystack.has(token)) matches += 1;
-    }
-    return matches / queryTokens.size;
-}
-
-function topK(records, query, k) {
-    return records
-        .map((record) => ({ id: record.id, path: record.path, score: scoreRecord(query, record) }))
-        .filter((record) => record.score > 0)
-        .sort((a, b) => b.score - a.score || a.path.localeCompare(b.path))
-        .slice(0, k);
 }
 
 function average(values) {
@@ -56,6 +35,10 @@ function markdownReport(summary) {
         `- Citation coverage: ${summary.metrics.citation_survival.coverage}`,
         `- Structural provenance coverage: ${summary.metrics.structural_preservation.provenance_coverage}`,
         `- Retrieval preservation@${summary.metrics.retrieval_preservation.top_k}: ${summary.metrics.retrieval_preservation.average_preservation}`,
+        `- Ranking mode: ${summary.metrics.retrieval_preservation.ranking_mode}`,
+        `- Compression experiment verdict: ${summary.metrics.compression_experiment.verdict}`,
+        `- Compression median ratio: ${summary.metrics.compression_experiment.median_compression_ratio}`,
+        `- Compression citation survival: ${summary.metrics.compression_experiment.citation_survival}`,
         '',
         '## Queries',
         '',
@@ -82,9 +65,10 @@ function evaluateCompiled({ result, topKSize }) {
     const sourcesWithCitations = result.contextPacket.sources.filter((source) => citationSourceIds.has(source.id));
     const sourcesWithProvenance = result.contextPacket.sources.filter((source) => source.provenance?.adapter && source.hash);
     const queries = Array.isArray(result.config.eval?.queries) ? result.config.eval.queries : [];
+    const semanticLite = result.config.eval?.semantic_lite !== false;
     const retrievalQueries = queries.map((query) => {
-        const baselineTop = topK(allowedRecords, query, topKSize);
-        const packetTop = topK(result.contextPacket.sources, query, topKSize);
+        const baselineTop = topK(allowedRecords, query, topKSize, { semanticLite });
+        const packetTop = topK(result.contextPacket.sources, query, topKSize, { semanticLite });
         const packetIds = new Set(packetTop.map((item) => item.id));
         const preserved = baselineTop.filter((item) => packetIds.has(item.id)).length;
         const preservation = baselineTop.length ? preserved / baselineTop.length : 1;
@@ -103,6 +87,29 @@ function evaluateCompiled({ result, topKSize }) {
         ? sourcesWithProvenance.length / result.contextPacket.sources.length
         : 1;
     const policyPass = blockedInPacket.length === 0 && blockPatternHits.length === 0;
+    const compressionExperiment = result.config.eval?.compression?.enabled === false
+        ? {
+            enabled: false,
+            strategy: 'disabled',
+            dependency_status: 'baseline_only',
+            source_count: result.contextPacket.sources.length,
+            median_compression_ratio: 1,
+            average_compression_ratio: 1,
+            citation_survival: citationCoverage,
+            provenance_preservation: provenanceCoverage,
+            retrieval_preservation: {
+                top_k: topKSize,
+                average_preservation: Number(retrievalAverage.toFixed(4)),
+                queries: retrievalQueries,
+            },
+            verdict: 'pass',
+        }
+        : evaluateCompressionExperiment({
+            contextPacket: result.contextPacket,
+            queries,
+            topKSize,
+            options: result.config.eval?.compression || {},
+        });
     const verdict = policyPass
         && citationCoverage >= 0.95
         && provenanceCoverage >= 0.95
@@ -133,9 +140,11 @@ function evaluateCompiled({ result, topKSize }) {
             },
             retrieval_preservation: {
                 top_k: topKSize,
+                ranking_mode: semanticLite ? 'semantic_lite' : 'lexical',
                 average_preservation: Number(retrievalAverage.toFixed(4)),
                 queries: retrievalQueries,
             },
+            compression_experiment: compressionExperiment,
         },
         files: result.manifest.files,
     };

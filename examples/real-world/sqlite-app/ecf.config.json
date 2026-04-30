@@ -1,0 +1,25 @@
+{
+  "schema_version": "ecf-core.local-config.v1",
+  "project_name": "sqlite-app",
+  "scope": "local_project",
+  "allow": ["README.md", "docs/**", "schema.sql"],
+  "block": [".env", ".env.*", "secrets/**", "*.db", "*.sqlite", "*.sqlite3", "customer_exports/**"],
+  "eval": {
+    "queries": ["sqlite schema", "customer table", "data policy"],
+    "top_k": 3,
+    "semantic_lite": true,
+    "compression": {
+      "enabled": true,
+      "max_summary_chars": 96
+    }
+  },
+  "tool_limits": {
+    "max_calls": 5,
+    "network_allowed": false,
+    "write_allowed": false
+  },
+  "handoff": {
+    "agent_os_preview_allowed": true,
+    "live_deploy_allowed": false
+  }
+}

@@ -27,7 +27,7 @@
 - [x] policy filtering
 - [x] deterministic source IDs
 - [x] context packet output
-- [ ] semantic ranking or retrieval beyond deterministic eval scoring
+- [x] semantic-lite ranking beyond exact lexical eval scoring
 
 ## Phase 3: Adapter Contracts
 
@@ -42,7 +42,7 @@
 - [x] retrieval preservation fixture
 - [x] citation survival fixture
 - [x] policy-block fixture
-- [ ] compression experiment fixture
+- [x] compression experiment fixture
 - [x] JSON and Markdown reports
 
 ## Phase 5: Agent OS Handoff
@@ -51,6 +51,7 @@
 - [x] deployment-preview export
 - [x] Agent OS Harness export
 - [x] no-spend readiness check integration
+- [x] Agent OS preview-import readiness check
 
 ## Phase 6: Stable OSS Release
 
@@ -59,7 +60,14 @@
 - [x] Agent OS import contract
 - [x] adapter extension example
 - [x] broader fixture coverage
-- [ ] compression experiment fixture
+- [x] compression experiment fixture
+
+## Phase 7: Next OSS Tranche
+
+- [ ] optional local MCP server for active context serving
+- [ ] richer semantic ranking adapters that remain optional and dependency-free by default
+- [ ] schema examples for third-party Agent OS importers
+- [ ] signed release provenance from GitHub Actions
 
 ## Explicit Non-Goals
 

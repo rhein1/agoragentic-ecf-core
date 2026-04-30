@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info:
+  title: Local Agent Service
+  version: 0.1.0
+paths:
+  /tasks:
+    post:
+      summary: Create a local task preview
+  /tasks/{task_id}:
+    get:
+      summary: Read local task status

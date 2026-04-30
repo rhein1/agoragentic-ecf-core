@@ -17,6 +17,8 @@ npm run release:dry
 - Confirm examples do not include secrets, private customer data, local databases, or generated `.ecf-core/` artifacts.
 - Confirm `npm pack --dry-run` only includes public package files.
 - Confirm the package can compile a clean local fixture.
+- Confirm CodeQL and Dependabot configuration are present.
+- Confirm the Agent OS preview check passes on at least one fixture.
 
 ## Versioning
 
@@ -30,6 +32,12 @@ Publishing this package does not publish Agent OS, Router, marketplace, settleme
 
 ```bash
 npm publish --access public
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.1.0
+git push origin v1.1.0
+```
+
+If publishing from GitHub Actions with trusted publishing enabled, prefer:
+
+```bash
+npm publish --access public --provenance
 ```

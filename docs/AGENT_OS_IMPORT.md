@@ -38,3 +38,24 @@ It declares:
 ## Consumer Rule
 
 Any Agent OS importer should treat ECF Core artifacts as preview evidence only. A separate Agent OS deployment flow must perform its own owner review, policy checks, runtime provisioning, billing/spend authorization, and launch gates.
+
+## Local Preview Check
+
+Before handing artifacts to Agent OS, run:
+
+```bash
+ecf-core agent-os-preview .ecf-core
+```
+
+The check verifies:
+
+- `agent-os-import.json` uses the stable preview-only schema
+- every required artifact file exists
+- deployment-preview checks satisfy import acceptance checks
+- the boundary flags still prove there is no hosted runtime, wallet/settlement authority, marketplace routing, or Full ECF private internals
+
+Machine-readable output is available with:
+
+```bash
+ecf-core agent-os-preview .ecf-core --json
+```

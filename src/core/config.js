@@ -83,6 +83,11 @@ function createDefaultConfig(options = {}) {
                 'sqlite schema',
             ],
             top_k: 3,
+            semantic_lite: true,
+            compression: {
+                enabled: true,
+                max_summary_chars: 96,
+            },
         },
         tool_limits: {
             max_calls: 10,

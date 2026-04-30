@@ -9,6 +9,7 @@ const {
     loadConfig,
     runEvaluation,
     validateCompiledArtifacts,
+    inspectAgentOsPreview,
 } = require('../src');
 
 function printHelp() {
@@ -18,6 +19,7 @@ Usage:
   ecf-core init [project] [--force]
   ecf-core compile [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--agent-os]
   ecf-core eval [project] [--config ecf.config.json] [--out .ecf-core] [--json]
+  ecf-core agent-os-preview [artifact-dir] [--json]
   ecf-core validate [artifact-dir]
   ecf-core version
 
@@ -25,6 +27,8 @@ Commands:
   init      Write a safe starter ecf.config.json.
   compile   Build context-packet, source-map, and policy-summary artifacts.
   eval      Compile and write deterministic JSON/Markdown evaluation reports.
+  agent-os-preview
+            Check compiled ECF Core artifacts before Agent OS preview import.
   validate  Validate required compiled artifacts exist and have expected schema versions.
   version   Print package version.
 `);
@@ -132,6 +136,25 @@ async function main() {
             return;
         }
         console.log(JSON.stringify(report, null, 2));
+        return;
+    }
+
+    if (command === 'agent-os-preview') {
+        const [artifactArg = '.ecf-core'] = positional(args);
+        const report = inspectAgentOsPreview(path.resolve(artifactArg));
+        if (args.includes('--json')) {
+            console.log(JSON.stringify(report, null, 2));
+        } else {
+            console.log(`Agent OS preview import: ${report.ok ? 'ready' : 'not ready'}`);
+            console.log(`Artifact dir: ${report.artifact_dir}`);
+            console.log(`Boundary safe: ${report.boundary_safe}`);
+            if (report.errors.length) {
+                console.log('Errors:');
+                for (const error of report.errors) console.log(`- ${error}`);
+            }
+            console.log(`Next step: ${report.next_step}`);
+        }
+        if (!report.ok) process.exitCode = 1;
         return;
     }
 

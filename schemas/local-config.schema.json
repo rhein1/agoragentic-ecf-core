@@ -28,7 +28,16 @@
       "additionalProperties": true,
       "properties": {
         "queries": { "type": "array", "items": { "type": "string" } },
-        "top_k": { "type": "integer", "minimum": 1 }
+        "top_k": { "type": "integer", "minimum": 1 },
+        "semantic_lite": { "type": "boolean" },
+        "compression": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "max_summary_chars": { "type": "integer", "minimum": 24 }
+          }
+        }
       }
     },
     "tool_limits": {

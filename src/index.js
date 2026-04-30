@@ -12,6 +12,16 @@ const {
     runEvaluation,
 } = require('./eval');
 const {
+    evaluateCompressionExperiment,
+} = require('./compression');
+const {
+    inspectAgentOsPreview,
+} = require('./agent-os-preview');
+const {
+    scoreRecord,
+    topK,
+} = require('./core/ranking');
+const {
     createDefaultConfig,
     loadConfig,
     normalizeConfig,
@@ -56,10 +66,14 @@ module.exports = {
     classifyPath,
     compileProject,
     createDefaultConfig,
+    evaluateCompressionExperiment,
+    inspectAgentOsPreview,
     loadConfig,
     matchesAny,
     normalizeConfig,
     normalizePath,
     runEvaluation,
+    scoreRecord,
     validateCompiledArtifacts,
+    topK,
 };

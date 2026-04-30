@@ -1,6 +1,6 @@
 {
   "name": "agoragentic-ecf-core",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Open-source self-hosted context governance runtime for local AI systems.",
   "license": "Apache-2.0",
   "type": "commonjs",
@@ -31,7 +31,7 @@
   ],
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "check": "node --check bin/ecf-core.js && node --check src/index.js && node --check src/compile.js && node --check src/eval.js && node --check src/core/config.js && node --check src/core/policy.js && node --check src/adapters/base.js && node --check src/adapters/filesystem.js && node --check src/adapters/markdown-docs.js && node --check src/adapters/sqlite-summary.js && node --check src/adapters/openapi.js && node --check src/adapters/mcp-context.js",
+    "check": "node --check bin/ecf-core.js && node --check src/index.js && node --check src/compile.js && node --check src/eval.js && node --check src/compression.js && node --check src/agent-os-preview.js && node --check src/core/config.js && node --check src/core/policy.js && node --check src/core/ranking.js && node --check src/adapters/base.js && node --check src/adapters/filesystem.js && node --check src/adapters/markdown-docs.js && node --check src/adapters/sqlite-summary.js && node --check src/adapters/openapi.js && node --check src/adapters/mcp-context.js",
     "pack:dry": "npm pack --dry-run",
     "release:dry": "npm test && npm run check && npm run pack:dry",
     "prepublishOnly": "npm run release:dry"
@@ -42,9 +42,11 @@
   "keywords": [
     "ai",
     "context",
+    "context-governance",
     "governance",
     "rag",
     "agents",
+    "agent-os",
     "local-first"
   ]
 }

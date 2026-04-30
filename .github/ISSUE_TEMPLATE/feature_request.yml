@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest a bounded OSS ECF Core feature.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What local/self-hosted context governance problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe the desired behavior.
+    validations:
+      required: true
+  - type: checkboxes
+    id: boundary
+    attributes:
+      label: Boundary
+      options:
+        - label: This does not require hosted Agent OS provisioning.
+          required: true
+        - label: This does not require wallet/x402 settlement.
+          required: true
+        - label: This does not require Full ECF private internals.
+          required: true

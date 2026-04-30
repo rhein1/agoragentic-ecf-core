@@ -16,6 +16,7 @@ Then run:
 ecf-core init .
 ecf-core compile . --agent-os
 ecf-core eval .
+ecf-core agent-os-preview .ecf-core
 ecf-core validate .ecf-core
 ```
 
@@ -31,6 +32,7 @@ Then run:
 ecf-core init .
 ecf-core compile . --agent-os
 ecf-core eval .
+ecf-core agent-os-preview .ecf-core
 ecf-core validate .ecf-core
 ```
 

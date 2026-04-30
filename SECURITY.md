@@ -2,7 +2,7 @@
 
 Do not open issues containing secrets, private customer data, tokens, API keys, credentials, or proprietary source dumps.
 
-ECF Core is currently a public open-source boundary scaffold. It is not SOC 2 certified, audited, or enterprise-production ready.
+ECF Core is public open-source local/self-hosted context governance software. It is not SOC 2 certified, audited, or enterprise-production ready for regulated buyers.
 
 ## Report A Vulnerability
 

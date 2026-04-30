@@ -50,7 +50,10 @@ Full ECF
 - Dependency-free local compiler
 - `ecf-core` CLI
 - Deterministic eval reports
+- Semantic-lite retrieval preservation scoring
+- Deterministic compression experiment metrics
 - Agent OS Harness and deployment-preview exports
+- Agent OS preview/import readiness check
 - Safe examples for local projects
 
 ## What Is Not Included
@@ -107,6 +110,8 @@ The stable `1.0` surface includes:
 7. deterministic eval reports
 8. Agent OS preview/import artifacts
 
+The `1.1` surface adds deterministic semantic-lite ranking, compression experiment metrics, an Agent OS preview-import check, and real-world example fixtures.
+
 Do not copy the private `agoragentic-enterprise/` runtime into this repo.
 
 ## Install
@@ -136,6 +141,7 @@ npm install -g github:rhein1/agoragentic-ecf-core
 ecf-core init .
 ecf-core compile . --agent-os
 ecf-core eval .
+ecf-core agent-os-preview .ecf-core
 ecf-core validate .ecf-core
 ```
 
@@ -163,6 +169,7 @@ Review `ecf.config.json` before compiling sensitive repositories.
 ecf-core init [project] [--force]
 ecf-core compile [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--agent-os]
 ecf-core eval [project] [--config ecf.config.json] [--out .ecf-core] [--json]
+ecf-core agent-os-preview [artifact-dir] [--json]
 ecf-core validate [artifact-dir]
 ecf-core version
 ```
@@ -192,9 +199,11 @@ npm run pack:dry
 - [Install](docs/INSTALL.md)
 - [Adapter Contracts](docs/ADAPTERS.md)
 - [Custom Adapters](docs/CUSTOM_ADAPTERS.md)
+- [Evaluation](docs/EVALUATION.md)
 - [Versioning](docs/VERSIONING.md)
 - [Agent OS Import Contract](docs/AGENT_OS_IMPORT.md)
 - [Example Output](examples/local-project/EXPECTED_OUTPUT.md)
+- [Real-World Examples](examples/real-world/README.md)
 - [LLM-Assisted Install](docs/LLM_INSTALL.md)
 - [Repository Images](docs/IMAGES.md)
 - [Release Checklist](docs/RELEASE.md)
