@@ -5,7 +5,7 @@ const path = require('node:path');
 const { evaluateCompressionExperiment } = require('./compression');
 const { applyGroundingEvidence, compileProject } = require('./compile');
 const { matchesAny } = require('./core/policy');
-const { topK } = require('./core/ranking');
+const { rankRecords, rankingOptionsFromConfig } = require('./core/ranking');
 const { groundingMarkdown, runGroundingEval } = require('./grounding');
 
 function writeJson(filePath, value) {
@@ -70,16 +70,20 @@ function evaluateCompiled({ result, topKSize }) {
     const sourcesWithCitations = result.contextPacket.sources.filter((source) => citationSourceIds.has(source.id));
     const sourcesWithProvenance = result.contextPacket.sources.filter((source) => source.provenance?.adapter && source.hash);
     const queries = Array.isArray(result.config.eval?.queries) ? result.config.eval.queries : [];
-    const semanticLite = result.config.eval?.semantic_lite !== false;
+    const rankingOptions = rankingOptionsFromConfig(result.config.eval || {});
     const retrievalQueries = queries.map((query) => {
-        const baselineTop = topK(allowedRecords, query, topKSize, { semanticLite });
-        const packetTop = topK(result.contextPacket.sources, query, topKSize, { semanticLite });
+        const baselineRanking = rankRecords(allowedRecords, query, topKSize, rankingOptions);
+        const packetRanking = rankRecords(result.contextPacket.sources, query, topKSize, rankingOptions);
+        const baselineTop = baselineRanking.hits;
+        const packetTop = packetRanking.hits;
         const packetIds = new Set(packetTop.map((item) => item.id));
         const preserved = baselineTop.filter((item) => packetIds.has(item.id)).length;
         const preservation = baselineTop.length ? preserved / baselineTop.length : 1;
         return {
             query,
             preservation: Number(preservation.toFixed(4)),
+            ranking_mode: baselineRanking.ranking_mode,
+            ranking_dependency_status: baselineRanking.dependency_status,
             baseline_top_paths: baselineTop.map((item) => item.path),
             packet_top_paths: packetTop.map((item) => item.path),
         };
@@ -145,7 +149,8 @@ function evaluateCompiled({ result, topKSize }) {
             },
             retrieval_preservation: {
                 top_k: topKSize,
-                ranking_mode: semanticLite ? 'semantic_lite' : 'lexical',
+                ranking_mode: retrievalQueries[0]?.ranking_mode || rankingOptions.provider,
+                ranking_dependency_status: retrievalQueries[0]?.ranking_dependency_status || 'builtin',
                 average_preservation: Number(retrievalAverage.toFixed(4)),
                 queries: retrievalQueries,
             },

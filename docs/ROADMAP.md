@@ -66,10 +66,10 @@
 
 ## Phase 7: Next OSS Tranche
 
-- [ ] optional local MCP server for active context serving
-- [ ] richer semantic ranking adapters that remain optional and dependency-free by default
-- [ ] schema examples for third-party Agent OS importers
-- [ ] signed release provenance from GitHub Actions
+- [x] optional local MCP server for active context serving
+- [x] richer semantic ranking adapters that remain optional and dependency-free by default
+- [x] schema examples for third-party Agent OS importers
+- [x] signed release provenance from GitHub Actions
 
 ## Explicit Non-Goals
 

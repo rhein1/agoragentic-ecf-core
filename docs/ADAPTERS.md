@@ -40,6 +40,13 @@ It does not read blocked files into context. Blocked source hashes are metadata 
 Good future public adapters:
 
 - local code graph adapter
+- optional local vector adapter
+- optional Qdrant/Chroma adapter wrappers
+- optional GitNexus/code-graph adapter
+
+These should remain opt-in and dependency-free by default. ECF Core should still install and run without embeddings, vector databases, remote LLMs, hosted connectors, or model-backed rerankers.
+
+The ranking layer now exposes these providers as bounded eval contracts: `local_vector` runs entirely in-process, while `qdrant`, `chroma`, `gitnexus_code_graph`, and `mcp_context_provider` require caller-supplied precomputed results or fall back to semantic-lite scoring with a skipped status. No external service is contacted by default.
 
 ## Custom Adapters
 

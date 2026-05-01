@@ -30,6 +30,43 @@
         "queries": { "type": "array", "items": { "type": "string" } },
         "top_k": { "type": "integer", "minimum": 1 },
         "semantic_lite": { "type": "boolean" },
+        "ranking": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "provider": {
+              "type": "string",
+              "enum": ["semantic_lite", "lexical", "local_vector", "qdrant", "chroma", "gitnexus_code_graph", "mcp_context_provider"]
+            },
+            "mode": {
+              "type": "string",
+              "enum": ["semantic_lite", "lexical", "local_vector", "qdrant", "chroma", "gitnexus_code_graph", "mcp_context_provider"]
+            },
+            "fallback": { "type": "string", "enum": ["semantic_lite", "lexical"] },
+            "dimensions": { "type": "integer", "minimum": 8, "maximum": 512 },
+            "precomputed_results": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "oneOf": [
+                    { "type": "string" },
+                    {
+                      "type": "object",
+                      "additionalProperties": true,
+                      "properties": {
+                        "id": { "type": "string" },
+                        "source_id": { "type": "string" },
+                        "path": { "type": "string" },
+                        "score": { "type": "number" }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
         "grounding_enabled": { "type": "boolean" },
         "grounding_required": { "type": "boolean" },
         "max_retries": { "type": "integer", "minimum": 0 },

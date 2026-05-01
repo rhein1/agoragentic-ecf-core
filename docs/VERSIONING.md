@@ -35,6 +35,10 @@ Stable means existing required fields remain compatible within the same major pa
 
 `1.2.x` adds the optional local grounding eval loop and `ecf-core.grounding-eval.v1`. Existing compile, eval, and Agent OS preview artifacts remain preview-only and do not authorize live deployment.
 
+## 1.3 Additions
+
+`1.3.x` adds optional ranking provider contracts for deterministic `local_vector` scoring plus precomputed-result hooks for Qdrant, Chroma, GitNexus/code graph, and MCP context providers. These adapters remain dependency-free by default and fall back to built-in semantic-lite ranking when external results are not supplied.
+
 ## Migration Policy
 
 When a future artifact version is introduced:

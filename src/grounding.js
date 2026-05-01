@@ -1,6 +1,6 @@
 'use strict';
 
-const { tokenize, topK } = require('./core/ranking');
+const { rankingOptionsFromConfig, tokenize, topK } = require('./core/ranking');
 
 const DEFAULT_UNSUPPORTED_RESPONSE = "I don't know based on the allowed context.";
 
@@ -97,7 +97,7 @@ function suggestedFixFor(query) {
     return `Add or allow source documentation that directly covers: ${query}`;
 }
 
-function evaluateQuestion({ entry, contextPacket, sourceMap, config, topKSize, semanticLite }) {
+function evaluateQuestion({ entry, contextPacket, sourceMap, config, topKSize, rankingOptions }) {
     const originalQuestion = normalizeQuestion(questionText(entry));
     const unsupportedResponse = config.eval?.unsupported_response || DEFAULT_UNSUPPORTED_RESPONSE;
     const maxRetries = Math.max(0, Number(config.eval?.max_retries ?? 2));
@@ -111,7 +111,7 @@ function evaluateQuestion({ entry, contextPacket, sourceMap, config, topKSize, s
     let retrievedBlocked = false;
 
     for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
-        const hits = topK(contextPacket.sources, query, topKSize, { semanticLite })
+        const hits = topK(contextPacket.sources, query, topKSize, rankingOptions)
             .map((hit) => ({
                 ...hit,
                 source: contextPacket.sources.find((source) => source.id === hit.id),
@@ -181,14 +181,14 @@ function runGroundingEval({ result, topKSize }) {
     const entries = Array.isArray(result.config.eval?.grounding_queries) && result.config.eval.grounding_queries.length
         ? result.config.eval.grounding_queries
         : result.config.eval?.queries || [];
-    const semanticLite = result.config.eval?.semantic_lite !== false;
+    const rankingOptions = rankingOptionsFromConfig(result.config.eval || {});
     const questions = entries.map((entry) => evaluateQuestion({
         entry,
         contextPacket: result.contextPacket,
         sourceMap: result.sourceMap,
         config: result.config,
         topKSize,
-        semanticLite,
+        rankingOptions,
     }));
     const summary = summarize(questions);
     const groundingRequired = result.config.eval?.grounding_required !== false;
@@ -201,6 +201,7 @@ function runGroundingEval({ result, topKSize }) {
         questions,
         policy: {
             top_k: topKSize,
+            ranking_provider: rankingOptions.provider,
             max_retries: Math.max(0, Number(result.config.eval?.max_retries ?? 2)),
             rewrite_enabled: result.config.eval?.rewrite_enabled !== false,
             grounding_required: groundingRequired,
