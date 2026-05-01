@@ -1,6 +1,6 @@
 # ECF Core
 
-![ECF Core](docs/images/banner.png)
+![ECF Core local context governance animation](docs/images/ecf-core-hero.gif)
 
 ECF Core is the open-source Micro ECF runtime: a local-first context and policy layer for safer agents.
 
