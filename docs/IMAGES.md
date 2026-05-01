@@ -6,6 +6,7 @@ ECF Core includes a small public image set for the GitHub repository and README.
 
 | File | Use |
 | --- | --- |
+| `docs/images/ecf-core-hero.gif` | README animated hero showing local sources, context boundary, grounding eval, blocked sources, and preview artifacts |
 | `docs/images/banner.png` | README header banner |
 | `docs/images/architecture.png` | Product boundary diagram |
 | `docs/images/social-preview.png` | GitHub repository social preview upload |

@@ -44,6 +44,7 @@
 - [x] policy-block fixture
 - [x] compression experiment fixture
 - [x] JSON and Markdown reports
+- [x] local grounding eval loop
 
 ## Phase 5: Agent OS Handoff
 
@@ -52,6 +53,7 @@
 - [x] Agent OS Harness export
 - [x] no-spend readiness check integration
 - [x] Agent OS preview-import readiness check
+- [x] optional grounding evidence for preview imports
 
 ## Phase 6: Stable OSS Release
 

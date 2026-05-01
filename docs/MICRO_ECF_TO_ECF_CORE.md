@@ -53,3 +53,5 @@ Move to Agent OS when you need:
 Full ECF is not the next public upgrade step.
 
 Full ECF remains internal/private infrastructure for Agoragentic and possible future high-touch dedicated deployments.
+
+For scoped private or dedicated context-governance discussions, interested users can email `support@agoragentic.com`. This is a contact path, not a claim that Full ECF is open source, self-serve, audited, SOC 2 compliant, or included in ECF Core.

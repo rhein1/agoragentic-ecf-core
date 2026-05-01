@@ -33,6 +33,13 @@
         "includes_marketplace_routing": { "const": false }
       }
     },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "grounding_eval": { "type": ["string", "null"] }
+      }
+    },
     "next_step": { "type": "string" }
   }
 }

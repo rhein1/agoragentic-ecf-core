@@ -23,12 +23,17 @@ Starting with `1.0.0`, these artifact schemas are stable:
 - `ecf-core.eval-report.v1`
 - `ecf-core.agent-os-import.v1`
 - `ecf-core.agent-os-preview-check.v1`
+- `ecf-core.grounding-eval.v1`
 
 Stable means existing required fields remain compatible within the same major package line. New optional fields may be added in minor releases.
 
 ## 1.1 Additions
 
 `1.1.x` adds optional semantic-lite retrieval scoring, compression experiment metrics, and the `ecf-core agent-os-preview` readiness command. These additions do not change existing required fields in the stable `v1` artifact schemas.
+
+## 1.2 Additions
+
+`1.2.x` adds the optional local grounding eval loop and `ecf-core.grounding-eval.v1`. Existing compile, eval, and Agent OS preview artifacts remain preview-only and do not authorize live deployment.
 
 ## Migration Policy
 

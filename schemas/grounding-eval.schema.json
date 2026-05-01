@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/grounding-eval.v1.json",
+  "title": "ECF Core Grounding Eval",
+  "type": "object",
+  "required": ["schema_version", "project", "verdict", "summary", "questions", "policy"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "ecf-core.grounding-eval.v1" },
+    "project": { "type": "string" },
+    "verdict": { "type": "string", "enum": ["pass", "warn"] },
+    "summary": {
+      "type": "object",
+      "required": ["queries", "grounded", "unsupported", "blocked", "hallucination_risk"],
+      "additionalProperties": false,
+      "properties": {
+        "queries": { "type": "integer", "minimum": 0 },
+        "grounded": { "type": "integer", "minimum": 0 },
+        "unsupported": { "type": "integer", "minimum": 0 },
+        "blocked": { "type": "integer", "minimum": 0 },
+        "hallucination_risk": { "type": "string", "enum": ["low", "medium"] }
+      }
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["question", "status", "answer_supported", "citations", "retries", "final_response", "attempts"],
+        "additionalProperties": true,
+        "properties": {
+          "question": { "type": "string" },
+          "status": { "type": "string", "enum": ["grounded", "unsupported", "blocked"] },
+          "answer_supported": { "type": "boolean" },
+          "citations": { "type": "array", "items": { "type": "string" } },
+          "citation_labels": { "type": "array", "items": { "type": "string" } },
+          "retries": { "type": "integer", "minimum": 0 },
+          "final_response": { "type": "string" },
+          "suggested_fix": { "type": ["string", "null"] },
+          "attempts": { "type": "array", "items": { "type": "object", "additionalProperties": true } }
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "required": ["top_k", "max_retries", "rewrite_enabled", "grounding_required", "unsupported_response"],
+      "additionalProperties": true,
+      "properties": {
+        "top_k": { "type": "integer", "minimum": 1 },
+        "max_retries": { "type": "integer", "minimum": 0 },
+        "rewrite_enabled": { "type": "boolean" },
+        "grounding_required": { "type": "boolean" },
+        "unsupported_response": { "type": "string" }
+      }
+    }
+  }
+}

@@ -41,6 +41,12 @@ Use these names consistently:
 - `Agent OS`: hosted deployment product
 - `Full ECF`: private/internal platform engine, not an active public sales SKU
 
+## Contact Path
+
+For scoped private or dedicated context-governance discussions, interested users can email `support@agoragentic.com`.
+
+This is a contact path only. It is not a claim that Full ECF is open source, self-serve, SOC 2 compliant, audited, enterprise-ready, hosted Agent OS, wallet settlement, marketplace routing, tenant isolation, or public Full ECF access.
+
 ## Trust Language
 
 Safe:

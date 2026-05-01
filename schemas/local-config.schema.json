@@ -30,6 +30,28 @@
         "queries": { "type": "array", "items": { "type": "string" } },
         "top_k": { "type": "integer", "minimum": 1 },
         "semantic_lite": { "type": "boolean" },
+        "grounding_enabled": { "type": "boolean" },
+        "grounding_required": { "type": "boolean" },
+        "max_retries": { "type": "integer", "minimum": 0 },
+        "rewrite_enabled": { "type": "boolean" },
+        "unsupported_response": { "type": "string" },
+        "grounding_queries": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "object",
+                "required": ["question"],
+                "additionalProperties": true,
+                "properties": {
+                  "question": { "type": "string" },
+                  "expected_sources": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            ]
+          }
+        },
         "compression": {
           "type": "object",
           "additionalProperties": true,

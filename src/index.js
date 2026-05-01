@@ -10,6 +10,7 @@ const {
 } = require('./compile');
 const {
     runEvaluation,
+    runGroundingEval,
 } = require('./eval');
 const {
     evaluateCompressionExperiment,
@@ -73,6 +74,7 @@ module.exports = {
     normalizeConfig,
     normalizePath,
     runEvaluation,
+    runGroundingEval,
     scoreRecord,
     validateCompiledArtifacts,
     topK,

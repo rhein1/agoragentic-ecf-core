@@ -6,6 +6,7 @@ const DEFAULT_SYNONYMS = {
     deploy: ['deployment', 'handoff', 'preview', 'agent', 'os'],
     governance: ['policy', 'boundary', 'allowed', 'blocked', 'control'],
     memory: ['context', 'source', 'citation', 'provenance'],
+    refund: ['payment', 'billing', 'invoice', 'charge'],
     security: ['secret', 'secrets', 'credential', 'key', 'blocked'],
 };
 
