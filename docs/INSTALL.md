@@ -20,6 +20,14 @@ ecf-core agent-os-preview .ecf-core
 ecf-core validate .ecf-core
 ```
 
+Optional active context serving for IDEs and local MCP clients:
+
+```bash
+ecf-core serve-mcp .ecf-core
+```
+
+The MCP server reads local compiled artifacts only. It does not deploy agents, spend funds, call remote models, or call Agoragentic Cloud.
+
 ## From GitHub
 
 ```bash

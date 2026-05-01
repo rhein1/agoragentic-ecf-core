@@ -80,9 +80,11 @@ Do not treat that contact path as a SOC 2, audit, enterprise-readiness, hosted r
 - Deterministic eval reports
 - Grounding eval loop for local fail-closed answer checks
 - Semantic-lite retrieval preservation scoring
+- Optional dependency-free ranking provider contracts (`local_vector`, Qdrant/Chroma precomputed results, GitNexus/code graph, MCP context provider)
 - Deterministic compression experiment metrics
 - Agent OS Harness and deployment-preview exports
 - Agent OS preview/import readiness check
+- Local stdio MCP server for active context serving from compiled artifacts
 - Safe examples for local projects
 
 ## What Is Not Included
@@ -151,7 +153,7 @@ Intended Agent OS flow:
 agoragentic-os preview .ecf-core/agent-os-import.json
 ```
 
-Agent OS preview import is the intended next step; live deployment requires a separate Agent OS launch flow with owner review, policy checks, runtime provisioning, and billing/spend authorization.
+Agent OS preview import is available through the hosted Agent OS CLI as a no-spend preview check; live deployment still requires a separate Agent OS launch flow with owner review, policy checks, runtime provisioning, and billing/spend authorization.
 
 ## Current Status
 
@@ -171,6 +173,8 @@ The stable `1.0` surface includes:
 The `1.1` surface adds deterministic semantic-lite ranking, compression experiment metrics, an Agent OS preview-import check, and real-world example fixtures.
 
 The `1.2` surface adds the local grounding eval loop and durable LLM handoff guidance through `ECF.md`.
+
+The `1.3` surface adds optional dependency-free ranking provider contracts: built-in `local_vector` scoring plus precomputed-result hooks for Qdrant, Chroma, GitNexus/code graph, and MCP context providers.
 
 Do not copy the private `agoragentic-enterprise/` runtime into this repo.
 
@@ -227,6 +231,44 @@ Review `ecf.config.json` before compiling sensitive repositories.
 
 Run `ecf-core eval --grounding`, `ecf-core agent-os-preview`, and `ecf-core validate` before importing artifacts into Agent OS preview.
 
+## Grounding Eval Loop
+
+ECF Core tests whether your local context can safely support agent answers before deployment.
+
+Run:
+
+```bash
+ecf-core eval . --grounding
+```
+
+The loop is local and fail-closed:
+
+```text
+eval query
+  |
+  v
+retrieve allowed sources
+  |
+  v
+synthesize extractive answer
+  |
+  v
+grounded?
+  |-- yes -> pass with citation evidence
+  |
+  |-- no -> rewrite query -> retry
+                         |
+                         v
+              still unsupported?
+                         |
+                         v
+       "I don't know based on the allowed context."
+```
+
+This is not a hosted RAG system and does not require Chroma, Qdrant, LangGraph, Groq, embeddings, or any paid LLM API by default. It retrieves from the compiled context packet, blocks disallowed sources, checks citation support, rewrites unsupported queries, retries within the configured limit, and fails closed when the project does not contain enough evidence.
+
+Agent OS can use `grounding-eval.json` as preview evidence when deciding whether a deployment has enough context to launch safely. Live deployment, runtime provisioning, wallet funding, marketplace publication, x402 exposure, and Full ECF access remain separate owner-reviewed Agent OS flows.
+
 ## CLI
 
 ```text
@@ -234,6 +276,7 @@ ecf-core init [project] [--force]
 ecf-core compile [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--agent-os]
 ecf-core eval [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--grounding]
 ecf-core agent-os-preview [artifact-dir] [--json]
+ecf-core serve-mcp [artifact-dir]
 ecf-core validate [artifact-dir]
 ecf-core version
 ```
@@ -273,6 +316,7 @@ npm run pack:dry
 - [Adapter Contracts](docs/ADAPTERS.md)
 - [Custom Adapters](docs/CUSTOM_ADAPTERS.md)
 - [Evaluation](docs/EVALUATION.md)
+- [Local MCP Server](docs/MCP_SERVER.md)
 - [Versioning](docs/VERSIONING.md)
 - [Agent OS Import Contract](docs/AGENT_OS_IMPORT.md)
 - [Durable LLM Handoff](ECF.md)

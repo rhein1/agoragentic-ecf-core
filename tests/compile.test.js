@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -9,6 +9,7 @@ const test = require('node:test');
 const {
     FilesystemAdapter,
     compileProject,
+    rankRecords,
     validateCompiledArtifacts,
 } = require('../src');
 const { CustomKeywordAdapter } = require('../examples/custom-adapter/custom-keyword-adapter');
@@ -136,6 +137,53 @@ test('CLI eval writes deterministic JSON and Markdown reports', () => {
     assert.equal(JSON.parse(preview).ok, true);
 });
 
+test('optional ranking providers remain dependency-free and bounded', () => {
+    const root = makeProject();
+    const configPath = path.join(root, 'ecf.config.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    config.eval = {
+        queries: ['billing payment'],
+        top_k: 3,
+        ranking: {
+            provider: 'local_vector',
+            dimensions: 32,
+        },
+    };
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+    const cli = path.join(__dirname, '..', 'bin', 'ecf-core.js');
+    let output = execFileSync(process.execPath, [cli, 'eval', root, '--json'], { encoding: 'utf8' });
+    let summary = JSON.parse(output);
+    assert.equal(summary.metrics.retrieval_preservation.ranking_mode, 'local_vector');
+    assert.equal(summary.metrics.retrieval_preservation.ranking_dependency_status, 'builtin');
+
+    config.eval.ranking = {
+        provider: 'qdrant',
+        precomputed_results: {
+            'billing payment': ['docs/billing.md#billing', 'docs/billing.md'],
+        },
+    };
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    output = execFileSync(process.execPath, [cli, 'eval', root, '--json'], { encoding: 'utf8' });
+    summary = JSON.parse(output);
+    assert.equal(summary.metrics.retrieval_preservation.ranking_mode, 'qdrant');
+    assert.equal(summary.metrics.retrieval_preservation.ranking_dependency_status, 'qdrant_adapter_configured');
+
+    config.eval.ranking = { provider: 'chroma' };
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    output = execFileSync(process.execPath, [cli, 'eval', root, '--json'], { encoding: 'utf8' });
+    summary = JSON.parse(output);
+    assert.equal(summary.metrics.retrieval_preservation.ranking_mode, 'chroma_fallback_semantic_lite');
+    assert.equal(summary.metrics.retrieval_preservation.ranking_dependency_status, 'chroma_adapter_skipped');
+
+    const hits = rankRecords([
+        { id: 'a', path: 'docs/a.md', summary: 'wallet budget receipts' },
+        { id: 'b', path: 'docs/b.md', summary: 'policy boundary citations' },
+    ], 'receipt budget', 1, { provider: 'local_vector' });
+    assert.equal(hits.ranking_mode, 'local_vector');
+    assert.equal(hits.hits[0].id, 'a');
+});
+
 test('custom adapters can extend context without changing core compiler', async () => {
     const root = makeProject();
     const result = await compileProject({
@@ -177,6 +225,8 @@ test('public package keeps durable handoff and workflow examples', () => {
     const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
     const boundary = fs.readFileSync(path.join(root, 'docs', 'BOUNDARY.md'), 'utf8');
     const imagesDoc = fs.readFileSync(path.join(root, 'docs', 'IMAGES.md'), 'utf8');
+    const mcpDoc = fs.readFileSync(path.join(root, 'docs', 'MCP_SERVER.md'), 'utf8');
+    const importerExample = fs.readFileSync(path.join(root, 'examples', 'importers', 'agent-os-import-consumer.example.json'), 'utf8');
 
     assert.ok(pkg.files.includes('ECF.md'));
     assert.ok(fs.existsSync(path.join(root, 'docs', 'images', 'ecf-core-hero.gif')));
@@ -189,6 +239,8 @@ test('public package keeps durable handoff and workflow examples', () => {
     assert.match(readme, /not a self-serve public SKU/);
     assert.match(boundary, /contact path only/i);
     assert.match(imagesDoc, /ecf-core-hero\.gif/);
+    assert.match(mcpDoc, /ecf_core\.search_context/);
+    assert.match(importerExample, /preview_only/);
     assert.match(workflowIndex, /IDE Coding Agent Context Check/);
     assert.match(workflowIndex, /Grounded Docs Agent Readiness/);
     assert.match(workflowIndex, /Agent OS Preview Handoff/);
@@ -295,4 +347,48 @@ test('real-world examples compile and keep preview imports bounded', () => {
         assert.equal(preview.boundary_safe, true);
         fs.rmSync(path.join(root, '.ecf-core'), { recursive: true, force: true });
     }
+});
+
+test('local MCP server exposes read-only compiled context tools', () => {
+    const root = makeProject();
+    const cli = path.join(__dirname, '..', 'bin', 'ecf-core.js');
+    execFileSync(process.execPath, [cli, 'compile', root, '--agent-os'], { stdio: 'pipe' });
+    const requests = [
+        { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} },
+        { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} },
+        {
+            jsonrpc: '2.0',
+            id: 3,
+            method: 'tools/call',
+            params: {
+                name: 'ecf_core.search_context',
+                arguments: { query: 'billing payment', top_k: 2 },
+            },
+        },
+        {
+            jsonrpc: '2.0',
+            id: 4,
+            method: 'tools/call',
+            params: {
+                name: 'ecf_core.get_policy',
+                arguments: {},
+            },
+        },
+    ].map((item) => JSON.stringify(item)).join('\n');
+    const result = spawnSync(process.execPath, [cli, 'serve-mcp', path.join(root, '.ecf-core')], {
+        input: `${requests}\n`,
+        encoding: 'utf8',
+    });
+    assert.equal(result.status, 0);
+    const responses = result.stdout.trim().split('\n').map((line) => JSON.parse(line));
+    assert.equal(responses[0].result.serverInfo.name, 'agoragentic-ecf-core');
+    assert.ok(responses[1].result.tools.some((tool) => tool.name === 'ecf_core.search_context'));
+    const searchPayload = JSON.parse(responses[2].result.content[0].text);
+    assert.equal(searchPayload.boundary.read_only, true);
+    assert.equal(searchPayload.boundary.live_deploy_allowed, false);
+    assert.equal(searchPayload.boundary.includes_wallet_or_settlement, false);
+    assert.ok(searchPayload.results.some((item) => item.path.includes('billing')));
+    const policyPayload = JSON.parse(responses[3].result.content[0].text);
+    assert.equal(policyPayload.boundary.hosted_runtime, false);
+    assert.equal(policyPayload.boundary.full_ecf_private_internals, false);
 });

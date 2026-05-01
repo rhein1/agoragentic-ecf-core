@@ -1,0 +1,37 @@
+{
+  "schema_version": "ecf-core.third-party-agent-os-importer-example.v1",
+  "input": {
+    "artifact": ".ecf-core/agent-os-import.json",
+    "required_schema_version": "ecf-core.agent-os-import.v1",
+    "required_import_mode": "preview_only",
+    "required_live_deploy_allowed": false
+  },
+  "required_validation": [
+    "read_agent_os_import_json",
+    "verify_required_files_exist",
+    "read_deployment_preview_json",
+    "verify_acceptance_checks",
+    "preserve_grounding_eval_if_present",
+    "show_owner_review_report"
+  ],
+  "forbidden_side_effects": [
+    "auto_deploy",
+    "wallet_funding",
+    "marketplace_publish",
+    "x402_enablement",
+    "public_api_exposure",
+    "full_ecf_access"
+  ],
+  "owner_report": {
+    "sections": [
+      "allowed_context",
+      "blocked_context",
+      "citation_coverage",
+      "grounding_eval",
+      "preview_readiness",
+      "missing_files",
+      "required_owner_approvals"
+    ]
+  },
+  "next_step": "create_agent_os_preview_report_only"
+}

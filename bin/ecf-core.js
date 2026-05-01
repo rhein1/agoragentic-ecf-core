@@ -8,6 +8,7 @@ const {
     createDefaultConfig,
     loadConfig,
     runEvaluation,
+    runMcpServer,
     validateCompiledArtifacts,
     inspectAgentOsPreview,
 } = require('../src');
@@ -20,6 +21,7 @@ Usage:
   ecf-core compile [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--agent-os]
   ecf-core eval [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--grounding]
   ecf-core agent-os-preview [artifact-dir] [--json]
+  ecf-core serve-mcp [artifact-dir]
   ecf-core validate [artifact-dir]
   ecf-core version
 
@@ -29,6 +31,7 @@ Commands:
   eval      Compile and write deterministic JSON/Markdown evaluation reports.
   agent-os-preview
             Check compiled ECF Core artifacts before Agent OS preview import.
+  serve-mcp Serve compiled ECF Core artifacts over a local stdio MCP tool surface.
   validate  Validate required compiled artifacts exist and have expected schema versions.
   version   Print package version.
 `);
@@ -156,6 +159,12 @@ async function main() {
             console.log(`Next step: ${report.next_step}`);
         }
         if (!report.ok) process.exitCode = 1;
+        return;
+    }
+
+    if (command === 'serve-mcp') {
+        const [artifactArg = '.ecf-core'] = positional(args);
+        runMcpServer({ artifactDir: path.resolve(artifactArg) });
         return;
     }
 

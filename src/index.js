@@ -19,7 +19,16 @@ const {
     inspectAgentOsPreview,
 } = require('./agent-os-preview');
 const {
+    TOOLS: MCP_TOOLS,
+    callTool: callMcpTool,
+    handleMcpRequest,
+    runMcpServer,
+} = require('./mcp-server');
+const {
+    rankRecords,
+    rankingOptionsFromConfig,
     scoreRecord,
+    scoreLocalVector,
     topK,
 } = require('./core/ranking');
 const {
@@ -64,18 +73,25 @@ module.exports = {
     buildAgentOsHandoff,
     buildAgentOsImport,
     buildDeploymentPreview,
+    callMcpTool,
     classifyPath,
     compileProject,
     createDefaultConfig,
     evaluateCompressionExperiment,
+    handleMcpRequest,
     inspectAgentOsPreview,
     loadConfig,
     matchesAny,
+    MCP_TOOLS,
     normalizeConfig,
     normalizePath,
+    rankRecords,
+    rankingOptionsFromConfig,
+    runMcpServer,
     runEvaluation,
     runGroundingEval,
     scoreRecord,
+    scoreLocalVector,
     validateCompiledArtifacts,
     topK,
 };
