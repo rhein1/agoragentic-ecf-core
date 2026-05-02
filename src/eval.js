@@ -40,6 +40,9 @@ function markdownReport(summary) {
         `- Compression experiment verdict: ${summary.metrics.compression_experiment.verdict}`,
         `- Compression median ratio: ${summary.metrics.compression_experiment.median_compression_ratio}`,
         `- Compression citation survival: ${summary.metrics.compression_experiment.citation_survival}`,
+        `- Context evidence units: ${summary.metrics.context_evidence_units.evidence_unit_count}`,
+        `- Context evidence compression ratio: ${summary.metrics.context_evidence_units.compression_ratio}`,
+        `- Context evidence citation survival: ${summary.metrics.context_evidence_units.citation_survival}`,
         ...(summary.metrics.grounding_eval ? [
             `- Grounding eval verdict: ${summary.metrics.grounding_eval.verdict}`,
             `- Grounded queries: ${summary.metrics.grounding_eval.summary.grounded}/${summary.metrics.grounding_eval.summary.queries}`,
@@ -119,6 +122,16 @@ function evaluateCompiled({ result, topKSize }) {
             topKSize,
             options: result.config.eval?.compression || {},
         });
+    const contextEvidenceMetrics = {
+        file: 'context-evidence-units.json',
+        report_file: 'context-compaction-report.json',
+        evidence_unit_count: result.evidenceUnits.units.length,
+        compression_ratio: result.compactionReport.compression_ratio,
+        duplicate_claim_count: result.compactionReport.duplicate_claim_count,
+        citation_survival: result.compactionReport.citation_survival,
+        retrieval_preservation: result.compactionReport.retrieval_preservation,
+        verdict: result.compactionReport.verdict,
+    };
     const verdict = policyPass
         && citationCoverage >= 0.95
         && provenanceCoverage >= 0.95
@@ -155,6 +168,7 @@ function evaluateCompiled({ result, topKSize }) {
                 queries: retrievalQueries,
             },
             compression_experiment: compressionExperiment,
+            context_evidence_units: contextEvidenceMetrics,
         },
         files: result.manifest.files,
     };

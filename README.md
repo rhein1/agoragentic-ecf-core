@@ -80,7 +80,10 @@ Do not treat that contact path as a SOC 2, audit, enterprise-readiness, hosted r
 - Deterministic eval reports
 - Grounding eval loop for local fail-closed answer checks
 - Semantic-lite retrieval preservation scoring
+- Context Evidence Units for policy-aware, citation-backed source claims
+- Deterministic context compaction reports with duplicate-claim and citation-survival metrics
 - Optional dependency-free ranking provider contracts (`local_vector`, Qdrant/Chroma precomputed results, GitNexus/code graph, MCP context provider)
+- Source-preview .NET lane for C#, ASP.NET Core, EF Core, and Agent OS-ready artifact compatibility
 - Deterministic compression experiment metrics
 - Agent OS Harness and deployment-preview exports
 - Agent OS preview/import readiness check
@@ -176,6 +179,8 @@ The `1.2` surface adds the local grounding eval loop and durable LLM handoff gui
 
 The `1.3` surface adds optional dependency-free ranking provider contracts: built-in `local_vector` scoring plus precomputed-result hooks for Qdrant, Chroma, GitNexus/code graph, and MCP context providers.
 
+The `.NET` source-preview lane adds artifact-compatible C#, ASP.NET Core, and EF Core scanners plus an `ecfnet` CLI scaffold. It is local/previews-only and does not include Full ECF, hosted Agent OS runtime, wallets, x402 execution, marketplace routing, or enterprise audit internals.
+
 Do not copy the private `agoragentic-enterprise/` runtime into this repo.
 
 ## Install
@@ -216,6 +221,8 @@ The compiler writes:
   context-packet.json
   source-map.json
   policy-summary.json
+  context-evidence-units.json
+  context-compaction-report.json
   manifest.json
   deployment-preview.json
   agent-os-harness.json
@@ -269,6 +276,17 @@ This is not a hosted RAG system and does not require Chroma, Qdrant, LangGraph, 
 
 Agent OS can use `grounding-eval.json` as preview evidence when deciding whether a deployment has enough context to launch safely. Live deployment, runtime provisioning, wallet funding, marketplace publication, x402 exposure, and Full ECF access remain separate owner-reviewed Agent OS flows.
 
+## Context Evidence Units
+
+ECF Core emits deterministic Context Evidence Units during compile:
+
+```text
+.ecf-core/context-evidence-units.json
+.ecf-core/context-compaction-report.json
+```
+
+These files convert allowed sources into citation-backed claims plus policy flags for Agent OS preview. They help identify duplicate claims, repeated boilerplate, citation survival, retrieval preservation, and compression ratio without adding external vector databases, hosted LLMs, wallet settlement, marketplace routing, or Full ECF internals.
+
 ## CLI
 
 ```text
@@ -317,6 +335,8 @@ npm run pack:dry
 - [Custom Adapters](docs/CUSTOM_ADAPTERS.md)
 - [Evaluation](docs/EVALUATION.md)
 - [Local MCP Server](docs/MCP_SERVER.md)
+- [Context Evidence Units](docs/EVIDENCE_UNITS.md)
+- [.NET Support](docs/DOTNET.md)
 - [Versioning](docs/VERSIONING.md)
 - [Agent OS Import Contract](docs/AGENT_OS_IMPORT.md)
 - [Durable LLM Handoff](ECF.md)

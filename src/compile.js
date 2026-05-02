@@ -10,6 +10,10 @@ const { OpenApiAdapter } = require('./adapters/openapi');
 const { SqliteSummaryAdapter } = require('./adapters/sqlite-summary');
 const { loadConfig } = require('./core/config');
 const { sha256 } = require('./core/hash');
+const {
+    buildContextCompactionReport,
+    buildContextEvidenceUnits,
+} = require('./evidence-units');
 
 function nowIso() {
     return new Date().toISOString();
@@ -95,6 +99,8 @@ function buildDeploymentPreview({ contextPacket, sourceMap, config, groundingSum
             context_packet: 'context-packet.json',
             source_map: 'source-map.json',
             policy_summary: 'policy-summary.json',
+            context_evidence_units: 'context-evidence-units.json',
+            context_compaction_report: 'context-compaction-report.json',
             grounding_eval: groundingSummary ? 'grounding-eval.json' : null,
         },
         next_step: checks.every((check) => check.status !== 'fail')
@@ -112,6 +118,8 @@ function buildAgentOsHarness({ deploymentPreview }) {
             context_packet: 'context-packet.json',
             source_map: 'source-map.json',
             policy_summary: 'policy-summary.json',
+            context_evidence_units: 'context-evidence-units.json',
+            context_compaction_report: 'context-compaction-report.json',
             deployment_preview: 'deployment-preview.json',
             grounding_eval: deploymentPreview.artifacts.grounding_eval,
         },
@@ -132,6 +140,8 @@ function buildAgentOsImport({ deploymentPreview }) {
         'context-packet.json',
         'source-map.json',
         'policy-summary.json',
+        'context-evidence-units.json',
+        'context-compaction-report.json',
         'deployment-preview.json',
         'agent-os-harness.json',
         'agent-os-handoff.json',
@@ -148,6 +158,8 @@ function buildAgentOsImport({ deploymentPreview }) {
         })),
         boundary: baseBoundary(),
         evidence: {
+            context_evidence_units: deploymentPreview.artifacts.context_evidence_units,
+            context_compaction_report: deploymentPreview.artifacts.context_compaction_report,
             grounding_eval: deploymentPreview.artifacts.grounding_eval,
         },
         next_step: 'agent_os_preview_import',
@@ -240,6 +252,8 @@ function validateCompiledArtifacts(artifactDir) {
     const sourceMap = readJsonIfPresent(path.join(artifactDir, 'source-map.json'), errors);
     const policySummary = readJsonIfPresent(path.join(artifactDir, 'policy-summary.json'), errors);
     const groundingEvalPath = path.join(artifactDir, 'grounding-eval.json');
+    const evidenceUnitsPath = path.join(artifactDir, 'context-evidence-units.json');
+    const compactionReportPath = path.join(artifactDir, 'context-compaction-report.json');
 
     validateSchemaVersion(contextPacket, 'ecf-core.context-packet.v1', 'context-packet.json', errors);
     validateSchemaVersion(sourceMap, 'ecf-core.source-map.v1', 'source-map.json', errors);
@@ -255,6 +269,16 @@ function validateCompiledArtifacts(artifactDir) {
         validateSchemaVersion(groundingEval, 'ecf-core.grounding-eval.v1', 'grounding-eval.json', errors);
         if (groundingEval && !Array.isArray(groundingEval.questions)) errors.push('grounding-eval.json questions must be an array');
         if (groundingEval && !groundingEval.summary) errors.push('grounding-eval.json summary is required');
+    }
+    if (fs.existsSync(evidenceUnitsPath)) {
+        const evidenceUnits = readJsonIfPresent(evidenceUnitsPath, errors);
+        validateSchemaVersion(evidenceUnits, 'ecf-core.context-evidence-units.v1', 'context-evidence-units.json', errors);
+        if (evidenceUnits && !Array.isArray(evidenceUnits.units)) errors.push('context-evidence-units.json units must be an array');
+    }
+    if (fs.existsSync(compactionReportPath)) {
+        const compactionReport = readJsonIfPresent(compactionReportPath, errors);
+        validateSchemaVersion(compactionReport, 'ecf-core.context-compaction-report.v1', 'context-compaction-report.json', errors);
+        if (compactionReport && !compactionReport.retrieval_preservation) errors.push('context-compaction-report.json retrieval_preservation is required');
     }
 
     return {
@@ -331,6 +355,14 @@ async function compileProject(options = {}) {
     };
 
     const policySummary = buildPolicySummary(config);
+    const evidenceUnits = buildContextEvidenceUnits({ contextPacket, createdAt });
+    const compactionReport = buildContextCompactionReport({
+        contextPacket,
+        evidenceUnits,
+        queries: Array.isArray(config.eval?.queries) ? config.eval.queries : [],
+        topKSize: Number.isFinite(Number(config.eval?.top_k)) ? Math.max(1, Number(config.eval.top_k)) : 3,
+        evalConfig: config.eval || {},
+    });
 
     const contextPacketPath = path.join(outDir, 'context-packet.json');
     const sourceMapPath = path.join(outDir, 'source-map.json');
@@ -338,6 +370,8 @@ async function compileProject(options = {}) {
     writeJson(contextPacketPath, contextPacket);
     writeJson(sourceMapPath, sourceMap);
     writeJson(policySummaryPath, policySummary);
+    writeJson(path.join(outDir, 'context-evidence-units.json'), evidenceUnits);
+    writeJson(path.join(outDir, 'context-compaction-report.json'), compactionReport);
 
     let agentOsHandoff = null;
     let deploymentPreview = null;
@@ -370,6 +404,8 @@ async function compileProject(options = {}) {
             context_packet: relativeArtifact(projectRoot, outDir, 'context-packet.json'),
             source_map: relativeArtifact(projectRoot, outDir, 'source-map.json'),
             policy_summary: relativeArtifact(projectRoot, outDir, 'policy-summary.json'),
+            context_evidence_units: relativeArtifact(projectRoot, outDir, 'context-evidence-units.json'),
+            context_compaction_report: relativeArtifact(projectRoot, outDir, 'context-compaction-report.json'),
             agent_os_handoff: agentOsHandoff ? relativeArtifact(projectRoot, outDir, 'agent-os-handoff.json') : null,
             deployment_preview: deploymentPreview ? relativeArtifact(projectRoot, outDir, 'deployment-preview.json') : null,
             agent_os_harness: agentOsHarness ? relativeArtifact(projectRoot, outDir, 'agent-os-harness.json') : null,
@@ -381,6 +417,7 @@ async function compileProject(options = {}) {
             blocked_sources: blocked.length,
             review_required_sources: reviewRequired.length,
             citations: citations.length,
+            context_evidence_units: evidenceUnits.units.length,
         },
     };
     writeJson(path.join(outDir, 'manifest.json'), manifest);
@@ -390,6 +427,8 @@ async function compileProject(options = {}) {
         contextPacket,
         sourceMap,
         policySummary,
+        evidenceUnits,
+        compactionReport,
         agentOsHandoff,
         deploymentPreview,
         agentOsHarness,
