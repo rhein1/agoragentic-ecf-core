@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Agoragentic.EcfCore\Agoragentic.EcfCore.csproj" />
+    <ProjectReference Include="..\Agoragentic.EcfCore.DotNet\Agoragentic.EcfCore.DotNet.csproj" />
+  </ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>ecfnet</ToolCommandName>
+    <PackageId>Agoragentic.EcfCore.Cli</PackageId>
+    <Description>Local ecfnet CLI for .NET artifact-compatible ECF Core exports.</Description>
+  </PropertyGroup>
+</Project>
+

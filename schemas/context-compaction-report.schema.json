@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/context-compaction-report.v1.json",
+  "title": "ECF Core Context Compaction Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "strategy",
+    "dependency_status",
+    "input_source_count",
+    "evidence_unit_count",
+    "duplicate_claim_count",
+    "compression_ratio",
+    "citation_survival",
+    "retrieval_preservation",
+    "verdict"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "ecf-core.context-compaction-report.v1" },
+    "strategy": { "const": "deterministic_context_evidence_units" },
+    "dependency_status": { "const": "baseline_only" },
+    "input_source_count": { "type": "integer", "minimum": 0 },
+    "evidence_unit_count": { "type": "integer", "minimum": 0 },
+    "duplicate_claim_count": { "type": "integer", "minimum": 0 },
+    "duplicate_claim_groups": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "repeated_boilerplate_count": { "type": "integer", "minimum": 0 },
+    "compression_ratio": { "type": "number", "minimum": 0 },
+    "citation_survival": { "type": "number", "minimum": 0, "maximum": 1 },
+    "retrieval_preservation": {
+      "type": "object",
+      "required": ["top_k", "average_preservation", "queries"],
+      "additionalProperties": true,
+      "properties": {
+        "top_k": { "type": "integer", "minimum": 1 },
+        "average_preservation": { "type": "number", "minimum": 0, "maximum": 1 },
+        "queries": { "type": "array", "items": { "type": "object", "additionalProperties": true } }
+      }
+    },
+    "verdict": { "enum": ["pass", "review"] }
+  }
+}
+

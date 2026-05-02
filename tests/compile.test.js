@@ -60,6 +60,8 @@ test('compileProject emits source map, context packet, policy summary, and hando
     assert.equal(result.contextPacket.schema_version, 'ecf-core.context-packet.v1');
     assert.equal(result.sourceMap.schema_version, 'ecf-core.source-map.v1');
     assert.equal(result.policySummary.schema_version, 'ecf-core.policy-summary.v1');
+    assert.equal(result.evidenceUnits.schema_version, 'ecf-core.context-evidence-units.v1');
+    assert.equal(result.compactionReport.schema_version, 'ecf-core.context-compaction-report.v1');
     assert.equal(result.agentOsHandoff.schema_version, 'ecf-core.agent-os-handoff.v1');
     assert.equal(result.deploymentPreview.schema_version, 'ecf-core.deployment-preview.v1');
     assert.equal(result.agentOsHarness.schema_version, 'ecf-core.agent-os-harness.v1');
@@ -67,6 +69,8 @@ test('compileProject emits source map, context packet, policy summary, and hando
     assert.equal(result.agentOsHandoff.boundary.includes_wallet_or_settlement, false);
     assert.equal(result.agentOsHarness.boundary.includes_hosted_runtime, false);
     assert.equal(result.agentOsImport.live_deploy_allowed, false);
+    assert.equal(result.agentOsImport.evidence.context_evidence_units, 'context-evidence-units.json');
+    assert.equal(result.agentOsImport.evidence.context_compaction_report, 'context-compaction-report.json');
 
     const sourcePaths = result.contextPacket.sources.map((source) => source.path).sort();
     assert.ok(sourcePaths.includes('README.md'));
@@ -76,6 +80,11 @@ test('compileProject emits source map, context packet, policy summary, and hando
     assert.ok(sourcePaths.includes('openapi.yaml#openapi-summary'));
     assert.ok(sourcePaths.includes('mcp.json#mcp-context-summary'));
     assert.equal(result.contextPacket.citations.length, result.contextPacket.sources.length);
+    assert.equal(result.evidenceUnits.units.length, result.contextPacket.sources.length);
+    assert.ok(result.evidenceUnits.units.every((unit) => unit.policy.live_deploy_allowed === false));
+    assert.ok(result.evidenceUnits.units.every((unit) => unit.citations.length > 0));
+    assert.equal(result.compactionReport.dependency_status, 'baseline_only');
+    assert.equal(result.compactionReport.citation_survival, 1);
     assert.ok(result.sourceMap.sources.some((source) => source.path === '.env' && source.classification === 'blocked'));
     assert.ok(!result.contextPacket.sources.some((source) => source.path.includes('node_modules')));
 
@@ -132,6 +141,10 @@ test('CLI eval writes deterministic JSON and Markdown reports', () => {
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'agent-os-harness.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'deployment-preview.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'agent-os-import.json')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'context-evidence-units.json')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'context-compaction-report.json')));
+    assert.equal(summary.metrics.context_evidence_units.evidence_unit_count > 0, true);
+    assert.equal(summary.metrics.context_evidence_units.citation_survival, 1);
 
     const preview = execFileSync(process.execPath, [cli, 'agent-os-preview', path.join(root, '.ecf-core'), '--json'], { encoding: 'utf8' });
     assert.equal(JSON.parse(preview).ok, true);
@@ -212,6 +225,8 @@ test('stable schema manifest lists every generated artifact contract', () => {
         'ecf-core.agent-os-import.v1',
         'ecf-core.agent-os-preview-check.v1',
         'ecf-core.grounding-eval.v1',
+        'ecf-core.context-evidence-units.v1',
+        'ecf-core.context-compaction-report.v1',
     ];
     assert.equal(manifest.stability, 'stable');
     assert.deepEqual(manifest.schemas.sort(), expected.sort());
@@ -226,6 +241,7 @@ test('public package keeps durable handoff and workflow examples', () => {
     const boundary = fs.readFileSync(path.join(root, 'docs', 'BOUNDARY.md'), 'utf8');
     const imagesDoc = fs.readFileSync(path.join(root, 'docs', 'IMAGES.md'), 'utf8');
     const mcpDoc = fs.readFileSync(path.join(root, 'docs', 'MCP_SERVER.md'), 'utf8');
+    const evidenceUnitsDoc = fs.readFileSync(path.join(root, 'docs', 'EVIDENCE_UNITS.md'), 'utf8');
     const importerExample = fs.readFileSync(path.join(root, 'examples', 'importers', 'agent-os-import-consumer.example.json'), 'utf8');
 
     assert.ok(pkg.files.includes('ECF.md'));
@@ -240,10 +256,64 @@ test('public package keeps durable handoff and workflow examples', () => {
     assert.match(boundary, /contact path only/i);
     assert.match(imagesDoc, /ecf-core-hero\.gif/);
     assert.match(mcpDoc, /ecf_core\.search_context/);
+    assert.match(evidenceUnitsDoc, /Context Evidence Units/);
+    assert.match(evidenceUnitsDoc, /live_deploy_allowed/);
+    assert.match(readme, /docs\/EVIDENCE_UNITS\.md/);
     assert.match(importerExample, /preview_only/);
     assert.match(workflowIndex, /IDE Coding Agent Context Check/);
     assert.match(workflowIndex, /Grounded Docs Agent Readiness/);
     assert.match(workflowIndex, /Agent OS Preview Handoff/);
+});
+
+test('dotnet lane is artifact-compatible and keeps the public ECF boundary', () => {
+    const root = path.join(__dirname, '..');
+    const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+    const dotnetReadme = fs.readFileSync(path.join(root, 'dotnet', 'README.md'), 'utf8');
+    const dotnetDocs = fs.readFileSync(path.join(root, 'docs', 'DOTNET.md'), 'utf8');
+    const coreModels = fs.readFileSync(path.join(root, 'dotnet', 'src', 'Agoragentic.EcfCore', 'Artifacts', 'ArtifactModels.cs'), 'utf8');
+    const safetyPolicy = fs.readFileSync(path.join(root, 'dotnet', 'src', 'Agoragentic.EcfCore.DotNet', 'Policy', 'DotNetSafetyPolicy.cs'), 'utf8');
+    const compiler = fs.readFileSync(path.join(root, 'dotnet', 'src', 'Agoragentic.EcfCore.DotNet', 'DotNetContextCompiler.cs'), 'utf8');
+    const cli = fs.readFileSync(path.join(root, 'dotnet', 'src', 'Agoragentic.EcfCore.Cli', 'Program.cs'), 'utf8');
+
+    assert.ok(pkg.files.includes('dotnet/'));
+    assert.ok(fs.existsSync(path.join(root, 'dotnet', 'src', 'Agoragentic.EcfCore', 'Agoragentic.EcfCore.csproj')));
+    assert.ok(fs.existsSync(path.join(root, 'dotnet', 'src', 'Agoragentic.EcfCore.DotNet', 'Agoragentic.EcfCore.DotNet.csproj')));
+    assert.ok(fs.existsSync(path.join(root, 'dotnet', 'src', 'Agoragentic.EcfCore.Cli', 'Agoragentic.EcfCore.Cli.csproj')));
+    assert.ok(fs.existsSync(path.join(root, 'dotnet', 'examples', 'AspNetMinimalApi', 'Program.cs')));
+    assert.ok(fs.existsSync(path.join(root, 'dotnet', 'examples', 'EfCoreApp', 'Data', 'AppDbContext.cs')));
+
+    assert.match(dotnetReadme, /not Full ECF/i);
+    assert.match(dotnetReadme, /preview-only/i);
+    assert.match(dotnetDocs, /does not deploy agents/i);
+    assert.match(dotnetDocs, /does not handle wallets/i);
+    assert.match(dotnetDocs, /does not run x402 execution/i);
+    assert.match(dotnetDocs, /does not route marketplace calls/i);
+    assert.match(dotnetDocs, /does not include Full ECF private internals/i);
+
+    assert.match(coreModels, /ecf-core\.context-packet\.v1/);
+    assert.match(coreModels, /ecf-core\.manifest\.v1/);
+    assert.match(coreModels, /ecf-core\.agent-os-handoff\.v1/);
+    assert.match(coreModels, /ecf-core\.agent-os-import\.v1/);
+    assert.match(coreModels, /LiveDeployAllowed/);
+    assert.match(compiler, /LiveDeployAllowed = false/);
+    assert.match(compiler, /ImportMode = "preview_only"/);
+    assert.match(compiler, /RequiredFiles = requiredFiles/);
+    assert.match(compiler, /AcceptanceChecks = acceptanceChecks/);
+    assert.match(compiler, /review-required records were kept out of context-packet\.json/);
+    assert.doesNotMatch(compiler, /allowed\.Concat\(reviewRequired\)/);
+    assert.match(compiler, /DotNetSafetyPolicy\.DefaultBlockedPatterns/);
+
+    for (const pattern of ['bin/**', 'obj/**', '.vs/**', '*.pfx', '*.snk', '*.publishsettings']) {
+        assert.match(safetyPolicy, new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    }
+
+    for (const key of ['ConnectionStrings', 'ClientSecret', 'ApiKey', 'PrivateKey', 'AzureWebJobsStorage', 'OpenAI']) {
+        assert.match(safetyPolicy, new RegExp(key));
+    }
+
+    for (const command of ['"init"', '"compile"', '"eval"', '"validate"', '"export"']) {
+        assert.match(cli, new RegExp(command));
+    }
 });
 
 test('grounding eval grounds supported queries and fails closed for unsupported context', () => {

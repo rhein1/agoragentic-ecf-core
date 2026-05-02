@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Agoragentic.EcfCore\Agoragentic.EcfCore.csproj" />
+  </ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <PackageId>Agoragentic.EcfCore.DotNet</PackageId>
+    <Description>Local .NET scanners and safety defaults for artifact-compatible ECF Core exports.</Description>
+  </PropertyGroup>
+</Project>
+

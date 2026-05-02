@@ -16,6 +16,10 @@ const {
     evaluateCompressionExperiment,
 } = require('./compression');
 const {
+    buildContextCompactionReport,
+    buildContextEvidenceUnits,
+} = require('./evidence-units');
+const {
     inspectAgentOsPreview,
 } = require('./agent-os-preview');
 const {
@@ -73,6 +77,8 @@ module.exports = {
     buildAgentOsHandoff,
     buildAgentOsImport,
     buildDeploymentPreview,
+    buildContextCompactionReport,
+    buildContextEvidenceUnits,
     callMcpTool,
     classifyPath,
     compileProject,
