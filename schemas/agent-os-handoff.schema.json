@@ -10,6 +10,9 @@
     "context_packet": { "type": "string" },
     "source_map": { "type": "string" },
     "policy_summary": { "type": "string" },
+    "page_index": { "type": "string" },
+    "tree_index": { "type": "string" },
+    "retrieval_plan": { "type": "string" },
     "deployment_preview": { "type": "string" },
     "agent_os_harness": { "type": "string" },
     "agent_os_preview": {

@@ -20,6 +20,11 @@ const {
     buildContextEvidenceUnits,
 } = require('./evidence-units');
 const {
+    buildContextIndexes,
+    findTreeNodesForSource,
+    normalizeConfiguredContextIndexProviders,
+} = require('./context-index');
+const {
     inspectAgentOsPreview,
 } = require('./agent-os-preview');
 const {
@@ -79,17 +84,20 @@ module.exports = {
     buildDeploymentPreview,
     buildContextCompactionReport,
     buildContextEvidenceUnits,
+    buildContextIndexes,
     callMcpTool,
     classifyPath,
     compileProject,
     createDefaultConfig,
     evaluateCompressionExperiment,
+    findTreeNodesForSource,
     handleMcpRequest,
     inspectAgentOsPreview,
     loadConfig,
     matchesAny,
     MCP_TOOLS,
     normalizeConfig,
+    normalizeConfiguredContextIndexProviders,
     normalizePath,
     rankRecords,
     rankingOptionsFromConfig,

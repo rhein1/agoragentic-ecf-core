@@ -43,6 +43,8 @@ function markdownReport(summary) {
         `- Context evidence units: ${summary.metrics.context_evidence_units.evidence_unit_count}`,
         `- Context evidence compression ratio: ${summary.metrics.context_evidence_units.compression_ratio}`,
         `- Context evidence citation survival: ${summary.metrics.context_evidence_units.citation_survival}`,
+        `- Context index tree nodes: ${summary.metrics.context_index.tree_node_count}`,
+        `- Context index retrieval queries: ${summary.metrics.context_index.retrieval_query_count}`,
         ...(summary.metrics.grounding_eval ? [
             `- Grounding eval verdict: ${summary.metrics.grounding_eval.verdict}`,
             `- Grounded queries: ${summary.metrics.grounding_eval.summary.grounded}/${summary.metrics.grounding_eval.summary.queries}`,
@@ -132,6 +134,21 @@ function evaluateCompiled({ result, topKSize }) {
         retrieval_preservation: result.compactionReport.retrieval_preservation,
         verdict: result.compactionReport.verdict,
     };
+    const contextIndexMetrics = {
+        page_index_file: 'page-index.json',
+        tree_index_file: 'tree-index.json',
+        retrieval_plan_file: 'retrieval-plan.json',
+        provider_count: result.pageIndex.providers.length,
+        dependency_status: result.pageIndex.dependency_status,
+        source_count: result.pageIndex.summary.source_count,
+        page_count: result.pageIndex.summary.page_count,
+        section_count: result.pageIndex.summary.section_count,
+        tree_node_count: result.treeIndex.summary.node_count,
+        retrieval_query_count: result.retrievalPlan.summary.query_count,
+        sources_requiring_public_exposure_review: result.treeIndex.nodes
+            .filter((node) => node.source_id && node.policy_flags?.requires_public_exposure_review)
+            .length,
+    };
     const verdict = policyPass
         && citationCoverage >= 0.95
         && provenanceCoverage >= 0.95
@@ -169,6 +186,7 @@ function evaluateCompiled({ result, topKSize }) {
             },
             compression_experiment: compressionExperiment,
             context_evidence_units: contextEvidenceMetrics,
+            context_index: contextIndexMetrics,
         },
         files: result.manifest.files,
     };

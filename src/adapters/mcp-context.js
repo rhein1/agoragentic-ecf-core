@@ -44,7 +44,8 @@ class McpContextProviderAdapter extends ContextAdapter {
     async discover(input) {
         const { projectRoot, config } = input;
         const records = [];
-        for (const fullPath of walkFiles(projectRoot, config)) {
+        const fileInventory = input.fileInventory || walkFiles(projectRoot, config);
+        for (const fullPath of fileInventory) {
             const relativePath = normalizePath(path.relative(projectRoot, fullPath));
             const base = path.basename(relativePath).toLowerCase();
             if (!['mcp.json', '.mcp.json', 'server.json', 'mcp-server.json'].includes(base)) continue;

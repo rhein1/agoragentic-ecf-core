@@ -25,6 +25,14 @@ Raw files and naive chunks are often too messy for agent deployment review. ECF 
 
 `context-compaction-report.json` summarizes duplicate claims, repeated boilerplate, citation survival, retrieval preservation, and compression ratio.
 
+The page/tree index artifacts consume the same allowed context source set and add navigable structure for Agent OS preview:
+
+```text
+.ecf-core/page-index.json
+.ecf-core/tree-index.json
+.ecf-core/retrieval-plan.json
+```
+
 ## Boundary
 
 Evidence units do not authorize live deployment, tool execution, spend, wallet settlement, x402, marketplace routing, or Full ECF behavior.
@@ -58,10 +66,12 @@ When `ecf-core compile --agent-os` runs, the Agent OS preview/import artifacts i
 {
   "evidence": {
     "context_evidence_units": "context-evidence-units.json",
-    "context_compaction_report": "context-compaction-report.json"
+    "context_compaction_report": "context-compaction-report.json",
+    "page_index": "page-index.json",
+    "tree_index": "tree-index.json",
+    "retrieval_plan": "retrieval-plan.json"
   }
 }
 ```
 
-Agent OS may use these files during preview review, but a separate owner-reviewed Agent OS launch flow is still required for live runtime.
-
+Agent OS may use these files during preview review to show source, evidence, and context-index readiness, but a separate owner-reviewed Agent OS launch flow is still required for live runtime.

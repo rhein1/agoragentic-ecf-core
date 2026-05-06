@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/tree-index.v1.json",
+  "title": "ECF Core Tree Index",
+  "type": "object",
+  "required": ["schema_version", "generated_by", "generated_at", "providers", "nodes", "edges", "summary"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "const": "ecf-core.tree-index.v1" },
+    "generated_by": { "const": "ecf-core" },
+    "generated_at": { "type": "string" },
+    "providers": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "dependency_status": { "const": "builtin_local_only" },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["node_id", "type", "source_path", "children", "policy_flags"],
+        "additionalProperties": true,
+        "properties": {
+          "node_id": { "type": "string" },
+          "type": { "type": "string" },
+          "source_id": { "type": ["string", "null"] },
+          "source_path": { "type": "string" },
+          "parent": { "type": ["string", "null"] },
+          "children": { "type": "array", "items": { "type": "string" } },
+          "heading": { "type": ["string", "null"] },
+          "summary": { "type": ["string", "null"] },
+          "citations": { "type": "array", "items": { "type": "string" } },
+          "policy_flags": { "type": "object", "additionalProperties": true }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "type"],
+        "additionalProperties": true,
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "type": { "type": "string" }
+        }
+      }
+    },
+    "summary": { "type": "object", "additionalProperties": true }
+  }
+}

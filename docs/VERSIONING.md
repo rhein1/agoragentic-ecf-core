@@ -24,6 +24,11 @@ Starting with `1.0.0`, these artifact schemas are stable:
 - `ecf-core.agent-os-import.v1`
 - `ecf-core.agent-os-preview-check.v1`
 - `ecf-core.grounding-eval.v1`
+- `ecf-core.context-evidence-units.v1`
+- `ecf-core.context-compaction-report.v1`
+- `ecf-core.page-index.v1`
+- `ecf-core.tree-index.v1`
+- `ecf-core.retrieval-plan.v1`
 
 Stable means existing required fields remain compatible within the same major package line. New optional fields may be added in minor releases.
 
@@ -38,6 +43,10 @@ Stable means existing required fields remain compatible within the same major pa
 ## 1.3 Additions
 
 `1.3.x` adds optional ranking provider contracts for deterministic `local_vector` scoring plus precomputed-result hooks for Qdrant, Chroma, GitNexus/code graph, and MCP context providers. These adapters remain dependency-free by default and fall back to built-in semantic-lite ranking when external results are not supplied.
+
+## 1.4 Additions
+
+`1.4.x` adds deterministic local page/tree context index artifacts and retrieval-plan metadata. The public package emits `page-index.json`, `tree-index.json`, and `retrieval-plan.json` for Agent OS preview readiness without adding OCR/VLM dependencies, hosted RAG, vector databases, wallet settlement, marketplace routing, or Full ECF internals.
 
 ## Migration Policy
 

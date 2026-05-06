@@ -51,6 +51,53 @@ function matchesAny(relativePath, patterns = []) {
     return patterns.some((pattern) => matchesPattern(relativePath, pattern));
 }
 
+const DEFAULT_SKIP_DIRECTORIES = [
+    '.git/**',
+    '**/.git/**',
+    'node_modules/**',
+    '**/node_modules/**',
+    '.ecf-core/**',
+    '**/.ecf-core/**',
+    '.micro-ecf/**',
+    '**/.micro-ecf/**',
+    '.venv/**',
+    '**/.venv/**',
+    'venv/**',
+    '**/venv/**',
+    '.deps*/**',
+    '**/.deps*/**',
+    '.worktrees/**',
+    '**/.worktrees/**',
+    '.tools/**',
+    '**/.tools/**',
+    'scratch/**',
+    '**/scratch/**',
+    'temp/**',
+    '**/temp/**',
+    'temp-*/**',
+    '**/temp-*/**',
+    'temp_*/**',
+    '**/temp_*/**',
+    'logs/**',
+    '**/logs/**',
+    'tmp/**',
+    '**/tmp/**',
+    '.tmp/**',
+    '**/.tmp/**',
+    '.cache/**',
+    '**/.cache/**',
+    '.pytest_cache/**',
+    '**/.pytest_cache/**',
+    '__pycache__/**',
+    '**/__pycache__/**',
+    'dist/**',
+    '**/dist/**',
+    'build/**',
+    '**/build/**',
+    'coverage/**',
+    '**/coverage/**',
+];
+
 function classifyPath(relativePath, config) {
     const normalized = normalizePath(relativePath);
     if (matchesAny(normalized, config.block)) {
@@ -73,12 +120,15 @@ function classifyPath(relativePath, config) {
 
 function shouldSkipDirectory(relativePath, config) {
     const normalized = normalizePath(relativePath);
+    if (!normalized) return false;
     return matchesAny(`${normalized}/placeholder`, config.block)
-        || matchesAny(`${normalized}/`, ['.git/**', 'node_modules/**', '.ecf-core/**', '.micro-ecf/**']);
+        || matchesAny(`${normalized}/placeholder`, DEFAULT_SKIP_DIRECTORIES)
+        || matchesAny(`${normalized}/`, DEFAULT_SKIP_DIRECTORIES);
 }
 
 module.exports = {
     classifyPath,
+    DEFAULT_SKIP_DIRECTORIES,
     globToRegex,
     matchesAny,
     matchesPattern,

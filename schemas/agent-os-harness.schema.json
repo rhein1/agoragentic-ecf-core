@@ -17,10 +17,18 @@
         "context_packet": { "type": "string" },
         "source_map": { "type": "string" },
         "policy_summary": { "type": "string" },
-        "deployment_preview": { "type": "string" }
+        "context_evidence_units": { "type": "string" },
+        "context_compaction_report": { "type": "string" },
+        "page_index": { "type": ["string", "null"] },
+        "tree_index": { "type": ["string", "null"] },
+        "retrieval_plan": { "type": ["string", "null"] },
+        "deployment_preview": { "type": "string" },
+        "grounding_eval": { "type": ["string", "null"] }
       }
     },
     "boundary": { "type": "object", "additionalProperties": true },
-    "readiness": { "type": "object", "additionalProperties": true }
+    "readiness": { "type": "object", "additionalProperties": true },
+    "context_index_readiness": { "type": ["object", "null"], "additionalProperties": true },
+    "agent_os_preview": { "type": "object", "additionalProperties": true }
   }
 }

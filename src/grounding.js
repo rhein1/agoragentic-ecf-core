@@ -1,6 +1,7 @@
 'use strict';
 
 const { rankingOptionsFromConfig, tokenize, topK } = require('./core/ranking');
+const { findTreeNodesForSource } = require('./context-index');
 
 const DEFAULT_UNSUPPORTED_RESPONSE = "I don't know based on the allowed context.";
 
@@ -97,7 +98,7 @@ function suggestedFixFor(query) {
     return `Add or allow source documentation that directly covers: ${query}`;
 }
 
-function evaluateQuestion({ entry, contextPacket, sourceMap, config, topKSize, rankingOptions }) {
+function evaluateQuestion({ entry, contextPacket, sourceMap, treeIndex, config, topKSize, rankingOptions }) {
     const originalQuestion = normalizeQuestion(questionText(entry));
     const unsupportedResponse = config.eval?.unsupported_response || DEFAULT_UNSUPPORTED_RESPONSE;
     const maxRetries = Math.max(0, Number(config.eval?.max_retries ?? 2));
@@ -128,11 +129,13 @@ function evaluateQuestion({ entry, contextPacket, sourceMap, config, topKSize, r
         const expectedSatisfied = expected.length === 0 || hits.some((hit) => expected.includes(hit.path) || expected.includes(hit.id));
         const supported = synthesis.supported && expectedSatisfied && !retrievedBlocked;
         const citation = synthesis.supporting_source_id ? citationForSource(contextPacket, synthesis.supporting_source_id) : null;
+        const retrievedTreeNodes = hits.flatMap((hit) => findTreeNodesForSource(treeIndex, hit.id));
         attempts.push({
             attempt,
             query,
             retrieved_source_ids: hits.map((hit) => hit.id),
             retrieved_paths: hits.map((hit) => hit.path),
+            retrieved_tree_node_ids: retrievedTreeNodes.map((node) => node.node_id),
             answer_supported: supported,
             supporting_source_id: synthesis.supporting_source_id,
         });
@@ -148,12 +151,17 @@ function evaluateQuestion({ entry, contextPacket, sourceMap, config, topKSize, r
     }
 
     const status = finalSupported ? 'grounded' : (blockedIntent || retrievedBlocked ? 'blocked' : 'unsupported');
+    const treeNodes = finalSupported && finalCitation
+        ? findTreeNodesForSource(treeIndex, finalCitation.source_id)
+        : [];
     return {
         question: originalQuestion,
         status,
         answer_supported: finalSupported,
         citations: finalCitation ? [finalCitation.path] : [],
         citation_labels: finalCitation ? [finalCitation.label] : [],
+        tree_node_ids: treeNodes.map((node) => node.node_id),
+        tree_node_paths: treeNodes.map((node) => node.source_path),
         retries: Math.max(0, attempts.length - 1),
         final_response: finalSupported ? finalAnswer : unsupportedResponse,
         suggested_fix: finalSupported ? null : suggestedFixFor(originalQuestion),
@@ -186,6 +194,7 @@ function runGroundingEval({ result, topKSize }) {
         entry,
         contextPacket: result.contextPacket,
         sourceMap: result.sourceMap,
+        treeIndex: result.treeIndex,
         config: result.config,
         topKSize,
         rankingOptions,
@@ -231,6 +240,7 @@ function groundingMarkdown(report) {
             `  - status: ${question.status}`,
             `  - retries: ${question.retries}`,
             `  - citations: ${question.citations.join(', ') || 'none'}`,
+            `  - tree nodes: ${question.tree_node_paths.join(', ') || 'none'}`,
             `  - final response: ${question.final_response}`,
         ]),
         '',

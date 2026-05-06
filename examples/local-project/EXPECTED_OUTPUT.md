@@ -15,6 +15,11 @@ creates:
   context-packet.json
   source-map.json
   policy-summary.json
+  context-evidence-units.json
+  context-compaction-report.json
+  page-index.json
+  tree-index.json
+  retrieval-plan.json
   manifest.json
   deployment-preview.json
   agent-os-harness.json

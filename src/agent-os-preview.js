@@ -23,6 +23,12 @@ function inspectAgentOsPreview(artifactDir) {
     const deploymentPreview = readJson(path.join(resolvedDir, 'deployment-preview.json'), errors);
     const groundingEvalPath = path.join(resolvedDir, 'grounding-eval.json');
     const groundingEval = fs.existsSync(groundingEvalPath) ? readJson(groundingEvalPath, errors) : null;
+    const pageIndexPath = path.join(resolvedDir, 'page-index.json');
+    const treeIndexPath = path.join(resolvedDir, 'tree-index.json');
+    const retrievalPlanPath = path.join(resolvedDir, 'retrieval-plan.json');
+    const pageIndex = fs.existsSync(pageIndexPath) ? readJson(pageIndexPath, errors) : null;
+    const treeIndex = fs.existsSync(treeIndexPath) ? readJson(treeIndexPath, errors) : null;
+    const retrievalPlan = fs.existsSync(retrievalPlanPath) ? readJson(retrievalPlanPath, errors) : null;
 
     if (agentOsImport && agentOsImport.schema_version !== 'ecf-core.agent-os-import.v1') {
         errors.push('agent-os-import.json has unsupported schema_version');
@@ -32,6 +38,15 @@ function inspectAgentOsPreview(artifactDir) {
     }
     if (groundingEval && groundingEval.schema_version !== 'ecf-core.grounding-eval.v1') {
         errors.push('grounding-eval.json has unsupported schema_version');
+    }
+    if (pageIndex && pageIndex.schema_version !== 'ecf-core.page-index.v1') {
+        errors.push('page-index.json has unsupported schema_version');
+    }
+    if (treeIndex && treeIndex.schema_version !== 'ecf-core.tree-index.v1') {
+        errors.push('tree-index.json has unsupported schema_version');
+    }
+    if (retrievalPlan && retrievalPlan.schema_version !== 'ecf-core.retrieval-plan.v1') {
+        errors.push('retrieval-plan.json has unsupported schema_version');
     }
 
     const requiredFiles = Array.isArray(agentOsImport?.required_files) ? agentOsImport.required_files : [];
@@ -74,6 +89,7 @@ function inspectAgentOsPreview(artifactDir) {
             verdict: groundingEval.verdict,
             summary: groundingEval.summary,
         } : null,
+        context_index_readiness: agentOsImport?.context_index_readiness || deploymentPreview?.context_index_readiness || null,
         boundary_safe: boundarySafe,
         next_step: errors.length === 0
             ? 'send_artifact_dir_to_agent_os_preview_import'

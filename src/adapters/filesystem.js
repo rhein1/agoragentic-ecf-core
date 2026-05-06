@@ -76,15 +76,39 @@ function summarizeText(text, type) {
     return line.length > 240 ? `${line.slice(0, 237)}...` : line;
 }
 
-function walkFiles(root, config, dir = root, output = []) {
-    const entries = fs.readdirSync(dir, { withFileTypes: true })
-        .sort((a, b) => a.name.localeCompare(b.name));
+function recordSkippedDirectory(root, dir, error, state) {
+    if (!state || !Array.isArray(state.skippedDirectories)) return;
+    state.skippedDirectories.push({
+        path: normalizePath(path.relative(root, dir)),
+        code: error.code || 'unreadable',
+        reason: error.message,
+    });
+}
+
+function isNestedGitRepository(root, dir) {
+    if (path.resolve(root) === path.resolve(dir)) return false;
+    try {
+        return fs.existsSync(path.join(dir, '.git'));
+    } catch {
+        return false;
+    }
+}
+
+function walkFiles(root, config, dir = root, output = [], state = null) {
+    let entries = [];
+    try {
+        entries = fs.readdirSync(dir, { withFileTypes: true })
+            .sort((a, b) => a.name.localeCompare(b.name));
+    } catch (error) {
+        recordSkippedDirectory(root, dir, error, state);
+        return output;
+    }
     for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
         const relativePath = normalizePath(path.relative(root, fullPath));
         if (entry.isDirectory()) {
-            if (!shouldSkipDirectory(relativePath, config)) {
-                walkFiles(root, config, fullPath, output);
+            if (!shouldSkipDirectory(relativePath, config) && !isNestedGitRepository(root, fullPath)) {
+                walkFiles(root, config, fullPath, output, state);
             }
             continue;
         }
@@ -108,9 +132,31 @@ class FilesystemAdapter extends ContextAdapter {
     async discover(input) {
         const { projectRoot, config } = input;
         const records = [];
-        for (const fullPath of walkFiles(projectRoot, config)) {
+        const fileInventory = input.fileInventory || walkFiles(projectRoot, config);
+        for (const fullPath of fileInventory) {
             const relativePath = normalizePath(path.relative(projectRoot, fullPath));
-            const stat = fs.statSync(fullPath);
+            let stat;
+            try {
+                stat = fs.statSync(fullPath);
+            } catch (error) {
+                records.push({
+                    id: sourceId(relativePath),
+                    path: relativePath,
+                    type: fileType(relativePath),
+                    classification: 'review_required',
+                    reason: `file metadata could not be read: ${error.code || 'unreadable'}`,
+                    byte_count: 0,
+                    line_count: 0,
+                    hash: sha256(`stat-error:${relativePath}:${error.code || error.message}`),
+                    summary: 'File metadata requires explicit review before inclusion.',
+                    provenance: {
+                        adapter: this.name,
+                        root: projectRoot,
+                        source_kind: 'local_file',
+                    },
+                });
+                continue;
+            }
             const policy = classifyPath(relativePath, config);
             const type = fileType(relativePath);
             const baseRecord = {
@@ -148,7 +194,19 @@ class FilesystemAdapter extends ContextAdapter {
                 continue;
             }
 
-            const raw = fs.readFileSync(fullPath);
+            let raw;
+            try {
+                raw = fs.readFileSync(fullPath);
+            } catch (error) {
+                records.push({
+                    ...baseRecord,
+                    classification: 'review_required',
+                    reason: `allowed path matched, but file could not be read: ${error.code || 'unreadable'}`,
+                    hash: sha256(`read-error:${relativePath}:${stat.size}:${Math.trunc(stat.mtimeMs)}:${error.code || error.message}`),
+                    summary: 'Unreadable file requires explicit review before inclusion.',
+                });
+                continue;
+            }
             if (raw.length > config.max_file_bytes) {
                 records.push({
                     ...baseRecord,

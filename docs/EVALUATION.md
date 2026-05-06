@@ -16,6 +16,7 @@ The report includes:
 - structural provenance preservation
 - retrieval preservation with semantic-lite scoring
 - compression experiment metrics
+- context index metrics
 - optional grounding eval loop
 
 ## Semantic-Lite Ranking
@@ -95,7 +96,7 @@ Expanded control flow:
 eval query
   |
   v
-retrieve allowed sources from context-packet.json
+retrieve allowed sources from context-packet.json and tree-index.json when present
   |
   v
 synthesize extractive answer
@@ -113,6 +114,8 @@ check support against citations
                                      v
               "I don't know based on the allowed context."
 ```
+
+Grounded questions include citation paths and matching tree node paths when `tree-index.json` is available.
 
 It writes:
 

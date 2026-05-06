@@ -121,10 +121,13 @@ function builtInRank(records, query, k, options = {}) {
     const provider = normalizeProvider(options.provider);
     const useVector = provider === 'local_vector';
     const semanticLite = provider === 'lexical' ? false : options.semanticLite !== false;
+    const queryVector = useVector ? vectorize(query, options) : null;
     const hits = records.map((record) => ({
         id: record.id,
         path: record.path,
-        score: useVector ? scoreLocalVector(query, record, options) : scoreRecord(query, record, { ...options, semanticLite }),
+        score: useVector
+            ? cosineSimilarity(queryVector, vectorize(recordText(record), options))
+            : scoreRecord(query, record, { ...options, semanticLite }),
     }));
     return {
         hits: sortHits(hits).slice(0, k),

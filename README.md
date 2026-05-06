@@ -4,7 +4,7 @@
 
 ECF Core is the open-source Micro ECF runtime: a local-first context and policy layer for safer agents.
 
-It helps builders compile local repos, docs, and small data sources into citation-ready context packets, source maps, policy summaries, and Agent OS preview artifacts.
+It helps builders compile local repos, docs, and small data sources into citation-ready context packets, source maps, page/tree indexes, policy summaries, and Agent OS preview artifacts.
 
 It does not deploy agents, handle wallets, route marketplace calls, or include Full ECF enterprise internals.
 
@@ -82,6 +82,7 @@ Do not treat that contact path as a SOC 2, audit, enterprise-readiness, hosted r
 - Semantic-lite retrieval preservation scoring
 - Context Evidence Units for policy-aware, citation-backed source claims
 - Deterministic context compaction reports with duplicate-claim and citation-survival metrics
+- Page, tree, and retrieval-plan index artifacts for local source-grounded review
 - Optional dependency-free ranking provider contracts (`local_vector`, Qdrant/Chroma precomputed results, GitNexus/code graph, MCP context provider)
 - Source-preview .NET lane for C#, ASP.NET Core, EF Core, and Agent OS-ready artifact compatibility
 - Deterministic compression experiment metrics
@@ -179,6 +180,8 @@ The `1.2` surface adds the local grounding eval loop and durable LLM handoff gui
 
 The `1.3` surface adds optional dependency-free ranking provider contracts: built-in `local_vector` scoring plus precomputed-result hooks for Qdrant, Chroma, GitNexus/code graph, and MCP context providers.
 
+The `1.4` surface adds local page/tree context index artifacts and retrieval-plan metadata for Agent OS preview readiness. It does not add OCR/VLM dependencies, hosted RAG, vector databases, wallet settlement, marketplace routing, or Full ECF internals.
+
 The `.NET` source-preview lane adds artifact-compatible C#, ASP.NET Core, and EF Core scanners plus an `ecfnet` CLI scaffold. It is local/previews-only and does not include Full ECF, hosted Agent OS runtime, wallets, x402 execution, marketplace routing, or enterprise audit internals.
 
 Do not copy the private `agoragentic-enterprise/` runtime into this repo.
@@ -223,6 +226,9 @@ The compiler writes:
   policy-summary.json
   context-evidence-units.json
   context-compaction-report.json
+  page-index.json
+  tree-index.json
+  retrieval-plan.json
   manifest.json
   deployment-preview.json
   agent-os-harness.json
@@ -286,6 +292,20 @@ ECF Core emits deterministic Context Evidence Units during compile:
 ```
 
 These files convert allowed sources into citation-backed claims plus policy flags for Agent OS preview. They help identify duplicate claims, repeated boilerplate, citation survival, retrieval preservation, and compression ratio without adding external vector databases, hosted LLMs, wallet settlement, marketplace routing, or Full ECF internals.
+
+## Context Index Artifacts
+
+ECF Core also emits deterministic local context indexes:
+
+```text
+.ecf-core/page-index.json
+.ecf-core/tree-index.json
+.ecf-core/retrieval-plan.json
+```
+
+These artifacts preserve document, page, section, and tree-node structure where the baseline adapters can detect it. Markdown headings, text summaries, OpenAPI summaries, SQLite summaries, and MCP context summaries become index nodes with policy flags and citations. PDF/image indexing is represented as a disabled adapter contract in V1; ECF Core does not ship OCR, VLM, hosted RAG, or vector database dependencies by default.
+
+Agent OS preview import can use these files to show context index readiness, unsupported grounding questions, and sources requiring owner review before any public exposure. Live deployment remains a separate owner-reviewed Agent OS flow.
 
 ## CLI
 

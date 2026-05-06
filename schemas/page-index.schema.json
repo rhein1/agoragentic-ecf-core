@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/page-index.v1.json",
+  "title": "ECF Core Page Index",
+  "type": "object",
+  "required": ["schema_version", "generated_by", "generated_at", "providers", "sources", "summary"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "const": "ecf-core.page-index.v1" },
+    "generated_by": { "const": "ecf-core" },
+    "generated_at": { "type": "string" },
+    "providers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/contextIndexProvider" }
+    },
+    "dependency_status": { "const": "builtin_local_only" },
+    "placeholder_adapters": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source_id", "path", "type", "pages"],
+        "additionalProperties": true,
+        "properties": {
+          "source_id": { "type": "string" },
+          "path": { "type": "string" },
+          "type": { "type": "string" },
+          "policy_flags": { "$ref": "#/$defs/policyFlags" },
+          "pages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["page_number", "sections"],
+              "additionalProperties": true,
+              "properties": {
+                "page_number": { "type": "integer", "minimum": 1 },
+                "summary": { "type": "string" },
+                "sections": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["section_id", "source_id", "source_path", "citations", "policy_flags"],
+                    "additionalProperties": true,
+                    "properties": {
+                      "section_id": { "type": "string" },
+                      "source_id": { "type": "string" },
+                      "source_path": { "type": "string" },
+                      "type": { "type": "string" },
+                      "heading": { "type": ["string", "null"] },
+                      "claims": { "type": "array", "items": { "type": "string" } },
+                      "citations": { "type": "array", "items": { "type": "string" } },
+                      "policy_flags": { "$ref": "#/$defs/policyFlags" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "summary": { "type": "object", "additionalProperties": true }
+  },
+  "$defs": {
+    "contextIndexProvider": {
+      "type": "object",
+      "required": ["provider_id", "type", "mode", "capabilities"],
+      "additionalProperties": true,
+      "properties": {
+        "provider_id": { "type": "string" },
+        "type": { "type": "string", "enum": ["page_index", "tree_index", "code_graph", "tool_graph", "policy_graph"] },
+        "mode": { "type": "string", "enum": ["local_adapter", "external_import"] },
+        "capabilities": { "type": "array", "items": { "type": "string" } },
+        "outputs": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "policyFlags": {
+      "type": "object",
+      "required": ["classification", "allowed_for_agent", "requires_review", "live_deploy_allowed"],
+      "additionalProperties": true,
+      "properties": {
+        "classification": { "type": "string" },
+        "allowed_for_agent": { "type": "boolean" },
+        "requires_review": { "type": "boolean" },
+        "public_safe": { "type": "boolean" },
+        "requires_public_exposure_review": { "type": "boolean" },
+        "live_deploy_allowed": { "const": false },
+        "agent_os_preview_allowed": { "type": "boolean" }
+      }
+    }
+  }
+}
