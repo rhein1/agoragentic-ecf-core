@@ -15,6 +15,7 @@
     "ecf-core.agent-os-import.v1",
     "ecf-core.agent-os-preview-check.v1",
     "ecf-core.grounding-eval.v1",
+    "ecf-core.evidence-units.v1",
     "ecf-core.context-evidence-units.v1",
     "ecf-core.context-compaction-report.v1",
     "ecf-core.page-index.v1",

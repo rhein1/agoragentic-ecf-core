@@ -37,6 +37,7 @@
       "type": "object",
       "additionalProperties": true,
       "properties": {
+        "evidence_units": { "type": "string" },
         "context_evidence_units": { "type": "string" },
         "context_compaction_report": { "type": "string" },
         "page_index": { "type": ["string", "null"] },
@@ -45,6 +46,7 @@
         "grounding_eval": { "type": ["string", "null"] }
       }
     },
+    "context_compile_readiness": { "type": ["object", "null"], "additionalProperties": true },
     "context_index_readiness": { "type": ["object", "null"], "additionalProperties": true },
     "next_step": { "type": "string" }
   }

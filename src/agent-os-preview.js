@@ -26,6 +26,8 @@ function inspectAgentOsPreview(artifactDir) {
     const pageIndexPath = path.join(resolvedDir, 'page-index.json');
     const treeIndexPath = path.join(resolvedDir, 'tree-index.json');
     const retrievalPlanPath = path.join(resolvedDir, 'retrieval-plan.json');
+    const evidenceUnitsPath = path.join(resolvedDir, 'evidence-units.json');
+    const evidenceUnits = fs.existsSync(evidenceUnitsPath) ? readJson(evidenceUnitsPath, errors) : null;
     const pageIndex = fs.existsSync(pageIndexPath) ? readJson(pageIndexPath, errors) : null;
     const treeIndex = fs.existsSync(treeIndexPath) ? readJson(treeIndexPath, errors) : null;
     const retrievalPlan = fs.existsSync(retrievalPlanPath) ? readJson(retrievalPlanPath, errors) : null;
@@ -38,6 +40,9 @@ function inspectAgentOsPreview(artifactDir) {
     }
     if (groundingEval && groundingEval.schema_version !== 'ecf-core.grounding-eval.v1') {
         errors.push('grounding-eval.json has unsupported schema_version');
+    }
+    if (evidenceUnits && evidenceUnits.schema_version !== 'ecf-core.evidence-units.v1') {
+        errors.push('evidence-units.json has unsupported schema_version');
     }
     if (pageIndex && pageIndex.schema_version !== 'ecf-core.page-index.v1') {
         errors.push('page-index.json has unsupported schema_version');
@@ -89,6 +94,7 @@ function inspectAgentOsPreview(artifactDir) {
             verdict: groundingEval.verdict,
             summary: groundingEval.summary,
         } : null,
+        context_compile_readiness: agentOsImport?.context_compile_readiness || deploymentPreview?.context_compile_readiness || null,
         context_index_readiness: agentOsImport?.context_index_readiness || deploymentPreview?.context_index_readiness || null,
         boundary_safe: boundarySafe,
         next_step: errors.length === 0

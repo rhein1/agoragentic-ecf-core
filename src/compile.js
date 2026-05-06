@@ -11,6 +11,7 @@ const { SqliteSummaryAdapter } = require('./adapters/sqlite-summary');
 const { loadConfig } = require('./core/config');
 const { sha256 } = require('./core/hash');
 const {
+    buildEvidenceUnits,
     buildContextCompactionReport,
     buildContextEvidenceUnits,
 } = require('./evidence-units');
@@ -81,14 +82,17 @@ function buildReadinessChecks({ contextPacket, sourceMap, config }) {
     ];
 }
 
-function buildContextIndexReadiness(contextIndexes) {
+function buildContextIndexReadiness(contextIndexes, evidenceUnits = null) {
     if (!contextIndexes) return null;
     const { pageIndex, treeIndex, retrievalPlan } = contextIndexes;
     const nodes = treeIndex?.summary?.node_count || 0;
-    const sections = pageIndex?.summary?.section_count || 0;
+    const evidenceUnitCount = Array.isArray(evidenceUnits?.units)
+        ? evidenceUnits.units.length
+        : pageIndex?.summary?.section_count || 0;
     return {
         providers: pageIndex?.providers || [],
         files: {
+            evidence_units: 'evidence-units.json',
             page_index: 'page-index.json',
             tree_index: 'tree-index.json',
             retrieval_plan: 'retrieval-plan.json',
@@ -96,7 +100,7 @@ function buildContextIndexReadiness(contextIndexes) {
         source_count: pageIndex?.summary?.source_count || 0,
         page_count: pageIndex?.summary?.page_count || 0,
         tree_node_count: nodes,
-        evidence_unit_count: sections,
+        evidence_unit_count: evidenceUnitCount,
         retrieval_query_count: retrievalPlan?.summary?.query_count || 0,
         unsupported_questions: retrievalPlan?.unsupported_questions || [],
         sources_requiring_public_exposure_review: (treeIndex?.nodes || [])
@@ -106,9 +110,49 @@ function buildContextIndexReadiness(contextIndexes) {
     };
 }
 
-function buildDeploymentPreview({ contextPacket, sourceMap, config, contextIndexes = null, groundingSummary = null }) {
+function buildCompileReadinessSummary({ contextPacket, sourceMap, evidenceUnits, contextIndexes, groundingSummary = null, checks = [] }) {
+    const totalSources = sourceMap?.sources?.length || 0;
+    const allowedSources = contextPacket?.sources?.length || 0;
+    const blockedSources = (sourceMap?.sources || []).filter((source) => source.classification === 'blocked');
+    const reviewRequiredSources = (sourceMap?.sources || []).filter((source) => source.classification === 'review_required');
+    const blockedInPacket = contextPacket?.sources?.filter((source) => (
+        blockedSources.some((blocked) => blocked.id === source.id)
+    )) || [];
+    const units = evidenceUnits?.units || [];
+    const reviewRequiredUnits = units.filter((unit) => unit.policy?.requires_review).length;
+    const citedUnits = units.filter((unit) => Array.isArray(unit.citations) && unit.citations.length > 0).length;
+    const citationCoverage = units.length ? citedUnits / units.length : 1;
+    const groundingTotal = groundingSummary?.summary?.queries || 0;
+    const groundingPassRate = groundingTotal ? groundingSummary.summary.grounded / groundingTotal : null;
+    const blockingFailure = checks.some((check) => check.status === 'fail');
+    const contextReadinessPercent = Math.round(Math.max(0, Math.min(1, (
+        (blockedInPacket.length === 0 ? 0.35 : 0)
+        + (citationCoverage * 0.25)
+        + (contextIndexes?.treeIndex?.summary?.node_count > 0 ? 0.20 : 0)
+        + (groundingPassRate === null ? 0.10 : groundingPassRate * 0.20)
+    ))) * 100);
+    return {
+        label: 'ECF Compile Stage',
+        context_readiness_percent: contextReadinessPercent,
+        sources_compiled: allowedSources,
+        total_sources_seen: totalSources,
+        evidence_units: units.length,
+        review_required_unit_count: reviewRequiredUnits,
+        grounded_queries: groundingTotal ? `${groundingSummary.summary.grounded}/${groundingTotal}` : null,
+        grounding_pass_rate: groundingPassRate === null ? null : Number(groundingPassRate.toFixed(4)),
+        blocked_sources_excluded: blockedInPacket.length === 0,
+        blocked_source_count: blockedSources.length,
+        review_required_sources: reviewRequiredSources.length,
+        public_safe_context: reviewRequiredUnits === 0 && blockedInPacket.length === 0 ? 'partial' : 'needs_review',
+        ready_for_preview: !blockingFailure,
+        ready_for_live_deployment: 'needs_owner_review',
+        context_compile_verdict: !blockingFailure && blockedInPacket.length === 0 ? 'preview_ready' : 'blocked',
+    };
+}
+
+function buildDeploymentPreview({ contextPacket, sourceMap, config, evidenceUnits = null, contextIndexes = null, groundingSummary = null }) {
     const checks = buildReadinessChecks({ contextPacket, sourceMap, config });
-    const contextIndexReadiness = buildContextIndexReadiness(contextIndexes);
+    const contextIndexReadiness = buildContextIndexReadiness(contextIndexes, evidenceUnits);
     if (contextIndexReadiness) {
         checks.push({
             id: 'context_index',
@@ -125,6 +169,14 @@ function buildDeploymentPreview({ contextPacket, sourceMap, config, contextIndex
             hallucination_risk: groundingSummary.summary.hallucination_risk,
         });
     }
+    const contextCompileReadiness = buildCompileReadinessSummary({
+        contextPacket,
+        sourceMap,
+        evidenceUnits,
+        contextIndexes,
+        groundingSummary,
+        checks,
+    });
     return {
         schema_version: 'ecf-core.deployment-preview.v1',
         mode: 'agent_os_preview',
@@ -134,6 +186,7 @@ function buildDeploymentPreview({ contextPacket, sourceMap, config, contextIndex
             context_packet: 'context-packet.json',
             source_map: 'source-map.json',
             policy_summary: 'policy-summary.json',
+            evidence_units: 'evidence-units.json',
             context_evidence_units: 'context-evidence-units.json',
             context_compaction_report: 'context-compaction-report.json',
             page_index: contextIndexes ? 'page-index.json' : null,
@@ -141,6 +194,7 @@ function buildDeploymentPreview({ contextPacket, sourceMap, config, contextIndex
             retrieval_plan: contextIndexes ? 'retrieval-plan.json' : null,
             grounding_eval: groundingSummary ? 'grounding-eval.json' : null,
         },
+        context_compile_readiness: contextCompileReadiness,
         context_index_readiness: contextIndexReadiness,
         next_step: checks.every((check) => check.status !== 'fail')
             ? 'review_agent_os_preview'
@@ -157,6 +211,7 @@ function buildAgentOsHarness({ deploymentPreview }) {
             context_packet: 'context-packet.json',
             source_map: 'source-map.json',
             policy_summary: 'policy-summary.json',
+            evidence_units: 'evidence-units.json',
             context_evidence_units: 'context-evidence-units.json',
             context_compaction_report: 'context-compaction-report.json',
             page_index: deploymentPreview.artifacts.page_index,
@@ -170,6 +225,7 @@ function buildAgentOsHarness({ deploymentPreview }) {
             live_deploy_allowed: false,
             checks: deploymentPreview.checks,
         },
+        context_compile_readiness: deploymentPreview.context_compile_readiness,
         context_index_readiness: deploymentPreview.context_index_readiness,
         agent_os_preview: {
             allowed: deploymentPreview.checks.every((check) => check.status !== 'fail'),
@@ -183,6 +239,7 @@ function buildAgentOsImport({ deploymentPreview }) {
         'context-packet.json',
         'source-map.json',
         'policy-summary.json',
+        'evidence-units.json',
         'context-evidence-units.json',
         'context-compaction-report.json',
         'deployment-preview.json',
@@ -204,6 +261,7 @@ function buildAgentOsImport({ deploymentPreview }) {
         })),
         boundary: baseBoundary(),
         evidence: {
+            evidence_units: deploymentPreview.artifacts.evidence_units,
             context_evidence_units: deploymentPreview.artifacts.context_evidence_units,
             context_compaction_report: deploymentPreview.artifacts.context_compaction_report,
             page_index: deploymentPreview.artifacts.page_index,
@@ -211,6 +269,7 @@ function buildAgentOsImport({ deploymentPreview }) {
             retrieval_plan: deploymentPreview.artifacts.retrieval_plan,
             grounding_eval: deploymentPreview.artifacts.grounding_eval,
         },
+        context_compile_readiness: deploymentPreview.context_compile_readiness,
         context_index_readiness: deploymentPreview.context_index_readiness,
         next_step: 'agent_os_preview_import',
     };
@@ -223,6 +282,7 @@ function buildAgentOsHandoff({
     pageIndexPath,
     treeIndexPath,
     retrievalPlanPath,
+    evidenceUnitsPath,
     deploymentPreviewPath,
     agentOsHarnessPath,
     config,
@@ -232,6 +292,7 @@ function buildAgentOsHandoff({
         context_packet: contextPacketPath,
         source_map: sourceMapPath,
         policy_summary: policySummaryPath,
+        evidence_units: evidenceUnitsPath,
         page_index: pageIndexPath,
         tree_index: treeIndexPath,
         retrieval_plan: retrievalPlanPath,
@@ -243,6 +304,22 @@ function buildAgentOsHandoff({
             recommended_next_step: 'review_in_agent_os_preview',
         },
         boundary: baseBoundary(),
+    };
+}
+
+function applyGroundingReadiness(summary, grounding) {
+    if (!summary) return summary;
+    const total = grounding.summary?.queries || 0;
+    const passRate = total ? grounding.summary.grounded / total : null;
+    const readinessDelta = passRate === null ? 0 : Math.round((passRate - 0.5) * 20);
+    return {
+        ...summary,
+        grounded_queries: total ? `${grounding.summary.grounded}/${total}` : null,
+        grounding_pass_rate: passRate === null ? null : Number(passRate.toFixed(4)),
+        context_readiness_percent: Math.max(0, Math.min(100, Number(summary.context_readiness_percent || 0) + readinessDelta)),
+        context_compile_verdict: grounding.verdict === 'pass' && summary.context_compile_verdict !== 'blocked'
+            ? 'preview_ready'
+            : summary.context_compile_verdict,
     };
 }
 
@@ -279,6 +356,10 @@ function applyGroundingEvidence({ outDir, grounding }) {
     if (deploymentPreview.context_index_readiness) {
         deploymentPreview.context_index_readiness.unsupported_questions = unsupportedQuestions;
     }
+    deploymentPreview.context_compile_readiness = applyGroundingReadiness(
+        deploymentPreview.context_compile_readiness,
+        grounding
+    );
     agentOsHarness.artifacts.grounding_eval = 'grounding-eval.json';
     agentOsHarness.readiness.checks = [
         ...agentOsHarness.readiness.checks.filter((item) => item.id !== 'grounding_eval'),
@@ -287,6 +368,10 @@ function applyGroundingEvidence({ outDir, grounding }) {
     if (agentOsHarness.context_index_readiness) {
         agentOsHarness.context_index_readiness.unsupported_questions = unsupportedQuestions;
     }
+    agentOsHarness.context_compile_readiness = applyGroundingReadiness(
+        agentOsHarness.context_compile_readiness,
+        grounding
+    );
     if (!agentOsImport.required_files.includes('grounding-eval.json')) {
         agentOsImport.required_files.push('grounding-eval.json');
     }
@@ -297,6 +382,10 @@ function applyGroundingEvidence({ outDir, grounding }) {
     if (agentOsImport.context_index_readiness) {
         agentOsImport.context_index_readiness.unsupported_questions = unsupportedQuestions;
     }
+    agentOsImport.context_compile_readiness = applyGroundingReadiness(
+        agentOsImport.context_compile_readiness,
+        grounding
+    );
     writeJson(deploymentPreviewPath, deploymentPreview);
     writeJson(agentOsHarnessPath, agentOsHarness);
     writeJson(agentOsImportPath, agentOsImport);
@@ -342,6 +431,7 @@ function validateCompiledArtifacts(artifactDir) {
     const pageIndexPath = path.join(artifactDir, 'page-index.json');
     const treeIndexPath = path.join(artifactDir, 'tree-index.json');
     const retrievalPlanPath = path.join(artifactDir, 'retrieval-plan.json');
+    const compileStageEvidenceUnitsPath = path.join(artifactDir, 'evidence-units.json');
 
     validateSchemaVersion(contextPacket, 'ecf-core.context-packet.v1', 'context-packet.json', errors);
     validateSchemaVersion(sourceMap, 'ecf-core.source-map.v1', 'source-map.json', errors);
@@ -362,6 +452,11 @@ function validateCompiledArtifacts(artifactDir) {
         const evidenceUnits = readJsonIfPresent(evidenceUnitsPath, errors);
         validateSchemaVersion(evidenceUnits, 'ecf-core.context-evidence-units.v1', 'context-evidence-units.json', errors);
         if (evidenceUnits && !Array.isArray(evidenceUnits.units)) errors.push('context-evidence-units.json units must be an array');
+    }
+    if (fs.existsSync(compileStageEvidenceUnitsPath)) {
+        const evidenceUnits = readJsonIfPresent(compileStageEvidenceUnitsPath, errors);
+        validateSchemaVersion(evidenceUnits, 'ecf-core.evidence-units.v1', 'evidence-units.json', errors);
+        if (evidenceUnits && !Array.isArray(evidenceUnits.units)) errors.push('evidence-units.json units must be an array');
     }
     if (fs.existsSync(compactionReportPath)) {
         const compactionReport = readJsonIfPresent(compactionReportPath, errors);
@@ -464,6 +559,7 @@ async function compileProject(options = {}) {
 
     const policySummary = buildPolicySummary(config);
     const evidenceUnits = buildContextEvidenceUnits({ contextPacket, createdAt });
+    const compileStageEvidenceUnits = buildEvidenceUnits({ contextPacket, createdAt });
     const compactionReport = buildContextCompactionReport({
         contextPacket,
         evidenceUnits,
@@ -484,6 +580,7 @@ async function compileProject(options = {}) {
     writeJson(contextPacketPath, contextPacket);
     writeJson(sourceMapPath, sourceMap);
     writeJson(policySummaryPath, policySummary);
+    writeJson(path.join(outDir, 'evidence-units.json'), compileStageEvidenceUnits);
     writeJson(path.join(outDir, 'context-evidence-units.json'), evidenceUnits);
     writeJson(path.join(outDir, 'context-compaction-report.json'), compactionReport);
     writeJson(path.join(outDir, 'page-index.json'), contextIndexes.pageIndex);
@@ -495,7 +592,7 @@ async function compileProject(options = {}) {
     let agentOsHarness = null;
     let agentOsImport = null;
     if (options.emitAgentOs) {
-        deploymentPreview = buildDeploymentPreview({ contextPacket, sourceMap, config, contextIndexes });
+        deploymentPreview = buildDeploymentPreview({ contextPacket, sourceMap, config, evidenceUnits: compileStageEvidenceUnits, contextIndexes });
         agentOsHarness = buildAgentOsHarness({ deploymentPreview });
         agentOsImport = buildAgentOsImport({ deploymentPreview });
         writeJson(path.join(outDir, 'deployment-preview.json'), deploymentPreview);
@@ -505,6 +602,7 @@ async function compileProject(options = {}) {
             contextPacketPath: 'context-packet.json',
             sourceMapPath: 'source-map.json',
             policySummaryPath: 'policy-summary.json',
+            evidenceUnitsPath: 'evidence-units.json',
             pageIndexPath: 'page-index.json',
             treeIndexPath: 'tree-index.json',
             retrievalPlanPath: 'retrieval-plan.json',
@@ -524,6 +622,7 @@ async function compileProject(options = {}) {
             context_packet: relativeArtifact(projectRoot, outDir, 'context-packet.json'),
             source_map: relativeArtifact(projectRoot, outDir, 'source-map.json'),
             policy_summary: relativeArtifact(projectRoot, outDir, 'policy-summary.json'),
+            evidence_units: relativeArtifact(projectRoot, outDir, 'evidence-units.json'),
             context_evidence_units: relativeArtifact(projectRoot, outDir, 'context-evidence-units.json'),
             context_compaction_report: relativeArtifact(projectRoot, outDir, 'context-compaction-report.json'),
             page_index: relativeArtifact(projectRoot, outDir, 'page-index.json'),
@@ -540,6 +639,7 @@ async function compileProject(options = {}) {
             blocked_sources: blocked.length,
             review_required_sources: reviewRequired.length,
             citations: citations.length,
+            evidence_units: compileStageEvidenceUnits.units.length,
             context_evidence_units: evidenceUnits.units.length,
             page_index_sources: contextIndexes.pageIndex.summary.source_count,
             tree_index_nodes: contextIndexes.treeIndex.summary.node_count,
@@ -554,6 +654,7 @@ async function compileProject(options = {}) {
         sourceMap,
         policySummary,
         evidenceUnits,
+        compileStageEvidenceUnits,
         compactionReport,
         contextIndexes,
         pageIndex: contextIndexes.pageIndex,

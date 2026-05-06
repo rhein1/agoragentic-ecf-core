@@ -71,7 +71,20 @@
       "additionalProperties": true,
       "properties": {
         "provider_id": { "type": "string" },
-        "type": { "type": "string", "enum": ["page_index", "tree_index", "code_graph", "tool_graph", "policy_graph"] },
+        "type": {
+          "type": "string",
+          "enum": [
+            "page_index",
+            "tree_index",
+            "code_graph",
+            "tool_graph",
+            "policy_graph",
+            "workflow_graph",
+            "receipt_graph",
+            "marketplace_graph",
+            "enterprise_context_graph"
+          ]
+        },
         "mode": { "type": "string", "enum": ["local_adapter", "external_import"] },
         "capabilities": { "type": "array", "items": { "type": "string" } },
         "outputs": { "type": "array", "items": { "type": "string" } }

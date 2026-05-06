@@ -16,6 +16,7 @@ const {
     evaluateCompressionExperiment,
 } = require('./compression');
 const {
+    buildEvidenceUnits,
     buildContextCompactionReport,
     buildContextEvidenceUnits,
 } = require('./evidence-units');
@@ -82,6 +83,7 @@ module.exports = {
     buildAgentOsHandoff,
     buildAgentOsImport,
     buildDeploymentPreview,
+    buildEvidenceUnits,
     buildContextCompactionReport,
     buildContextEvidenceUnits,
     buildContextIndexes,
