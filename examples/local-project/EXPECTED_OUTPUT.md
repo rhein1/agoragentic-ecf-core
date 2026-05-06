@@ -15,6 +15,7 @@ creates:
   context-packet.json
   source-map.json
   policy-summary.json
+  evidence-units.json
   context-evidence-units.json
   context-compaction-report.json
   page-index.json

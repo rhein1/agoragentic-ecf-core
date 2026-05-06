@@ -26,6 +26,10 @@ const ALLOWED_PROVIDER_TYPES = new Set([
     'code_graph',
     'tool_graph',
     'policy_graph',
+    'workflow_graph',
+    'receipt_graph',
+    'marketplace_graph',
+    'enterprise_context_graph',
 ]);
 
 const ALLOWED_PROVIDER_MODES = new Set([

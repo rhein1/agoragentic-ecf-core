@@ -36,6 +36,11 @@ function markdownReport(summary) {
         `- Citation coverage: ${summary.metrics.citation_survival.coverage}`,
         `- Structural provenance coverage: ${summary.metrics.structural_preservation.provenance_coverage}`,
         `- Retrieval preservation@${summary.metrics.retrieval_preservation.top_k}: ${summary.metrics.retrieval_preservation.average_preservation}`,
+        `- Context compile verdict: ${summary.metrics.compile_stage.context_compile_verdict}`,
+        `- Evidence units: ${summary.metrics.compile_stage.evidence_unit_count}`,
+        `- Review-required evidence units: ${summary.metrics.compile_stage.review_required_unit_count}`,
+        `- Blocked source exclusion: ${summary.metrics.compile_stage.blocked_source_exclusion}`,
+        `- Grounding pass rate: ${summary.metrics.compile_stage.grounding_pass_rate}`,
         `- Ranking mode: ${summary.metrics.retrieval_preservation.ranking_mode}`,
         `- Compression experiment verdict: ${summary.metrics.compression_experiment.verdict}`,
         `- Compression median ratio: ${summary.metrics.compression_experiment.median_compression_ratio}`,
@@ -124,10 +129,15 @@ function evaluateCompiled({ result, topKSize }) {
             topKSize,
             options: result.config.eval?.compression || {},
         });
+    const compileStageEvidenceUnits = result.compileStageEvidenceUnits || result.evidenceUnits;
+    const reviewRequiredUnitCount = (compileStageEvidenceUnits.units || [])
+        .filter((unit) => unit.policy?.requires_review).length;
     const contextEvidenceMetrics = {
-        file: 'context-evidence-units.json',
+        file: 'evidence-units.json',
+        legacy_file: 'context-evidence-units.json',
         report_file: 'context-compaction-report.json',
-        evidence_unit_count: result.evidenceUnits.units.length,
+        evidence_unit_count: compileStageEvidenceUnits.units.length,
+        review_required_unit_count: reviewRequiredUnitCount,
         compression_ratio: result.compactionReport.compression_ratio,
         duplicate_claim_count: result.compactionReport.duplicate_claim_count,
         citation_survival: result.compactionReport.citation_survival,
@@ -148,6 +158,18 @@ function evaluateCompiled({ result, topKSize }) {
         sources_requiring_public_exposure_review: result.treeIndex.nodes
             .filter((node) => node.source_id && node.policy_flags?.requires_public_exposure_review)
             .length,
+    };
+    const compileStageMetrics = {
+        evidence_units_file: 'evidence-units.json',
+        evidence_unit_count: compileStageEvidenceUnits.units.length,
+        review_required_unit_count: reviewRequiredUnitCount,
+        grounding_pass_rate: null,
+        blocked_source_exclusion: blockedInPacket.length === 0,
+        citation_coverage: Number(citationCoverage.toFixed(4)),
+        retrieval_preservation: Number(retrievalAverage.toFixed(4)),
+        context_compile_verdict: policyPass && citationCoverage >= 0.95 && retrievalAverage >= 0.95
+            ? 'preview_ready'
+            : 'needs_review',
     };
     const verdict = policyPass
         && citationCoverage >= 0.95
@@ -184,6 +206,7 @@ function evaluateCompiled({ result, topKSize }) {
                 average_preservation: Number(retrievalAverage.toFixed(4)),
                 queries: retrievalQueries,
             },
+            compile_stage: compileStageMetrics,
             compression_experiment: compressionExperiment,
             context_evidence_units: contextEvidenceMetrics,
             context_index: contextIndexMetrics,
@@ -214,6 +237,13 @@ async function runEvaluation(options = {}) {
             summary: grounding.summary,
             file: 'grounding-eval.json',
         };
+        summary.metrics.compile_stage.grounding_pass_rate = grounding.summary.queries
+            ? Number((grounding.summary.grounded / grounding.summary.queries).toFixed(4))
+            : null;
+        summary.metrics.compile_stage.context_compile_verdict = grounding.verdict === 'pass'
+            && summary.metrics.compile_stage.context_compile_verdict !== 'blocked'
+            ? 'preview_ready'
+            : summary.metrics.compile_stage.context_compile_verdict;
         summary.files.grounding_eval = 'grounding-eval.json';
         writeJson(path.join(outDir, 'grounding-eval.json'), grounding);
         writeText(path.join(outDir, 'grounding-eval.md'), groundingMarkdown(grounding));

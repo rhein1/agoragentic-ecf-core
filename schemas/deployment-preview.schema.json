@@ -10,6 +10,9 @@
     "mode": { "const": "agent_os_preview" },
     "live_deploy_allowed": { "const": false },
     "checks": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
-    "artifacts": { "type": "object", "additionalProperties": true }
+    "artifacts": { "type": "object", "additionalProperties": true },
+    "context_compile_readiness": { "type": ["object", "null"], "additionalProperties": true },
+    "context_index_readiness": { "type": ["object", "null"], "additionalProperties": true },
+    "next_step": { "type": "string" }
   }
 }

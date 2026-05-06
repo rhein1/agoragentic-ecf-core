@@ -90,6 +90,7 @@ public sealed class DotNetContextCompiler
             "agent-os-handoff.json",
             "agent-os-harness.json",
             "agent-os-import.json",
+            "evidence-units.json",
             "context-evidence-units.json",
             "context-compaction-report.json",
             "grounding-eval.json",

@@ -1,6 +1,6 @@
 # Context Evidence Units
 
-Context Evidence Units are ECF Core's local, policy-aware way to turn allowed context sources into citation-backed claims for Agent OS preview.
+Context Evidence Units are ECF Core's local, policy-aware way to turn allowed context sources into citation-backed claims for Agent OS preview. They are the evidence part of the ECF Compile Stage: sources become source maps, policy summaries, evidence units, page/tree indexes, retrieval plans, grounding evals, and preview-only Agent OS imports.
 
 They are original ECF artifacts, not a clone of another project's data model. They stay JSON-first, source-map aware, and deployment-safety oriented.
 
@@ -17,11 +17,14 @@ Raw files and naive chunks are often too messy for agent deployment review. ECF 
 ## Artifacts
 
 ```text
+.ecf-core/evidence-units.json
 .ecf-core/context-evidence-units.json
 .ecf-core/context-compaction-report.json
 ```
 
-`context-evidence-units.json` contains one deterministic unit per allowed context source.
+`evidence-units.json` is the current Agent OS-facing compile-stage artifact and contains one deterministic unit per allowed context source.
+
+`context-evidence-units.json` remains a compatibility alias for earlier consumers.
 
 `context-compaction-report.json` summarizes duplicate claims, repeated boilerplate, citation survival, retrieval preservation, and compression ratio.
 
@@ -46,13 +49,17 @@ They are local evidence for Agent OS preview only.
   "unit_id": "ceu_abc123",
   "source_id": "src_docs_refunds",
   "source_path": "docs/refunds.md#refund-window",
+  "source_hash": "sha256...",
   "claim": "Refunds are available for 30 days after purchase.",
   "supported_answer": "Customers may request a refund within 30 days.",
   "citations": ["docs/refunds.md#refund-window"],
+  "tags": ["markdown_section", "ext:md", "adapter:markdown_docs"],
+  "entities": ["Refund Window", "refunds.md"],
   "policy": {
     "allowed_for_agent": true,
     "public_safe": true,
     "requires_review": false,
+    "requires_public_exposure_review": false,
     "live_deploy_allowed": false
   }
 }
@@ -65,6 +72,7 @@ When `ecf-core compile --agent-os` runs, the Agent OS preview/import artifacts i
 ```json
 {
   "evidence": {
+    "evidence_units": "evidence-units.json",
     "context_evidence_units": "context-evidence-units.json",
     "context_compaction_report": "context-compaction-report.json",
     "page_index": "page-index.json",

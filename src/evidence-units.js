@@ -24,6 +24,35 @@ function compact(value, maxChars = 220) {
     return `${normalized.slice(0, Math.max(0, maxChars - 1)).trimEnd()}…`;
 }
 
+function uniqueStrings(values) {
+    return [...new Set(values.map((value) => String(value || '').trim()).filter(Boolean))];
+}
+
+function pathExtension(sourcePath) {
+    const match = String(sourcePath || '').match(/\.([a-z0-9]+)(?:#|$)/i);
+    return match ? match[1].toLowerCase() : null;
+}
+
+function tagsForSource(source) {
+    const extension = pathExtension(source.path);
+    return uniqueStrings([
+        source.type,
+        extension ? `ext:${extension}` : null,
+        source.provenance?.adapter ? `adapter:${source.provenance.adapter}` : null,
+        source.provenance?.source_kind ? `kind:${source.provenance.source_kind}` : null,
+        source.heading ? 'heading' : null,
+    ]);
+}
+
+function entitiesForSource(source) {
+    const fileName = String(source.path || '').split('#')[0].split('/').pop();
+    return uniqueStrings([
+        source.heading,
+        fileName,
+        source.provenance?.parent_path,
+    ]);
+}
+
 function claimFingerprint(value) {
     return normalizeText(value)
         .toLowerCase()
@@ -71,15 +100,19 @@ function buildContextEvidenceUnits({ contextPacket, createdAt = new Date().toISO
             source_id: source.id,
             source_path: source.path,
             source_type: source.type,
+            source_hash: source.hash,
             claim,
             supported_answer: supportedAnswer,
             summary: `${claim} ${supportedAnswer}`,
             citations: citation ? [citation.path] : [],
             citation_labels: citation?.label ? [citation.label] : [],
+            tags: tagsForSource(source),
+            entities: entitiesForSource(source),
             policy: {
                 allowed_for_agent: true,
                 public_safe: true,
                 requires_review: false,
+                requires_public_exposure_review: false,
                 live_deploy_allowed: false,
             },
             provenance: source.provenance || {},
@@ -95,6 +128,16 @@ function buildContextEvidenceUnits({ contextPacket, createdAt = new Date().toISO
         source_count: contextPacket.sources.length,
         unit_count: units.length,
         units,
+    };
+}
+
+function buildEvidenceUnits({ contextPacket, createdAt = new Date().toISOString() }) {
+    const evidenceUnits = buildContextEvidenceUnits({ contextPacket, createdAt });
+    return {
+        ...evidenceUnits,
+        schema_version: 'ecf-core.evidence-units.v1',
+        artifact_role: 'ecf_compile_stage_evidence_units',
+        compatibility_aliases: ['context-evidence-units.json'],
     };
 }
 
@@ -165,7 +208,7 @@ function buildContextCompactionReport({ contextPacket, evidenceUnits, queries = 
 }
 
 module.exports = {
+    buildEvidenceUnits,
     buildContextCompactionReport,
     buildContextEvidenceUnits,
 };
-

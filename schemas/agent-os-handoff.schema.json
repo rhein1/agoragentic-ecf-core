@@ -10,6 +10,7 @@
     "context_packet": { "type": "string" },
     "source_map": { "type": "string" },
     "policy_summary": { "type": "string" },
+    "evidence_units": { "type": "string" },
     "page_index": { "type": "string" },
     "tree_index": { "type": "string" },
     "retrieval_plan": { "type": "string" },

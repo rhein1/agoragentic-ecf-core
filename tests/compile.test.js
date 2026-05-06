@@ -62,6 +62,7 @@ test('compileProject emits source map, context packet, policy summary, and hando
     assert.equal(result.contextPacket.schema_version, 'ecf-core.context-packet.v1');
     assert.equal(result.sourceMap.schema_version, 'ecf-core.source-map.v1');
     assert.equal(result.policySummary.schema_version, 'ecf-core.policy-summary.v1');
+    assert.equal(result.compileStageEvidenceUnits.schema_version, 'ecf-core.evidence-units.v1');
     assert.equal(result.evidenceUnits.schema_version, 'ecf-core.context-evidence-units.v1');
     assert.equal(result.compactionReport.schema_version, 'ecf-core.context-compaction-report.v1');
     assert.equal(result.pageIndex.schema_version, 'ecf-core.page-index.v1');
@@ -74,13 +75,18 @@ test('compileProject emits source map, context packet, policy summary, and hando
     assert.equal(result.agentOsHandoff.boundary.includes_wallet_or_settlement, false);
     assert.equal(result.agentOsHarness.boundary.includes_hosted_runtime, false);
     assert.equal(result.agentOsImport.live_deploy_allowed, false);
+    assert.equal(result.agentOsImport.evidence.evidence_units, 'evidence-units.json');
     assert.equal(result.agentOsImport.evidence.context_evidence_units, 'context-evidence-units.json');
     assert.equal(result.agentOsImport.evidence.context_compaction_report, 'context-compaction-report.json');
     assert.equal(result.agentOsImport.evidence.page_index, 'page-index.json');
     assert.equal(result.agentOsImport.evidence.tree_index, 'tree-index.json');
     assert.equal(result.agentOsImport.required_files.includes('page-index.json'), true);
     assert.equal(result.agentOsImport.required_files.includes('tree-index.json'), true);
+    assert.equal(result.agentOsImport.required_files.includes('evidence-units.json'), true);
+    assert.equal(result.agentOsImport.context_compile_readiness.context_compile_verdict, 'preview_ready');
+    assert.equal(result.deploymentPreview.context_compile_readiness.evidence_units, result.compileStageEvidenceUnits.units.length);
     assert.equal(result.agentOsHandoff.page_index, 'page-index.json');
+    assert.equal(result.agentOsHandoff.evidence_units, 'evidence-units.json');
 
     const sourcePaths = result.contextPacket.sources.map((source) => source.path).sort();
     assert.ok(sourcePaths.includes('README.md'));
@@ -90,6 +96,10 @@ test('compileProject emits source map, context packet, policy summary, and hando
     assert.ok(sourcePaths.includes('openapi.yaml#openapi-summary'));
     assert.ok(sourcePaths.includes('mcp.json#mcp-context-summary'));
     assert.equal(result.contextPacket.citations.length, result.contextPacket.sources.length);
+    assert.equal(result.compileStageEvidenceUnits.units.length, result.contextPacket.sources.length);
+    assert.ok(result.compileStageEvidenceUnits.units.every((unit) => unit.source_hash));
+    assert.ok(result.compileStageEvidenceUnits.units.every((unit) => Array.isArray(unit.tags)));
+    assert.ok(result.compileStageEvidenceUnits.units.every((unit) => Array.isArray(unit.entities)));
     assert.equal(result.evidenceUnits.units.length, result.contextPacket.sources.length);
     assert.ok(result.evidenceUnits.units.every((unit) => unit.policy.live_deploy_allowed === false));
     assert.ok(result.evidenceUnits.units.every((unit) => unit.citations.length > 0));
@@ -198,12 +208,18 @@ test('CLI eval writes deterministic JSON and Markdown reports', () => {
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'agent-os-harness.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'deployment-preview.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'agent-os-import.json')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'evidence-units.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'context-evidence-units.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'context-compaction-report.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'page-index.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'tree-index.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'retrieval-plan.json')));
     assert.equal(summary.metrics.context_evidence_units.evidence_unit_count > 0, true);
+    assert.equal(summary.metrics.context_evidence_units.file, 'evidence-units.json');
+    assert.equal(summary.metrics.context_evidence_units.legacy_file, 'context-evidence-units.json');
+    assert.equal(summary.metrics.compile_stage.evidence_unit_count > 0, true);
+    assert.equal(summary.metrics.compile_stage.blocked_source_exclusion, true);
+    assert.equal(summary.metrics.compile_stage.context_compile_verdict, 'preview_ready');
     assert.equal(summary.metrics.context_evidence_units.citation_survival, 1);
     assert.equal(summary.metrics.context_index.tree_node_count > 0, true);
     assert.equal(summary.metrics.context_index.dependency_status, 'builtin_local_only');
@@ -211,6 +227,7 @@ test('CLI eval writes deterministic JSON and Markdown reports', () => {
     const preview = execFileSync(process.execPath, [cli, 'agent-os-preview', path.join(root, '.ecf-core'), '--json'], { encoding: 'utf8' });
     const previewCheck = JSON.parse(preview);
     assert.equal(previewCheck.ok, true);
+    assert.equal(previewCheck.context_compile_readiness.context_compile_verdict, 'preview_ready');
     assert.equal(previewCheck.context_index_readiness.tree_node_count > 0, true);
 });
 
@@ -303,6 +320,7 @@ test('stable schema manifest lists every generated artifact contract', () => {
         'ecf-core.agent-os-import.v1',
         'ecf-core.agent-os-preview-check.v1',
         'ecf-core.grounding-eval.v1',
+        'ecf-core.evidence-units.v1',
         'ecf-core.context-evidence-units.v1',
         'ecf-core.context-compaction-report.v1',
         'ecf-core.page-index.v1',
@@ -422,6 +440,7 @@ test('grounding eval grounds supported queries and fails closed for unsupported 
     const grounding = JSON.parse(fs.readFileSync(path.join(root, '.ecf-core', 'grounding-eval.json'), 'utf8'));
 
     assert.equal(summary.metrics.grounding_eval.verdict, 'warn');
+    assert.equal(summary.metrics.compile_stage.grounding_pass_rate, 0.5);
     assert.equal(grounding.summary.grounded, 1);
     assert.equal(grounding.summary.unsupported, 1);
     assert.equal(grounding.questions[0].status, 'grounded');
@@ -435,6 +454,7 @@ test('grounding eval grounds supported queries and fails closed for unsupported 
     const preview = JSON.parse(execFileSync(process.execPath, [cli, 'agent-os-preview', path.join(root, '.ecf-core'), '--json'], { encoding: 'utf8' }));
     assert.equal(preview.ok, true);
     assert.equal(preview.grounding_eval.verdict, 'warn');
+    assert.equal(preview.context_compile_readiness.grounded_queries, '1/2');
     assert.equal(preview.context_index_readiness.unsupported_questions.length, 1);
 
     const validation = validateCompiledArtifacts(path.join(root, '.ecf-core'));

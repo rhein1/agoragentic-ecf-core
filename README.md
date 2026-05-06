@@ -2,9 +2,9 @@
 
 ![ECF Core local context governance animation](docs/images/ecf-core-hero.gif)
 
-ECF Core is the open-source Micro ECF runtime: a local-first context and policy layer for safer agents.
+ECF Core is the open-source Micro ECF runtime: a local-first context and policy compile stage for safer agents.
 
-It helps builders compile local repos, docs, and small data sources into citation-ready context packets, source maps, page/tree indexes, policy summaries, and Agent OS preview artifacts.
+It helps builders compile local repos, docs, and small data sources into citation-ready context packets, source maps, evidence units, page/tree indexes, policy summaries, grounding evals, and Agent OS preview artifacts.
 
 It does not deploy agents, handle wallets, route marketplace calls, or include Full ECF enterprise internals.
 
@@ -14,6 +14,7 @@ ECF Core helps answer:
 - Where did it come from?
 - What must be blocked?
 - What can be cited?
+- What evidence can safely support an agent answer?
 - What can be handed to an agent safely?
 - What should be exported into Agent OS later?
 
@@ -81,6 +82,7 @@ Do not treat that contact path as a SOC 2, audit, enterprise-readiness, hosted r
 - Grounding eval loop for local fail-closed answer checks
 - Semantic-lite retrieval preservation scoring
 - Context Evidence Units for policy-aware, citation-backed source claims
+- ECF Compile Stage readiness summaries for Agent OS preview cards
 - Deterministic context compaction reports with duplicate-claim and citation-survival metrics
 - Page, tree, and retrieval-plan index artifacts for local source-grounded review
 - Optional dependency-free ranking provider contracts (`local_vector`, Qdrant/Chroma precomputed results, GitNexus/code graph, MCP context provider)
@@ -129,6 +131,25 @@ Use Agent OS when you need:
 - operational support
 
 ECF Core can prepare context and policy evidence for Agent OS, but it does not deploy agents or handle money.
+
+## ECF Compile Stage
+
+ECF Core is not a generic RAG app. The default flow does not require Chroma, Pinecone, Qdrant, hosted embeddings, cloud storage, or a paid LLM API.
+
+The compile stage turns local sources into deployment-readiness artifacts:
+
+```text
+sources
+-> source-map.json
+-> policy-summary.json
+-> evidence-units.json
+-> page-index.json / tree-index.json
+-> retrieval-plan.json
+-> grounding-eval.json
+-> agent-os-import.json
+```
+
+That answers a deployment question rather than only a retrieval question: is this context safe, cited, grounded, and ready for an owner-reviewed Agent OS preview?
 
 ## Why Use ECF Core?
 
@@ -182,6 +203,8 @@ The `1.3` surface adds optional dependency-free ranking provider contracts: buil
 
 The `1.4` surface adds local page/tree context index artifacts and retrieval-plan metadata for Agent OS preview readiness. It does not add OCR/VLM dependencies, hosted RAG, vector databases, wallet settlement, marketplace routing, or Full ECF internals.
 
+The compile-stage surface now also emits `evidence-units.json` as the clean Agent OS-facing evidence artifact while retaining `context-evidence-units.json` for compatibility with earlier consumers.
+
 The `.NET` source-preview lane adds artifact-compatible C#, ASP.NET Core, and EF Core scanners plus an `ecfnet` CLI scaffold. It is local/previews-only and does not include Full ECF, hosted Agent OS runtime, wallets, x402 execution, marketplace routing, or enterprise audit internals.
 
 Do not copy the private `agoragentic-enterprise/` runtime into this repo.
@@ -224,6 +247,7 @@ The compiler writes:
   context-packet.json
   source-map.json
   policy-summary.json
+  evidence-units.json
   context-evidence-units.json
   context-compaction-report.json
   page-index.json
@@ -287,11 +311,12 @@ Agent OS can use `grounding-eval.json` as preview evidence when deciding whether
 ECF Core emits deterministic Context Evidence Units during compile:
 
 ```text
+.ecf-core/evidence-units.json
 .ecf-core/context-evidence-units.json
 .ecf-core/context-compaction-report.json
 ```
 
-These files convert allowed sources into citation-backed claims plus policy flags for Agent OS preview. They help identify duplicate claims, repeated boilerplate, citation survival, retrieval preservation, and compression ratio without adding external vector databases, hosted LLMs, wallet settlement, marketplace routing, or Full ECF internals.
+`evidence-units.json` is the current compile-stage artifact for Agent OS preview. `context-evidence-units.json` remains as a compatibility alias. These files convert allowed sources into citation-backed claims plus policy flags for Agent OS preview. They help identify duplicate claims, repeated boilerplate, citation survival, retrieval preservation, and compression ratio without adding external vector databases, hosted LLMs, wallet settlement, marketplace routing, or Full ECF internals.
 
 ## Context Index Artifacts
 

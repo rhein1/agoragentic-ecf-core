@@ -27,7 +27,7 @@ Usage:
 
 Commands:
   init      Write a safe starter ecf.config.json.
-  compile   Build context-packet, source-map, and policy-summary artifacts.
+  compile   Build context-packet, source-map, policy-summary, evidence, and index artifacts.
   eval      Compile and write deterministic JSON/Markdown evaluation reports.
   agent-os-preview
             Check compiled ECF Core artifacts before Agent OS preview import.

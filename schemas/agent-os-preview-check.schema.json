@@ -35,6 +35,10 @@
       "type": ["object", "null"],
       "additionalProperties": true
     },
+    "context_compile_readiness": {
+      "type": ["object", "null"],
+      "additionalProperties": true
+    },
     "boundary_safe": { "type": "boolean" },
     "next_step": { "type": "string" },
     "errors": { "type": "array", "items": { "type": "string" } }

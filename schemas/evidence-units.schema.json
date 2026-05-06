@@ -1,16 +1,18 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.agoragentic.com/ecf-core/context-evidence-units.v1.json",
-  "title": "ECF Core Context Evidence Units",
+  "$id": "https://schemas.agoragentic.com/ecf-core/evidence-units.v1.json",
+  "title": "ECF Core Evidence Units",
   "type": "object",
   "required": ["schema_version", "generated_by", "created_at", "source_count", "unit_count", "units"],
-  "additionalProperties": false,
+  "additionalProperties": true,
   "properties": {
-    "schema_version": { "const": "ecf-core.context-evidence-units.v1" },
-    "generated_by": { "type": "string" },
+    "schema_version": { "const": "ecf-core.evidence-units.v1" },
+    "generated_by": { "const": "ecf-core" },
+    "artifact_role": { "const": "ecf_compile_stage_evidence_units" },
     "created_at": { "type": "string" },
     "source_count": { "type": "integer", "minimum": 0 },
     "unit_count": { "type": "integer", "minimum": 0 },
+    "compatibility_aliases": { "type": "array", "items": { "type": "string" } },
     "units": {
       "type": "array",
       "items": {

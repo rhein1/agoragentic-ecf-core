@@ -203,6 +203,9 @@ public sealed record PreviewArtifacts
     [JsonPropertyName("policy_summary")]
     public string PolicySummary { get; init; } = "policy-summary.json";
 
+    [JsonPropertyName("evidence_units")]
+    public string EvidenceUnits { get; init; } = "evidence-units.json";
+
     [JsonPropertyName("context_evidence_units")]
     public string ContextEvidenceUnits { get; init; } = "context-evidence-units.json";
 
@@ -253,6 +256,9 @@ public sealed record AgentOsHandoff
 
     [JsonPropertyName("policy_summary")]
     public string PolicySummary { get; init; } = "policy-summary.json";
+
+    [JsonPropertyName("evidence_units")]
+    public string EvidenceUnits { get; init; } = "evidence-units.json";
 
     [JsonPropertyName("deployment_preview")]
     public string DeploymentPreview { get; init; } = "deployment-preview.json";
@@ -362,6 +368,9 @@ public sealed record AcceptanceCheck
 
 public sealed record AgentOsImportEvidence
 {
+    [JsonPropertyName("evidence_units")]
+    public string EvidenceUnits { get; init; } = "evidence-units.json";
+
     [JsonPropertyName("context_evidence_units")]
     public string ContextEvidenceUnits { get; init; } = "context-evidence-units.json";
 

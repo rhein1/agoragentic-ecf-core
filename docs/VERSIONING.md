@@ -24,6 +24,7 @@ Starting with `1.0.0`, these artifact schemas are stable:
 - `ecf-core.agent-os-import.v1`
 - `ecf-core.agent-os-preview-check.v1`
 - `ecf-core.grounding-eval.v1`
+- `ecf-core.evidence-units.v1`
 - `ecf-core.context-evidence-units.v1`
 - `ecf-core.context-compaction-report.v1`
 - `ecf-core.page-index.v1`
@@ -47,6 +48,10 @@ Stable means existing required fields remain compatible within the same major pa
 ## 1.4 Additions
 
 `1.4.x` adds deterministic local page/tree context index artifacts and retrieval-plan metadata. The public package emits `page-index.json`, `tree-index.json`, and `retrieval-plan.json` for Agent OS preview readiness without adding OCR/VLM dependencies, hosted RAG, vector databases, wallet settlement, marketplace routing, or Full ECF internals.
+
+## Compile-Stage Evidence Addition
+
+The compile-stage artifact set now emits `evidence-units.json` with schema `ecf-core.evidence-units.v1` as the clean Agent OS-facing evidence file. `context-evidence-units.json` remains readable as a compatibility alias within the same major package line.
 
 ## Migration Policy
 
