@@ -17,6 +17,11 @@ ECF Core writes:
   context-packet.json
   source-map.json
   policy-summary.json
+  context-evidence-units.json
+  context-compaction-report.json
+  page-index.json
+  tree-index.json
+  retrieval-plan.json
   deployment-preview.json
   agent-os-harness.json
   agent-os-handoff.json
@@ -34,13 +39,14 @@ It declares:
 - `live_deploy_allowed: false`
 - required local artifact files
 - acceptance checks for preview import
+- context index readiness from `page-index.json`, `tree-index.json`, and `retrieval-plan.json`
 - explicit boundary flags proving the export does not include hosted runtime, settlement, marketplace routing, or Full ECF private internals
 
 ## Consumer Rule
 
 Any Agent OS importer should treat ECF Core artifacts as preview evidence only. A separate Agent OS deployment flow must perform its own owner review, policy checks, runtime provisioning, billing/spend authorization, and launch gates.
 
-Agent OS can use `grounding-eval.json` as preview evidence when deciding whether a deployment has enough allowed context to launch safely. A passing grounding eval is not deployment approval; it is evidence for the owner-facing readiness report.
+Agent OS can use `page-index.json`, `tree-index.json`, `retrieval-plan.json`, and `grounding-eval.json` as preview evidence when deciding whether a deployment has enough allowed context to launch safely. A passing grounding eval is not deployment approval; it is evidence for the owner-facing readiness report.
 
 ## Local Preview Check
 
@@ -55,6 +61,7 @@ The check verifies:
 - `agent-os-import.json` uses the stable preview-only schema
 - every required artifact file exists
 - deployment-preview checks satisfy import acceptance checks
+- context index artifacts are readable and preview-only
 - optional grounding evidence is readable when present
 - the boundary flags still prove there is no hosted runtime, wallet/settlement authority, marketplace routing, or Full ECF private internals
 

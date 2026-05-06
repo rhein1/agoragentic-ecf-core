@@ -71,7 +71,8 @@ class OpenApiAdapter extends ContextAdapter {
     async discover(input) {
         const { projectRoot, config } = input;
         const records = [];
-        for (const fullPath of walkFiles(projectRoot, config)) {
+        const fileInventory = input.fileInventory || walkFiles(projectRoot, config);
+        for (const fullPath of fileInventory) {
             const relativePath = normalizePath(path.relative(projectRoot, fullPath));
             if (!/(openapi|swagger).*\.(json|ya?ml)$/i.test(path.basename(relativePath))) continue;
             const policy = classifyPath(relativePath, config);

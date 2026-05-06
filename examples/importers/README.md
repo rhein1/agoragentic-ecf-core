@@ -23,6 +23,7 @@ An importer should:
 - require `live_deploy_allowed: false`
 - verify all `required_files`
 - verify acceptance checks against `deployment-preview.json`
+- show context index readiness from page/tree/retrieval artifacts
 - preserve grounding evidence when present
 - show an owner-facing report before any deployment request
 

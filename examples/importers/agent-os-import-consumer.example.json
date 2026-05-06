@@ -10,6 +10,7 @@
     "read_agent_os_import_json",
     "verify_required_files_exist",
     "read_deployment_preview_json",
+    "read_context_index_readiness",
     "verify_acceptance_checks",
     "preserve_grounding_eval_if_present",
     "show_owner_review_report"
@@ -27,6 +28,8 @@
       "allowed_context",
       "blocked_context",
       "citation_coverage",
+      "context_index_readiness",
+      "sources_requiring_public_exposure_review",
       "grounding_eval",
       "preview_readiness",
       "missing_files",

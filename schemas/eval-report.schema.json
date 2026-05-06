@@ -18,6 +18,7 @@
         "structural_preservation": { "type": "object", "additionalProperties": true },
         "retrieval_preservation": { "type": "object", "additionalProperties": true },
         "compression_experiment": { "type": "object", "additionalProperties": true },
+        "context_index": { "type": "object", "additionalProperties": true },
         "grounding_eval": { "type": "object", "additionalProperties": true }
       }
     },

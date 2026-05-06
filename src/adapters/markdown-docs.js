@@ -52,7 +52,8 @@ class MarkdownDocsAdapter extends ContextAdapter {
     async discover(input) {
         const { projectRoot, config } = input;
         const records = [];
-        for (const fullPath of walkFiles(projectRoot, config)) {
+        const fileInventory = input.fileInventory || walkFiles(projectRoot, config);
+        for (const fullPath of fileInventory) {
             const relativePath = normalizePath(path.relative(projectRoot, fullPath));
             if (path.extname(relativePath).toLowerCase() !== '.md') continue;
             const policy = classifyPath(relativePath, config);

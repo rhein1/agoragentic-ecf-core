@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/retrieval-plan.v1.json",
+  "title": "ECF Core Retrieval Plan",
+  "type": "object",
+  "required": ["schema_version", "generated_by", "generated_at", "preferred_default_strategy", "queries", "summary"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "const": "ecf-core.retrieval-plan.v1" },
+    "generated_by": { "const": "ecf-core" },
+    "generated_at": { "type": "string" },
+    "preferred_default_strategy": { "const": "tree_search_then_grounding_eval" },
+    "provider_dependency_status": { "const": "builtin_local_only" },
+    "unsupported_response": { "type": "string" },
+    "queries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["query", "preferred_strategy", "required_sources", "required_node_ids", "fallback"],
+        "additionalProperties": true,
+        "properties": {
+          "query": { "type": "string" },
+          "preferred_strategy": { "type": "string" },
+          "required_sources": { "type": "array", "items": { "type": "string" } },
+          "required_node_ids": { "type": "array", "items": { "type": "string" } },
+          "fallback": { "const": "unsupported_response" }
+        }
+      }
+    },
+    "unsupported_questions": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "summary": { "type": "object", "additionalProperties": true }
+  }
+}

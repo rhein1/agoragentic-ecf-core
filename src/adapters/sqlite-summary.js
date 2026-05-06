@@ -42,7 +42,8 @@ class SqliteSummaryAdapter extends ContextAdapter {
     async discover(input) {
         const { projectRoot, config } = input;
         const records = [];
-        for (const fullPath of walkFiles(projectRoot, config)) {
+        const fileInventory = input.fileInventory || walkFiles(projectRoot, config);
+        for (const fullPath of fileInventory) {
             const relativePath = normalizePath(path.relative(projectRoot, fullPath));
             const ext = path.extname(relativePath).toLowerCase();
             const sqliteSchemaJson = relativePath.endsWith('.sqlite.schema.json') || relativePath.endsWith('.db.schema.json');

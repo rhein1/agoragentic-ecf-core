@@ -23,6 +23,21 @@
         "mcp_context": { "$ref": "#/$defs/adapterToggle" }
       }
     },
+    "context_index_providers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["provider_id", "type", "mode", "capabilities"],
+        "additionalProperties": true,
+        "properties": {
+          "provider_id": { "type": "string" },
+          "type": { "type": "string", "enum": ["page_index", "tree_index", "code_graph", "tool_graph", "policy_graph"] },
+          "mode": { "type": "string", "enum": ["local_adapter", "external_import"] },
+          "capabilities": { "type": "array", "items": { "type": "string" } },
+          "outputs": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
     "eval": {
       "type": "object",
       "additionalProperties": true,

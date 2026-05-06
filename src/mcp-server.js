@@ -61,6 +61,15 @@ const TOOLS = [
     },
 ];
 
+const ARTIFACT_FILES = [
+    'context-packet.json',
+    'source-map.json',
+    'policy-summary.json',
+    'manifest.json',
+];
+
+const artifactCache = new Map();
+
 function readJson(filePath) {
     if (!fs.existsSync(filePath)) {
         return null;
@@ -68,15 +77,46 @@ function readJson(filePath) {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
+function artifactSignature(resolvedDir) {
+    return ARTIFACT_FILES.map((fileName) => {
+        const filePath = path.join(resolvedDir, fileName);
+        try {
+            const stat = fs.statSync(filePath);
+            return `${fileName}:${stat.size}:${Math.trunc(stat.mtimeMs)}`;
+        } catch {
+            return `${fileName}:missing`;
+        }
+    }).join('|');
+}
+
+function indexArtifacts(artifacts) {
+    const records = sourceRecords(artifacts.contextPacket || { sources: [] });
+    artifacts.records = records;
+    artifacts.recordsById = new Map(records.map((record) => [record.id, record]));
+    artifacts.recordsByPath = new Map(records.map((record) => [record.path, record]));
+    artifacts.citationsBySourceId = new Map((artifacts.contextPacket?.citations || [])
+        .map((citation) => [citation.source_id, citation]));
+    artifacts.sourceMapById = new Map((artifacts.sourceMap?.sources || [])
+        .map((record) => [record.id, record]));
+    return artifacts;
+}
+
 function loadArtifacts(artifactDir) {
     const resolvedDir = path.resolve(artifactDir || '.ecf-core');
-    return {
+    const signature = artifactSignature(resolvedDir);
+    const cached = artifactCache.get(resolvedDir);
+    if (cached?.signature === signature) {
+        return cached.artifacts;
+    }
+    const artifacts = indexArtifacts({
         artifactDir: resolvedDir,
         contextPacket: readJson(path.join(resolvedDir, 'context-packet.json')),
         sourceMap: readJson(path.join(resolvedDir, 'source-map.json')),
         policySummary: readJson(path.join(resolvedDir, 'policy-summary.json')),
         manifest: readJson(path.join(resolvedDir, 'manifest.json')),
-    };
+    });
+    artifactCache.set(resolvedDir, { signature, artifacts });
+    return artifacts;
 }
 
 function requireArtifact(value, name) {
@@ -102,11 +142,11 @@ function searchContext(artifacts, args = {}) {
     const query = String(args.query || '').trim();
     if (!query) throw new Error('query is required');
     const topLimit = Math.max(1, Math.min(Number(args.top_k || 5), 20));
-    const records = sourceRecords(artifacts.contextPacket);
+    const records = artifacts.records || sourceRecords(artifacts.contextPacket);
     const ranking = rankRecords(records, query, topLimit, { provider: args.ranking_provider || 'semantic_lite' });
     const ranked = ranking.hits.map((hit) => {
-        const source = records.find((record) => record.id === hit.id);
-        const citation = findCitation(artifacts.contextPacket, hit.id);
+        const source = artifacts.recordsById?.get(hit.id) || records.find((record) => record.id === hit.id);
+        const citation = artifacts.citationsBySourceId?.get(hit.id) || findCitation(artifacts.contextPacket, hit.id);
         return {
             source_id: hit.id,
             path: hit.path,
@@ -137,19 +177,17 @@ function searchContext(artifacts, args = {}) {
 
 function getSource(artifacts, args = {}) {
     requireArtifact(artifacts.contextPacket, 'context-packet.json');
-    const records = sourceRecords(artifacts.contextPacket);
-    const source = records.find((record) => (
-        (args.source_id && record.id === args.source_id)
-        || (args.path && record.path === args.path)
-    ));
+    const source = (args.source_id && artifacts.recordsById?.get(args.source_id))
+        || (args.path && artifacts.recordsByPath?.get(args.path))
+        || null;
     if (!source) {
         throw new Error('source not found by source_id or path');
     }
     return {
         schema_version: 'ecf-core.mcp.source.v1',
         source,
-        citation: findCitation(artifacts.contextPacket, source.id),
-        source_map_entry: (artifacts.sourceMap?.sources || []).find((record) => record.id === source.id) || null,
+        citation: artifacts.citationsBySourceId?.get(source.id) || findCitation(artifacts.contextPacket, source.id),
+        source_map_entry: artifacts.sourceMapById?.get(source.id) || null,
     };
 }
 

@@ -9,9 +9,11 @@ const test = require('node:test');
 const {
     FilesystemAdapter,
     compileProject,
+    loadConfig,
     rankRecords,
     validateCompiledArtifacts,
 } = require('../src');
+const { walkFiles } = require('../src/adapters/filesystem');
 const { CustomKeywordAdapter } = require('../examples/custom-adapter/custom-keyword-adapter');
 
 function makeProject() {
@@ -62,6 +64,9 @@ test('compileProject emits source map, context packet, policy summary, and hando
     assert.equal(result.policySummary.schema_version, 'ecf-core.policy-summary.v1');
     assert.equal(result.evidenceUnits.schema_version, 'ecf-core.context-evidence-units.v1');
     assert.equal(result.compactionReport.schema_version, 'ecf-core.context-compaction-report.v1');
+    assert.equal(result.pageIndex.schema_version, 'ecf-core.page-index.v1');
+    assert.equal(result.treeIndex.schema_version, 'ecf-core.tree-index.v1');
+    assert.equal(result.retrievalPlan.schema_version, 'ecf-core.retrieval-plan.v1');
     assert.equal(result.agentOsHandoff.schema_version, 'ecf-core.agent-os-handoff.v1');
     assert.equal(result.deploymentPreview.schema_version, 'ecf-core.deployment-preview.v1');
     assert.equal(result.agentOsHarness.schema_version, 'ecf-core.agent-os-harness.v1');
@@ -71,6 +76,11 @@ test('compileProject emits source map, context packet, policy summary, and hando
     assert.equal(result.agentOsImport.live_deploy_allowed, false);
     assert.equal(result.agentOsImport.evidence.context_evidence_units, 'context-evidence-units.json');
     assert.equal(result.agentOsImport.evidence.context_compaction_report, 'context-compaction-report.json');
+    assert.equal(result.agentOsImport.evidence.page_index, 'page-index.json');
+    assert.equal(result.agentOsImport.evidence.tree_index, 'tree-index.json');
+    assert.equal(result.agentOsImport.required_files.includes('page-index.json'), true);
+    assert.equal(result.agentOsImport.required_files.includes('tree-index.json'), true);
+    assert.equal(result.agentOsHandoff.page_index, 'page-index.json');
 
     const sourcePaths = result.contextPacket.sources.map((source) => source.path).sort();
     assert.ok(sourcePaths.includes('README.md'));
@@ -85,6 +95,14 @@ test('compileProject emits source map, context packet, policy summary, and hando
     assert.ok(result.evidenceUnits.units.every((unit) => unit.citations.length > 0));
     assert.equal(result.compactionReport.dependency_status, 'baseline_only');
     assert.equal(result.compactionReport.citation_survival, 1);
+    assert.ok(result.treeIndex.nodes.some((node) => node.type === 'section' && node.heading === 'Billing'));
+    assert.ok(!result.pageIndex.sources.some((source) => source.path === '.env'));
+    assert.ok(!result.treeIndex.nodes.some((node) => node.source_path === '.env'));
+    const billingNode = result.treeIndex.nodes.find((node) => node.source_path === 'docs/billing.md#billing');
+    assert.equal(billingNode.policy_flags.allowed_for_agent, true);
+    assert.equal(billingNode.policy_flags.live_deploy_allowed, false);
+    assert.equal(result.deploymentPreview.artifacts.page_index, 'page-index.json');
+    assert.equal(result.deploymentPreview.context_index_readiness.tree_node_count, result.treeIndex.summary.node_count);
     assert.ok(result.sourceMap.sources.some((source) => source.path === '.env' && source.classification === 'blocked'));
     assert.ok(!result.contextPacket.sources.some((source) => source.path.includes('node_modules')));
 
@@ -104,6 +122,45 @@ test('filesystem adapter returns deterministic source ids for the same paths', a
         config: require('../src').loadConfig({ projectRoot: root }),
     });
     assert.deepEqual(first.map((item) => item.id), second.map((item) => item.id));
+});
+
+test('default walker skips generated logs temp folders and nested dependencies', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ecf-core-walk-'));
+    fs.mkdirSync(path.join(root, 'docs'), { recursive: true });
+    fs.mkdirSync(path.join(root, 'logs', 'reports'), { recursive: true });
+    fs.mkdirSync(path.join(root, '.tmp', 'codex_ecf'), { recursive: true });
+    fs.mkdirSync(path.join(root, 'packages', 'sample', 'node_modules', 'dep'), { recursive: true });
+    fs.mkdirSync(path.join(root, '.venv', 'Lib'), { recursive: true });
+    fs.mkdirSync(path.join(root, 'vendor', 'nested-repo', '.git'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'docs', 'guide.md'), '# Guide\n');
+    fs.writeFileSync(path.join(root, 'logs', 'reports', 'stale.md'), '# Stale report\n');
+    fs.writeFileSync(path.join(root, '.tmp', 'codex_ecf', 'index.json'), '{}\n');
+    fs.writeFileSync(path.join(root, 'packages', 'sample', 'node_modules', 'dep', 'README.md'), '# Dep\n');
+    fs.writeFileSync(path.join(root, '.venv', 'Lib', 'module.py'), 'print("ignore")\n');
+    fs.writeFileSync(path.join(root, 'vendor', 'nested-repo', 'README.md'), '# Nested repo\n');
+
+    const config = loadConfig({ projectRoot: root });
+    const paths = walkFiles(root, config).map((fullPath) => path.relative(root, fullPath).replace(/\\/g, '/'));
+
+    assert.deepEqual(paths, ['docs/guide.md']);
+});
+
+test('compileProject shares one file inventory with adapters', async () => {
+    const root = makeProject();
+    class InventoryCheckingAdapter extends CustomKeywordAdapter {
+        async discover(input) {
+            assert.equal(Array.isArray(input.fileInventory), true);
+            assert.ok(input.fileInventory.length > 0);
+            return super.discover(input);
+        }
+    }
+
+    const result = await compileProject({
+        projectRoot: root,
+        emitAgentOs: true,
+        adapters: [new InventoryCheckingAdapter(['shared inventory fixture'])],
+    });
+    assert.ok(result.records.some((record) => record.type === 'custom_keyword'));
 });
 
 test('CLI init compile and validate work without runtime dependencies', () => {
@@ -143,11 +200,32 @@ test('CLI eval writes deterministic JSON and Markdown reports', () => {
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'agent-os-import.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'context-evidence-units.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'context-compaction-report.json')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'page-index.json')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'tree-index.json')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'retrieval-plan.json')));
     assert.equal(summary.metrics.context_evidence_units.evidence_unit_count > 0, true);
     assert.equal(summary.metrics.context_evidence_units.citation_survival, 1);
+    assert.equal(summary.metrics.context_index.tree_node_count > 0, true);
+    assert.equal(summary.metrics.context_index.dependency_status, 'builtin_local_only');
 
     const preview = execFileSync(process.execPath, [cli, 'agent-os-preview', path.join(root, '.ecf-core'), '--json'], { encoding: 'utf8' });
-    assert.equal(JSON.parse(preview).ok, true);
+    const previewCheck = JSON.parse(preview);
+    assert.equal(previewCheck.ok, true);
+    assert.equal(previewCheck.context_index_readiness.tree_node_count > 0, true);
+});
+
+test('missing context index provider configuration still emits local index artifacts', async () => {
+    const root = makeProject();
+    const configPath = path.join(root, 'ecf.config.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    config.context_index_providers = [];
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+
+    const result = await compileProject({ projectRoot: root, outDir: path.join(root, '.ecf-core'), emitAgentOs: true });
+    assert.deepEqual(result.pageIndex.providers, []);
+    assert.equal(result.pageIndex.dependency_status, 'builtin_local_only');
+    assert.equal(result.treeIndex.summary.node_count > 0, true);
+    assert.equal(result.agentOsImport.required_files.includes('retrieval-plan.json'), true);
 });
 
 test('optional ranking providers remain dependency-free and bounded', () => {
@@ -227,6 +305,9 @@ test('stable schema manifest lists every generated artifact contract', () => {
         'ecf-core.grounding-eval.v1',
         'ecf-core.context-evidence-units.v1',
         'ecf-core.context-compaction-report.v1',
+        'ecf-core.page-index.v1',
+        'ecf-core.tree-index.v1',
+        'ecf-core.retrieval-plan.v1',
     ];
     assert.equal(manifest.stability, 'stable');
     assert.deepEqual(manifest.schemas.sort(), expected.sort());
@@ -345,6 +426,7 @@ test('grounding eval grounds supported queries and fails closed for unsupported 
     assert.equal(grounding.summary.unsupported, 1);
     assert.equal(grounding.questions[0].status, 'grounded');
     assert.equal(grounding.questions[0].citations.includes('docs/billing.md#billing'), true);
+    assert.equal(grounding.questions[0].tree_node_paths.includes('docs/billing.md#billing'), true);
     assert.equal(grounding.questions[1].status, 'unsupported');
     assert.equal(grounding.questions[1].final_response, "I don't know based on the allowed context.");
     assert.equal(grounding.questions[1].retries, 1);
@@ -353,6 +435,7 @@ test('grounding eval grounds supported queries and fails closed for unsupported 
     const preview = JSON.parse(execFileSync(process.execPath, [cli, 'agent-os-preview', path.join(root, '.ecf-core'), '--json'], { encoding: 'utf8' }));
     assert.equal(preview.ok, true);
     assert.equal(preview.grounding_eval.verdict, 'warn');
+    assert.equal(preview.context_index_readiness.unsupported_questions.length, 1);
 
     const validation = validateCompiledArtifacts(path.join(root, '.ecf-core'));
     assert.equal(validation.ok, true);
