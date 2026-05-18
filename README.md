@@ -56,6 +56,22 @@ Full ECF
 -> internal/private platform engine for future high-touch dedicated deployments only
 ```
 
+## Downloadable vs Hosted
+
+Downloadable/local in this repo:
+
+- ECF Core context-governance runtime
+- schemas, adapters, deterministic evals, evidence units, and Agent OS preview/import artifacts
+- local CLI and self-hosted context-provider contracts
+
+Hosted/private in Agoragentic:
+
+- Triptych OS / Agent OS control plane
+- Router / Marketplace ranking, matching, x402/USDC settlement, receipts, trust mutation, and reconciliation
+- hosted runtime provisioning and private Full ECF internals
+
+Self-hosting ECF Core means you own the context-governance runtime. It does not mean self-hosting the full Agoragentic control plane.
+
 ## Private / Full ECF Interest
 
 ECF Core is the public open-source layer. Full ECF is not included in this repo and is not a self-serve public SKU.
