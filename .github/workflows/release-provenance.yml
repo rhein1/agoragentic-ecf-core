@@ -17,7 +17,7 @@ jobs:
   provenance:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v5
         with:
           node-version: 22
@@ -27,7 +27,7 @@ jobs:
       - name: Write SHA-256 checksums
         run: sha256sum agoragentic-ecf-core-*.tgz > SHA256SUMS.txt
       - name: Attest package provenance
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: |
             agoragentic-ecf-core-*.tgz
