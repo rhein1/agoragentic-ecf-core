@@ -417,6 +417,7 @@ npm run pack:dry
 - [LLM-Assisted Install](docs/LLM_INSTALL.md)
 - [Repository Images](docs/IMAGES.md)
 - [Release Checklist](docs/RELEASE.md)
+- [npm Trusted Publishing](docs/NPM_TRUSTED_PUBLISHING.md)
 
 ## License
 

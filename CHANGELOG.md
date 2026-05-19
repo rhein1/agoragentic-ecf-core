@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Documentation index in `docs/README.md`.
 - Glama registry metadata for the local MCP server.
 - CODEOWNERS for repository review routing.
+- Tokenless npm Trusted Publishing workflow and setup notes for `agoragentic-ecf-core`.
 
 ### Changed
 - Clarified the boundary between Micro ECF, ECF Core, Triptych OS (Agent OS), and private Full ECF.
@@ -29,4 +30,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 - Initial public ECF Core CLI, schemas, local compiler, deterministic evals, and Agent OS preview artifacts.
-

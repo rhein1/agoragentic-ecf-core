@@ -1,0 +1,40 @@
+name: Publish ECF Core to npm
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    if: startsWith(github.event.release.tag_name, 'v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node for npm trusted publishing
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
+      - name: Verify npm trusted publishing runtime
+        run: |
+          node --version
+          npm --version
+
+      - name: Test ECF Core
+        run: npm test
+
+      - name: Check ECF Core syntax
+        run: npm run check
+
+      - name: Dry-run package contents
+        run: npm pack --dry-run
+
+      - name: Publish ECF Core with npm trusted publishing
+        run: npm publish --access public

@@ -25,8 +25,8 @@ Use this index when navigating the public ECF Core docs.
 - [Roadmap](ROADMAP.md)
 - [Repository Images](IMAGES.md)
 - [Release Checklist](RELEASE.md)
+- [npm Trusted Publishing](NPM_TRUSTED_PUBLISHING.md)
 
 ## Product Boundary
 
 ECF Core is the open-source self-hosted context-governance runtime. It prepares local context and policy evidence for Triptych OS (Agent OS) preview/import, but it does not deploy agents, handle wallets, run x402 settlement, mutate marketplace trust, or include private Full ECF internals.
-
