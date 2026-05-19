@@ -2,11 +2,11 @@
 
 ![ECF Core local context governance animation](docs/images/ecf-core-hero.gif)
 
-ECF Core is the open-source Micro ECF runtime: a local-first context and policy compile stage for safer agents.
+ECF Core is the open-source self-hosted context governance runtime: a local-first context and policy compile stage for safer agents.
 
 It helps builders compile local repos, docs, and small data sources into citation-ready context packets, source maps, evidence units, page/tree indexes, policy summaries, grounding evals, and Agent OS preview artifacts.
 
-It does not deploy agents, handle wallets, route marketplace calls, or include Full ECF enterprise internals.
+It does not deploy agents, handle wallets, route marketplace calls, or include private Full ECF internals.
 
 ECF Core helps answer:
 
@@ -20,7 +20,7 @@ ECF Core helps answer:
 
 ## Product Boundary
 
-ECF Core is not Full ECF Enterprise.
+ECF Core is not private Full ECF.
 
 ECF Core is:
 
@@ -28,13 +28,13 @@ ECF Core is:
 - open-source
 - context and policy packet generation
 - source-map and citation aware
-- Agent OS preview export
+- Triptych OS (Agent OS) preview export
 - useful for small builders and teams
 
 ECF Core is not:
 
 - hosted Agent OS
-- Full ECF Enterprise
+- private Full ECF
 - wallet or x402 settlement
 - marketplace ranking
 - tenant-isolated enterprise runtime
@@ -49,12 +49,28 @@ Micro ECF
 ECF Core
 -> open-source self-hosted context governance runtime
 
-Agent OS
+Triptych OS (Agent OS)
 -> paid hosted deployment, runtime, budgets, APIs, receipts, marketplace access, and x402
 
 Full ECF
 -> internal/private platform engine for future high-touch dedicated deployments only
 ```
+
+## Downloadable vs Hosted
+
+Downloadable/local in this repo:
+
+- ECF Core context-governance runtime
+- schemas, adapters, deterministic evals, evidence units, and Triptych OS (Agent OS) preview/import artifacts
+- local CLI and self-hosted context-provider contracts
+
+Hosted/private in Agoragentic:
+
+- Triptych OS / Agent OS control plane
+- Router / Marketplace ranking, matching, x402/USDC settlement, receipts, trust mutation, and reconciliation
+- hosted runtime provisioning and private Full ECF internals
+
+Self-hosting ECF Core means you own the context-governance runtime. It does not mean self-hosting the full Agoragentic control plane.
 
 ## Private / Full ECF Interest
 
@@ -70,7 +86,7 @@ Do not treat that contact path as a SOC 2, audit, enterprise-readiness, hosted r
 - Policy summary schema
 - Source map schema
 - Provenance and citation contract
-- Local/self-hosted runtime boundary
+- Local/self-hosted context-provider boundary
 - Connector adapter contracts
 - Markdown/docs section adapter
 - SQLite schema summary adapter
@@ -97,7 +113,7 @@ Do not treat that contact path as a SOC 2, audit, enterprise-readiness, hosted r
 
 ECF Core does not include:
 
-- Full ECF enterprise tenant-isolation internals
+- Private Full ECF tenant-isolation internals
 - Enterprise access-audit storage internals
 - Customer evidence-packet automation
 - Private copilot runtime
@@ -114,13 +130,22 @@ ECF Core does not include:
 
 Micro ECF is the smallest local wedge: it creates durable project artifacts such as `ECF.md`, source maps, policy summaries, and Agent OS Harness exports.
 
-ECF Core is the next layer up: a self-hosted runtime for teams that want local governance, context compilation, citations, and adapter contracts without adopting Agoragentic Cloud.
+ECF Core is the next layer up: a self-hosted context runtime for teams that want local governance, context compilation, citations, and adapter contracts without adopting Agoragentic Cloud.
 
-## Relationship To Agent OS
+## Micro ECF vs ECF Core vs Triptych OS
 
-Agent OS is where agents become deployed products.
+| Layer | What It Is | When To Use It |
+|-------|------------|----------------|
+| Micro ECF | Local context wedge and durable project artifacts | You need bounded local policy, source maps, and Agent OS Harness exports. |
+| ECF Core | Self-hosted context-governance runtime | You need richer local compilation, evidence units, grounding evals, and provider contracts. |
+| Triptych OS (Agent OS) | Hosted deployment/control plane | You need hosted runtime, budgets, wallets, APIs, receipts, marketplace access, x402, and reconciliation. |
+| Full ECF | Private/internal platform infrastructure | Not a public self-serve SKU; reserved for Agoragentic-operated high-touch dedicated infrastructure. |
 
-Use Agent OS when you need:
+## Relationship To Triptych OS (Agent OS)
+
+Triptych OS (Agent OS) is where agents become deployed products.
+
+Use Triptych OS (Agent OS) when you need:
 
 - hosted runtime
 - wallet budgets
@@ -130,7 +155,7 @@ Use Agent OS when you need:
 - x402 monetization
 - operational support
 
-ECF Core can prepare context and policy evidence for Agent OS, but it does not deploy agents or handle money.
+ECF Core can prepare context and policy evidence for Triptych OS (Agent OS), but it does not deploy agents or handle money.
 
 ## ECF Compile Stage
 
@@ -153,13 +178,13 @@ That answers a deployment question rather than only a retrieval question: is thi
 
 ## Why Use ECF Core?
 
-Use ECF Core when you want an agent to know what it can safely read, cite, summarize, and export before you deploy it into Agent OS.
+Use ECF Core when you want an agent to know what it can safely read, cite, summarize, and export before you deploy it into Triptych OS (Agent OS).
 
 Before deploying an agent, compile its context boundary.
 
-If you want the agent to run live, hold a budget, expose APIs, sell services, earn through the marketplace, or use x402 monetization, import the output into Agent OS and complete a separate owner-reviewed launch flow.
+If you want the agent to run live, hold a budget, expose APIs, sell services, earn through the marketplace, or use x402 monetization, import the output into Triptych OS (Agent OS) and complete a separate owner-reviewed launch flow.
 
-## From ECF Core To Agent OS
+## From ECF Core To Triptych OS (Agent OS)
 
 Local flow:
 
@@ -172,13 +197,13 @@ ecf-core agent-os-preview .ecf-core
 ecf-core validate .ecf-core
 ```
 
-Intended Agent OS flow:
+Intended Triptych OS (Agent OS) flow:
 
 ```bash
 agoragentic-os preview .ecf-core/agent-os-import.json
 ```
 
-Agent OS preview import is available through the hosted Agent OS CLI as a no-spend preview check; live deployment still requires a separate Agent OS launch flow with owner review, policy checks, runtime provisioning, and billing/spend authorization.
+Triptych OS (Agent OS) preview import is available through the hosted Agent OS CLI as a no-spend preview check; live deployment still requires a separate Agent OS launch flow with owner review, policy checks, runtime provisioning, and billing/spend authorization.
 
 ## Current Status
 
@@ -266,7 +291,7 @@ The compiler writes:
 
 Review `ecf.config.json` before compiling sensitive repositories.
 
-Run `ecf-core eval --grounding`, `ecf-core agent-os-preview`, and `ecf-core validate` before importing artifacts into Agent OS preview.
+Run `ecf-core eval --grounding`, `ecf-core agent-os-preview`, and `ecf-core validate` before importing artifacts into Triptych OS (Agent OS) preview.
 
 ## Grounding Eval Loop
 
@@ -304,7 +329,7 @@ grounded?
 
 This is not a hosted RAG system and does not require Chroma, Qdrant, LangGraph, Groq, embeddings, or any paid LLM API by default. It retrieves from the compiled context packet, blocks disallowed sources, checks citation support, rewrites unsupported queries, retries within the configured limit, and fails closed when the project does not contain enough evidence.
 
-Agent OS can use `grounding-eval.json` as preview evidence when deciding whether a deployment has enough context to launch safely. Live deployment, runtime provisioning, wallet funding, marketplace publication, x402 exposure, and Full ECF access remain separate owner-reviewed Agent OS flows.
+Triptych OS (Agent OS) can use `grounding-eval.json` as preview evidence when deciding whether a deployment has enough context to launch safely. Live deployment, runtime provisioning, wallet funding, marketplace publication, x402 exposure, and Full ECF access remain separate owner-reviewed Agent OS flows.
 
 ## Context Evidence Units
 
@@ -330,7 +355,7 @@ ECF Core also emits deterministic local context indexes:
 
 These artifacts preserve document, page, section, and tree-node structure where the baseline adapters can detect it. Markdown headings, text summaries, OpenAPI summaries, SQLite summaries, and MCP context summaries become index nodes with policy flags and citations. PDF/image indexing is represented as a disabled adapter contract in V1; ECF Core does not ship OCR, VLM, hosted RAG, or vector database dependencies by default.
 
-Agent OS preview import can use these files to show context index readiness, unsupported grounding questions, and sources requiring owner review before any public exposure. Live deployment remains a separate owner-reviewed Agent OS flow.
+Triptych OS (Agent OS) preview import can use these files to show context index readiness, unsupported grounding questions, and sources requiring owner review before any public exposure. Live deployment remains a separate owner-reviewed Agent OS flow.
 
 ## CLI
 
@@ -383,6 +408,7 @@ npm run pack:dry
 - [Context Evidence Units](docs/EVIDENCE_UNITS.md)
 - [.NET Support](docs/DOTNET.md)
 - [Versioning](docs/VERSIONING.md)
+- [Docs Index](docs/README.md)
 - [Agent OS Import Contract](docs/AGENT_OS_IMPORT.md)
 - [Durable LLM Handoff](ECF.md)
 - [Workflow Examples](examples/workflows/README.md)
