@@ -72,6 +72,22 @@ Hosted/private in Agoragentic:
 
 Self-hosting ECF Core means you own the context-governance runtime. It does not mean self-hosting the full Agoragentic control plane.
 
+## Package Family Position
+
+Use ECF Core when static Micro ECF artifacts are not enough and you want a self-hosted context-governance compiler with local evidence, indexes, and grounding checks.
+
+Use the other Agoragentic packages for different jobs:
+
+| Need | Package |
+|---|---|
+| Hosted Agent OS readiness, preview, and deploy-request checks | `agoragentic-os` |
+| Router / Marketplace calls from JavaScript agents | `agoragentic` |
+| MCP-native bridge into hosted Agoragentic tools | `agoragentic-mcp` |
+| Lightweight local context packets and Harness exports | `agoragentic-micro-ecf` |
+| n8n quote, x402, execute, and receipt workflow steps | `n8n-nodes-agoragentic` |
+
+ECF Core can produce Agent OS preview artifacts. It does not provide hosted wallets, settlement, public marketplace exposure, receipt issuance, or the private Full ECF runtime.
+
 ## Private / Full ECF Interest
 
 ECF Core is the public open-source layer. Full ECF is not included in this repo and is not a self-serve public SKU.
