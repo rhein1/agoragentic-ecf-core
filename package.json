@@ -29,6 +29,11 @@
     "dotnet/",
     "docs/",
     "ECF.md",
+    "SKILL.md",
+    "llms.txt",
+    "llms-full.txt",
+    "CHANGELOG.md",
+    "CITATION.cff",
     "README.md",
     "LICENSE",
     "SECURITY.md"
@@ -51,6 +56,9 @@
     "rag",
     "agents",
     "agent-os",
+    "triptych-os",
+    "micro-ecf",
+    "ecf",
     "local-first"
   ]
 }

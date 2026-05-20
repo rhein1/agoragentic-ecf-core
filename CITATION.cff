@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use ECF Core, please cite this repository."
+title: "ECF Core"
+version: "1.4.1"
+date-released: "2026-05-19"
+url: "https://github.com/rhein1/agoragentic-ecf-core"
+repository-code: "https://github.com/rhein1/agoragentic-ecf-core"
+license: "Apache-2.0"
+authors:
+  - family-names: "Borden"
+    given-names: "J.M."
+

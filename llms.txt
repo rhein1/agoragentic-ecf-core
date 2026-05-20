@@ -1,0 +1,24 @@
+# ECF Core
+
+ECF Core is Agoragentic's open-source self-hosted context-governance runtime for local agents and IDE assistants.
+
+Use it to compile bounded local context before Triptych OS (Agent OS) deployment preview:
+
+```bash
+npx agoragentic-ecf-core init .
+npx agoragentic-ecf-core compile . --agent-os
+npx agoragentic-ecf-core eval . --grounding
+npx agoragentic-ecf-core agent-os-preview .ecf-core
+npx agoragentic-ecf-core validate .ecf-core
+```
+
+Core docs:
+
+- README: https://github.com/rhein1/agoragentic-ecf-core#readme
+- Install: https://github.com/rhein1/agoragentic-ecf-core/blob/main/docs/INSTALL.md
+- Agent OS import: https://github.com/rhein1/agoragentic-ecf-core/blob/main/docs/AGENT_OS_IMPORT.md
+- Local MCP server: https://github.com/rhein1/agoragentic-ecf-core/blob/main/docs/MCP_SERVER.md
+- Durable LLM handoff: https://github.com/rhein1/agoragentic-ecf-core/blob/main/ECF.md
+
+Boundary: ECF Core is not hosted Triptych OS, not Full ECF, not wallet/x402 settlement, and not marketplace routing.
+

@@ -1,0 +1,78 @@
+# ECF Core Full LLM Context
+
+ECF Core is the public open-source self-hosted context-governance runtime from Agoragentic. It prepares context and policy evidence before a builder imports artifacts into Triptych OS (Agent OS).
+
+## Product Model
+
+```text
+Micro ECF
+-> local context wedge and durable project artifacts
+
+ECF Core
+-> self-hosted context-governance runtime and compile stage
+
+Triptych OS (Agent OS)
+-> hosted deployment/control plane with runtime, budgets, wallets, APIs, receipts, marketplace access, x402, and reconciliation
+
+Full ECF
+-> private/internal platform infrastructure, not included here
+```
+
+## What ECF Core Does
+
+- Compiles local repos, docs, OpenAPI summaries, SQLite summaries, and MCP context summaries into bounded context artifacts.
+- Produces `context-packet.json`, `source-map.json`, `policy-summary.json`, `evidence-units.json`, `page-index.json`, `tree-index.json`, `retrieval-plan.json`, `grounding-eval.json`, and `agent-os-import.json`.
+- Runs deterministic local checks for source coverage, policy flags, citation support, context indexes, and grounding.
+- Serves compiled context through a local stdio MCP server.
+- Exports preview/import artifacts for Triptych OS (Agent OS).
+
+## What ECF Core Does Not Do
+
+- It does not deploy agents.
+- It does not provision hosted runtimes.
+- It does not handle wallets, x402 settlement, marketplace routing, trust ranking, seller payouts, or reconciliation.
+- It does not include private Full ECF internals or enterprise audit infrastructure.
+- It does not claim SOC 2, audit readiness, or hosted enterprise status.
+
+## Safe CLI Flow
+
+```bash
+ecf-core init .
+ecf-core compile . --agent-os
+ecf-core eval . --grounding
+ecf-core agent-os-preview .ecf-core
+ecf-core validate .ecf-core
+```
+
+Equivalent `npx` flow:
+
+```bash
+npx agoragentic-ecf-core init .
+npx agoragentic-ecf-core compile . --agent-os
+npx agoragentic-ecf-core eval . --grounding
+npx agoragentic-ecf-core agent-os-preview .ecf-core
+npx agoragentic-ecf-core validate .ecf-core
+```
+
+## How To Use In An IDE LLM
+
+Tell the assistant:
+
+```text
+Install ECF Core for this local repo.
+Before writing files, explain what it will create, what it blocks by default, and that it does not deploy agents, handle wallets, or include Full ECF internals.
+Only proceed after approval.
+After approval, run init, show ecf.config.json, compile with --agent-os, run eval --grounding, run agent-os-preview, and validate.
+```
+
+## Important Files
+
+- `README.md`: primary public product docs.
+- `ECF.md`: durable assistant handoff contract.
+- `docs/INSTALL.md`: install guidance.
+- `docs/AGENT_OS_IMPORT.md`: Agent OS preview/import contract.
+- `docs/MCP_SERVER.md`: local MCP serving.
+- `docs/EVIDENCE_UNITS.md`: evidence-unit output.
+- `docs/EVALUATION.md`: deterministic evals.
+- `docs/MICRO_ECF_TO_ECF_CORE.md`: upgrade path from Micro ECF.
+
