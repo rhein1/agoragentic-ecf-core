@@ -9,6 +9,11 @@ const {
     buildEcfCoreContextPack,
     buildEcfCoreResidentStatus,
 } = require('./resident');
+const {
+    buildHandoff,
+    buildWorklogStatus,
+    readWorklogArtifacts,
+} = require('./work-memory');
 const { version: packageVersion } = require('../package.json');
 
 const SERVER_NAME = 'agoragentic-ecf-core';
@@ -79,6 +84,30 @@ const TOOLS = [
             properties: {
                 task: { type: 'string' },
             },
+        },
+    },
+    {
+        name: 'ecf_core.worklog_status',
+        description: 'Return local ECF Core worklog status for next-session continuity.',
+        inputSchema: {
+            type: 'object',
+            properties: {},
+        },
+    },
+    {
+        name: 'ecf_core.handoff',
+        description: 'Return the local next-session handoff without writing files.',
+        inputSchema: {
+            type: 'object',
+            properties: {},
+        },
+    },
+    {
+        name: 'ecf_core.work_memory',
+        description: 'Return local work memory artifacts: worklog status, docs-sync plan, handoff, and latest summary.',
+        inputSchema: {
+            type: 'object',
+            properties: {},
         },
     },
 ];
@@ -254,6 +283,24 @@ function callTool({ artifactDir, name, args }) {
             projectRoot: path.dirname(artifacts.artifactDir),
             artifactDir: artifacts.artifactDir,
             task: args.task,
+        });
+    }
+    if (name === 'ecf_core.worklog_status') {
+        return buildWorklogStatus({
+            projectRoot: path.dirname(artifacts.artifactDir),
+            artifactDir: artifacts.artifactDir,
+        });
+    }
+    if (name === 'ecf_core.handoff') {
+        return buildHandoff({
+            projectRoot: path.dirname(artifacts.artifactDir),
+            artifactDir: artifacts.artifactDir,
+        });
+    }
+    if (name === 'ecf_core.work_memory') {
+        return readWorklogArtifacts({
+            projectRoot: path.dirname(artifacts.artifactDir),
+            artifactDir: artifacts.artifactDir,
         });
     }
     throw new Error(`unknown tool: ${name}`);

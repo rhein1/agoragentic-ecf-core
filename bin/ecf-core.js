@@ -17,6 +17,13 @@ const {
     writeEcfCoreContextPack,
     buildEcfCoreMcpConfig,
     writeEcfCoreMcpConfig,
+    beginWorklog,
+    buildHandoff,
+    buildWorklogStatus,
+    checkpointWorklog,
+    finishWorklog,
+    planDocsSync,
+    writeHandoff,
 } = require('../src');
 
 function printHelp() {
@@ -29,6 +36,12 @@ Usage:
   ecf-core agent-os-preview [artifact-dir] [--json]
   ecf-core status [project] [--out .ecf-core] [--write] [--json]
   ecf-core context-pack [project] [--out .ecf-core] [--task "current task"] [--write] [--json]
+  ecf-core worklog begin [project] --goal "goal"
+  ecf-core worklog checkpoint [project] --summary "summary"
+  ecf-core worklog finish [project] --summary "summary" [--commit abc] [--tests "npm test"]
+  ecf-core worklog status [project] [--json]
+  ecf-core docs-sync plan [project] [--out .ecf-core] [--json]
+  ecf-core handoff [project] [--out .ecf-core] [--write] [--json]
   ecf-core mcp-config --target codex [project] [--out .ecf-core] [--write] [--install-codex]
   ecf-core serve-mcp [artifact-dir]
   ecf-core validate [artifact-dir]
@@ -43,6 +56,9 @@ Commands:
   status    Print or write local resident status for IDE/Codex context handoff.
   context-pack
             Print or write a local IDE/Codex context-pack summary.
+  worklog   Persist local session continuity under .ecf-core/worklog/.
+  docs-sync Plan documentation updates without auto-editing docs.
+  handoff   Print or write the next-session handoff under .ecf-core/.
   mcp-config
             Generate or install a workspace-specific Codex MCP server entry.
   serve-mcp Serve compiled ECF Core artifacts over a local stdio MCP tool surface.
@@ -63,7 +79,14 @@ function positional(args) {
     return args.filter((arg, index) => {
         if (arg.startsWith('--')) return false;
             const previous = args[index - 1];
-        return !(previous && previous.startsWith('--') && previous !== '--json' && previous !== '--agent-os' && previous !== '--force');
+        return !(previous
+            && previous.startsWith('--')
+            && previous !== '--json'
+            && previous !== '--agent-os'
+            && previous !== '--force'
+            && previous !== '--grounding'
+            && previous !== '--write'
+            && previous !== '--install-codex');
     });
 }
 
@@ -219,6 +242,86 @@ async function main() {
             console.log(`Sources: ${pack.summary.source_counts.allowed_sources}`);
         }
         if (!pack.ok) process.exitCode = 1;
+        return;
+    }
+
+    if (command === 'worklog') {
+        const [worklogCommand = 'status', projectArg = '.'] = positional(args);
+        const projectRoot = path.resolve(projectArg);
+        const outDir = readFlag(args, '--out', '.ecf-core');
+        const options = {
+            projectRoot,
+            artifactDir: path.resolve(projectRoot, outDir),
+            goal: readFlag(args, '--goal', '') || '',
+            summary: readFlag(args, '--summary', '') || '',
+            workId: readFlag(args, '--id', readFlag(args, '--work-id', null)),
+            decisions: readFlag(args, '--decisions', ''),
+            files: readFlag(args, '--files', ''),
+            validation: readFlag(args, '--validation', ''),
+            tests: readFlag(args, '--tests', ''),
+            unfinished: readFlag(args, '--unfinished', ''),
+            nextPrompt: readFlag(args, '--next-prompt', ''),
+            commit: readFlag(args, '--commit', ''),
+        };
+        let result;
+        if (worklogCommand === 'begin') {
+            result = beginWorklog(options);
+        } else if (worklogCommand === 'checkpoint') {
+            result = checkpointWorklog(options);
+        } else if (worklogCommand === 'finish') {
+            result = finishWorklog(options);
+        } else if (worklogCommand === 'status') {
+            result = buildWorklogStatus(options);
+        } else {
+            throw new Error(`unknown worklog command: ${worklogCommand}`);
+        }
+        if (args.includes('--json') || worklogCommand !== 'status') {
+            console.log(JSON.stringify(result, null, 2));
+        } else {
+            console.log(`ECF Core worklog: ${result.active ? 'active' : 'inactive'}`);
+            console.log(`History events: ${result.history_count}`);
+            console.log(`Checkpoints: ${result.checkpoint_count}`);
+        }
+        return;
+    }
+
+    if (command === 'docs-sync') {
+        const [docsCommand = 'plan', projectArg = '.'] = positional(args);
+        if (docsCommand !== 'plan') throw new Error(`unknown docs-sync command: ${docsCommand}`);
+        const projectRoot = path.resolve(projectArg);
+        const outDir = readFlag(args, '--out', '.ecf-core');
+        const plan = planDocsSync({
+            projectRoot,
+            artifactDir: path.resolve(projectRoot, outDir),
+        });
+        if (args.includes('--json')) {
+            console.log(JSON.stringify(plan, null, 2));
+        } else {
+            console.log(`ECF Core docs-sync plan: ${plan.recommended_updates.length} recommended updates`);
+            console.log(`Plan: ${plan.plan_path}`);
+            console.log('Auto-edit enabled: false');
+        }
+        return;
+    }
+
+    if (command === 'handoff') {
+        const [projectArg = '.'] = positional(args);
+        const projectRoot = path.resolve(projectArg);
+        const outDir = readFlag(args, '--out', '.ecf-core');
+        const options = {
+            projectRoot,
+            artifactDir: path.resolve(projectRoot, outDir),
+            goal: readFlag(args, '--goal', '') || '',
+        };
+        const handoff = args.includes('--write')
+            ? writeHandoff(options)
+            : buildHandoff(options);
+        if (args.includes('--json') || args.includes('--write')) {
+            console.log(JSON.stringify(handoff, null, 2));
+        } else {
+            console.log(`ECF Core handoff: ${handoff.work.status || 'unknown'}`);
+            console.log('Run with --write to persist .ecf-core/handoff.md and .ecf-core/next-session.md');
+        }
         return;
     }
 

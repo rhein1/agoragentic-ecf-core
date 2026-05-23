@@ -131,6 +131,7 @@ Do not treat that contact path as a SOC 2, audit, enterprise-readiness, hosted r
 - Agent OS Harness and deployment-preview exports
 - Agent OS preview/import readiness check
 - Local stdio MCP server for active context serving from compiled artifacts
+- Local resident worklog, docs-sync plan, and handoff artifacts for session continuity
 - Safe examples for local projects
 
 ## What Is Not Included
@@ -289,6 +290,15 @@ ecf-core agent-os-preview .ecf-core
 ecf-core validate .ecf-core
 ```
 
+Optional resident continuity:
+
+```bash
+ecf-core worklog begin . --goal "current goal"
+ecf-core worklog checkpoint . --summary "what changed"
+ecf-core docs-sync plan .
+ecf-core handoff . --write
+```
+
 The compiler writes:
 
 ```text
@@ -311,6 +321,11 @@ The compiler writes:
   eval-report.md
   grounding-eval.json
   grounding-eval.md
+  worklog/current.json
+  worklog/latest-summary.md
+  docs-sync-plan.json
+  handoff.md
+  next-session.md
 ```
 
 Review `ecf.config.json` before compiling sensitive repositories.
@@ -388,6 +403,15 @@ ecf-core init [project] [--force]
 ecf-core compile [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--agent-os]
 ecf-core eval [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--grounding]
 ecf-core agent-os-preview [artifact-dir] [--json]
+ecf-core status [project] [--out .ecf-core] [--write] [--json]
+ecf-core context-pack [project] [--out .ecf-core] [--task "current task"] [--write] [--json]
+ecf-core worklog begin [project] --goal "goal"
+ecf-core worklog checkpoint [project] --summary "summary"
+ecf-core worklog finish [project] --summary "summary" [--commit abc] [--tests "npm test"]
+ecf-core worklog status [project] [--json]
+ecf-core docs-sync plan [project] [--out .ecf-core] [--json]
+ecf-core handoff [project] [--out .ecf-core] [--write] [--json]
+ecf-core mcp-config --target codex [project] [--out .ecf-core] [--write] [--install-codex]
 ecf-core serve-mcp [artifact-dir]
 ecf-core validate [artifact-dir]
 ecf-core version
@@ -429,6 +453,7 @@ npm run pack:dry
 - [Custom Adapters](docs/CUSTOM_ADAPTERS.md)
 - [Evaluation](docs/EVALUATION.md)
 - [Local MCP Server](docs/MCP_SERVER.md)
+- [Resident Work Memory](docs/RESIDENT_WORK_MEMORY.md)
 - [Context Evidence Units](docs/EVIDENCE_UNITS.md)
 - [.NET Support](docs/DOTNET.md)
 - [Versioning](docs/VERSIONING.md)

@@ -16,6 +16,8 @@ It compiles a local repo, docs folder, or small data source into:
 - `.ecf-core/agent-os-import.json`
 - `.ecf-core/eval-report.json`
 - `.ecf-core/grounding-eval.json` when `eval --grounding` is run
+- `.ecf-core/worklog/latest-summary.md` when resident work memory is used
+- `.ecf-core/handoff.md` and `.ecf-core/next-session.md` when a handoff is written
 
 Use it to answer: what can this agent safely know, cite, and export before deployment?
 
@@ -51,6 +53,7 @@ Do not claim SOC 2 compliance, audited status, enterprise readiness, hosted Agen
 When using this repo in an LLM or IDE agent, state which context source is active:
 
 - `ECF Core artifacts`: you read `.ecf-core/*` outputs.
+- `ECF Core resident memory`: you read `.ecf-core/worklog/*` or `.ecf-core/handoff.md`.
 - `Direct repo reads`: you inspected local files directly.
 - `Both`: you used generated artifacts plus direct file reads.
 - `Not active`: ECF Core is installed but no artifacts were read in this chat.
@@ -101,6 +104,20 @@ ecf-core eval . --grounding
 ecf-core agent-os-preview .ecf-core
 ecf-core validate .ecf-core
 ```
+
+## Resident Work Memory
+
+Use resident work memory when a coding agent needs continuity across IDE chats or Codex sessions:
+
+```bash
+ecf-core worklog begin . --goal "current goal"
+ecf-core worklog checkpoint . --summary "what changed"
+ecf-core worklog finish . --summary "what shipped" --tests "npm test" --next-prompt "next scoped task"
+ecf-core docs-sync plan .
+ecf-core handoff . --write
+```
+
+This writes local `.ecf-core/` artifacts only. `docs-sync plan` does not auto-edit docs, and resident memory does not deploy, spend, mutate wallets, settle x402, publish marketplace listings, provision hosted runtime, or expose Full ECF private internals.
 
 ## When To Use ECF Core
 

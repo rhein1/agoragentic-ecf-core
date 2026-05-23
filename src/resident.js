@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const crypto = require('node:crypto');
 const path = require('node:path');
 const { validateCompiledArtifacts } = require('./compile');
+const { buildWorklogStatus } = require('./work-memory');
 
 const RESIDENT_STATUS_FILE = 'resident-status.json';
 const CONTEXT_PACK_FILE = 'context-pack.json';
@@ -242,8 +243,12 @@ function buildEcfCoreResidentStatus(options = {}) {
                 'ecf_core.agent_os_preview_check',
                 'ecf_core.status',
                 'ecf_core.context_pack',
+                'ecf_core.worklog_status',
+                'ecf_core.handoff',
+                'ecf_core.work_memory',
             ],
         },
+        work_memory: buildWorklogStatus({ projectRoot, artifactDir }),
         context_pack: {
             available: missing.includes('context-packet.json') === false
                 && missing.includes('source-map.json') === false
@@ -252,7 +257,7 @@ function buildEcfCoreResidentStatus(options = {}) {
         },
         authority_boundary: authorityBoundary(),
         next_steps: ready
-            ? ['ecf-core context-pack . --write', 'ecf-core serve-mcp .ecf-core']
+            ? ['ecf-core context-pack . --write', 'ecf-core docs-sync plan .', 'ecf-core handoff . --write', 'ecf-core serve-mcp .ecf-core']
             : ['ecf-core init .', 'ecf-core compile . --agent-os', 'ecf-core status . --write'],
     };
 }
@@ -310,6 +315,9 @@ function buildEcfCoreContextPack(options = {}) {
                 '.ecf-core/context-packet.json',
                 '.ecf-core/policy-summary.json',
                 '.ecf-core/agent-os-import.json',
+                '.ecf-core/worklog/latest-summary.md',
+                '.ecf-core/handoff.md',
+                '.ecf-core/next-session.md',
             ],
             disclosure: 'ECF Core resident context is compiled local context, not hidden global memory or hosted Agent OS authority.',
             refresh_commands: [
@@ -317,6 +325,8 @@ function buildEcfCoreContextPack(options = {}) {
                 'ecf-core validate .ecf-core',
                 'ecf-core status . --write',
                 'ecf-core context-pack . --write',
+                'ecf-core docs-sync plan .',
+                'ecf-core handoff . --write',
             ],
         },
         authority_boundary: authorityBoundary(),

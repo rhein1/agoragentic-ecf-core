@@ -206,6 +206,9 @@ test('CLI resident status and context pack expose compiled local context without
     assert.equal(status.authority_boundary.full_ecf_private_internals_included, false);
     assert.ok(status.mcp.tools.includes('ecf_core.status'));
     assert.ok(status.mcp.tools.includes('ecf_core.context_pack'));
+    assert.ok(status.mcp.tools.includes('ecf_core.worklog_status'));
+    assert.ok(status.mcp.tools.includes('ecf_core.handoff'));
+    assert.ok(status.mcp.tools.includes('ecf_core.work_memory'));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'resident-status.json')));
 
     const pack = JSON.parse(execFileSync(process.execPath, [
@@ -224,6 +227,9 @@ test('CLI resident status and context pack expose compiled local context without
     assert.equal(pack.summary.source_counts.allowed_sources > 0, true);
     assert.equal(pack.summary.live_deploy_allowed, false);
     assert.ok(pack.assistant_bootstrap.read_order.includes('ecf.config.json'));
+    assert.ok(pack.assistant_bootstrap.read_order.includes('.ecf-core/worklog/latest-summary.md'));
+    assert.ok(pack.assistant_bootstrap.refresh_commands.includes('ecf-core docs-sync plan .'));
+    assert.ok(pack.assistant_bootstrap.refresh_commands.includes('ecf-core handoff . --write'));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'context-pack.json')));
 
     const codexHome = path.join(root, 'codex-home');
@@ -264,6 +270,105 @@ test('CLI resident status and context pack expose compiled local context without
     assert.match(codexConfig, /BEGIN ECF Core resident test_ecf_core/);
     assert.match(codexConfig, /\[mcp_servers\.test_ecf_core\]/);
     assert.match(codexConfig, /ecf-core\.js/);
+});
+
+test('CLI worklog docs-sync and handoff persist local-only resident work memory', () => {
+    const root = makeProject();
+    const cli = path.join(__dirname, '..', 'bin', 'ecf-core.js');
+    execFileSync(process.execPath, [cli, 'compile', root, '--agent-os'], { stdio: 'pipe' });
+
+    const begin = JSON.parse(execFileSync(process.execPath, [
+        cli,
+        'worklog',
+        'begin',
+        root,
+        '--goal',
+        'Add resident work memory',
+        '--json',
+    ], { encoding: 'utf8' }));
+    assert.equal(begin.ok, true);
+    assert.equal(begin.current.schema_version, 'ecf-core.worklog-current.v1');
+    assert.equal(begin.current.authority_boundary.local_only, true);
+    assert.equal(begin.current.authority_boundary.wallet_mutation_enabled, false);
+    assert.equal(begin.current.authority_boundary.x402_settlement_enabled, false);
+    assert.equal(begin.current.authority_boundary.hosted_runtime_enabled, false);
+    assert.equal(begin.current.authority_boundary.full_ecf_private_internals_included, false);
+
+    const checkpoint = JSON.parse(execFileSync(process.execPath, [
+        cli,
+        'worklog',
+        'checkpoint',
+        root,
+        '--summary',
+        'Wired CLI commands',
+        '--files',
+        'bin/ecf-core.js,src/work-memory.js',
+        '--validation',
+        'node --check src/work-memory.js',
+        '--json',
+    ], { encoding: 'utf8' }));
+    assert.equal(checkpoint.checkpoint.schema_version, 'ecf-core.worklog-checkpoint.v1');
+    assert.ok(checkpoint.current.changed_files.includes('src/work-memory.js'));
+
+    const finished = JSON.parse(execFileSync(process.execPath, [
+        cli,
+        'worklog',
+        'finish',
+        root,
+        '--summary',
+        'Resident work memory shipped',
+        '--commit',
+        'abc1234',
+        '--tests',
+        'npm test',
+        '--unfinished',
+        'Full ECF resident manager',
+        '--next-prompt',
+        'Implement private Full ECF resident workspace manager',
+        '--json',
+    ], { encoding: 'utf8' }));
+    assert.equal(finished.finished.schema_version, 'ecf-core.worklog-finished.v1');
+    assert.equal(finished.finished.status, 'finished');
+    assert.ok(finished.finished.validation.includes('npm test'));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'worklog', 'latest-summary.md')));
+
+    const docsPlan = JSON.parse(execFileSync(process.execPath, [
+        cli,
+        'docs-sync',
+        'plan',
+        root,
+        '--json',
+    ], { encoding: 'utf8' }));
+    assert.equal(docsPlan.schema_version, 'ecf-core.docs-sync-plan.v1');
+    assert.equal(docsPlan.auto_edit_enabled, false);
+    assert.equal(docsPlan.authority_boundary.deploy_enabled, false);
+    assert.ok(docsPlan.recommended_updates.some((item) => item.path === 'README.md'));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'docs-sync-plan.json')));
+
+    const handoff = JSON.parse(execFileSync(process.execPath, [
+        cli,
+        'handoff',
+        root,
+        '--write',
+        '--json',
+    ], { encoding: 'utf8' }));
+    assert.equal(handoff.schema_version, 'ecf-core.handoff.v1');
+    assert.equal(handoff.work.next_prompt, 'Implement private Full ECF resident workspace manager');
+    assert.ok(handoff.read_order.includes('.ecf-core/worklog/latest-summary.md'));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'handoff.md')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'handoff.json')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'next-session.md')));
+
+    const status = JSON.parse(execFileSync(process.execPath, [
+        cli,
+        'worklog',
+        'status',
+        root,
+        '--json',
+    ], { encoding: 'utf8' }));
+    assert.equal(status.schema_version, 'ecf-core.worklog-status.v1');
+    assert.equal(status.active, false);
+    assert.equal(status.history_count >= 3, true);
 });
 
 test('CLI eval writes deterministic JSON and Markdown reports', () => {
@@ -417,6 +522,7 @@ test('public package keeps durable handoff and workflow examples', () => {
     const imagesDoc = fs.readFileSync(path.join(root, 'docs', 'IMAGES.md'), 'utf8');
     const mcpDoc = fs.readFileSync(path.join(root, 'docs', 'MCP_SERVER.md'), 'utf8');
     const codexMcpDoc = fs.readFileSync(path.join(root, 'docs', 'CODEX_MCP.md'), 'utf8');
+    const residentMemoryDoc = fs.readFileSync(path.join(root, 'docs', 'RESIDENT_WORK_MEMORY.md'), 'utf8');
     const evidenceUnitsDoc = fs.readFileSync(path.join(root, 'docs', 'EVIDENCE_UNITS.md'), 'utf8');
     const importerExample = fs.readFileSync(path.join(root, 'examples', 'importers', 'agent-os-import-consumer.example.json'), 'utf8');
 
@@ -435,6 +541,10 @@ test('public package keeps durable handoff and workflow examples', () => {
     assert.match(mcpDoc, /ecf-core mcp-config --target codex/);
     assert.match(codexMcpDoc, /Resident MCP for Codex/);
     assert.match(codexMcpDoc, /ecf_core\.context_pack/);
+    assert.match(residentMemoryDoc, /worklog begin/);
+    assert.match(residentMemoryDoc, /docs-sync plan/);
+    assert.match(residentMemoryDoc, /handoff --write/);
+    assert.match(residentMemoryDoc, /does not auto-edit docs/i);
     assert.match(evidenceUnitsDoc, /Context Evidence Units/);
     assert.match(evidenceUnitsDoc, /live_deploy_allowed/);
     assert.match(readme, /docs\/EVIDENCE_UNITS\.md/);
@@ -606,6 +716,9 @@ test('local MCP server exposes read-only compiled context tools', () => {
     const root = makeProject();
     const cli = path.join(__dirname, '..', 'bin', 'ecf-core.js');
     execFileSync(process.execPath, [cli, 'compile', root, '--agent-os'], { stdio: 'pipe' });
+    execFileSync(process.execPath, [cli, 'worklog', 'begin', root, '--goal', 'MCP resident memory'], { stdio: 'pipe' });
+    execFileSync(process.execPath, [cli, 'worklog', 'checkpoint', root, '--summary', 'MCP checkpoint'], { stdio: 'pipe' });
+    execFileSync(process.execPath, [cli, 'handoff', root, '--write'], { stdio: 'pipe' });
     const requests = [
         { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} },
         { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} },
@@ -645,6 +758,33 @@ test('local MCP server exposes read-only compiled context tools', () => {
                 arguments: { task: 'mcp context' },
             },
         },
+        {
+            jsonrpc: '2.0',
+            id: 7,
+            method: 'tools/call',
+            params: {
+                name: 'ecf_core.worklog_status',
+                arguments: {},
+            },
+        },
+        {
+            jsonrpc: '2.0',
+            id: 8,
+            method: 'tools/call',
+            params: {
+                name: 'ecf_core.handoff',
+                arguments: {},
+            },
+        },
+        {
+            jsonrpc: '2.0',
+            id: 9,
+            method: 'tools/call',
+            params: {
+                name: 'ecf_core.work_memory',
+                arguments: {},
+            },
+        },
     ].map((item) => JSON.stringify(item)).join('\n');
     const result = spawnSync(process.execPath, [cli, 'serve-mcp', path.join(root, '.ecf-core')], {
         input: `${requests}\n`,
@@ -656,6 +796,9 @@ test('local MCP server exposes read-only compiled context tools', () => {
     assert.ok(responses[1].result.tools.some((tool) => tool.name === 'ecf_core.search_context'));
     assert.ok(responses[1].result.tools.some((tool) => tool.name === 'ecf_core.status'));
     assert.ok(responses[1].result.tools.some((tool) => tool.name === 'ecf_core.context_pack'));
+    assert.ok(responses[1].result.tools.some((tool) => tool.name === 'ecf_core.worklog_status'));
+    assert.ok(responses[1].result.tools.some((tool) => tool.name === 'ecf_core.handoff'));
+    assert.ok(responses[1].result.tools.some((tool) => tool.name === 'ecf_core.work_memory'));
     const searchPayload = JSON.parse(responses[2].result.content[0].text);
     assert.equal(searchPayload.boundary.read_only, true);
     assert.equal(searchPayload.boundary.live_deploy_allowed, false);
@@ -670,4 +813,13 @@ test('local MCP server exposes read-only compiled context tools', () => {
     const packPayload = JSON.parse(responses[5].result.content[0].text);
     assert.equal(packPayload.task, 'mcp context');
     assert.equal(packPayload.summary.live_deploy_allowed, false);
+    const worklogPayload = JSON.parse(responses[6].result.content[0].text);
+    assert.equal(worklogPayload.schema_version, 'ecf-core.worklog-status.v1');
+    assert.equal(worklogPayload.active, true);
+    const handoffPayload = JSON.parse(responses[7].result.content[0].text);
+    assert.equal(handoffPayload.schema_version, 'ecf-core.handoff.v1');
+    assert.equal(handoffPayload.work.goal, 'MCP resident memory');
+    const memoryPayload = JSON.parse(responses[8].result.content[0].text);
+    assert.equal(memoryPayload.schema_version, 'ecf-core.work-memory.v1');
+    assert.equal(memoryPayload.authority_boundary.local_only, true);
 });
