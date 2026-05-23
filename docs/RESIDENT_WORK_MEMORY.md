@@ -4,6 +4,10 @@ ECF Core can keep local session continuity artifacts under `.ecf-core/` so IDE a
 
 This is local-only work memory. It is not Full ECF, not hosted Agent OS, not a daemon, and not a deployment authority.
 
+For builders, the resident layer makes repo work inspectable across conversations. It records the active goal, checkpoints, files changed, commits, validation, unfinished work, docs impact, and next prompt. A future IDE agent can read those files before asking the developer to reconstruct the last session from memory.
+
+This is still not a substitute for source inspection. The resident layer tells the next agent where to start and what was claimed; the agent must still read the actual files before editing.
+
 ## Commands
 
 Start a worklog:
@@ -54,6 +58,15 @@ The resident work-memory layer writes:
 ```
 
 These files are intended for local continuity between IDE sessions, Codex threads, and agent runs.
+
+They answer:
+
+- what goal was active
+- what changed
+- what validation ran
+- what remains unfinished
+- which docs may need updates
+- what exact next prompt should continue the work
 
 ## Docs Sync Boundary
 

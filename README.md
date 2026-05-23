@@ -12,7 +12,9 @@ It does not deploy agents, handle wallets, route marketplace calls, or include p
 
 Installing ECF Core on a codebase gives builders a self-hosted context-governance compiler. Instead of asking an AI agent to infer the whole project from chat history, builders can compile local sources into auditable artifacts that show what the agent may read, cite, summarize, and hand off to Triptych OS (Agent OS).
 
-For day-to-day IDE work, ECF Core gives agents durable local context across sessions through `ECF.md`, `.ecf-core/*` artifacts, and the optional resident MCP server. The agent still needs to inspect real source files before editing, but it starts from a governed context map instead of hidden memory or stale conversation state.
+For day-to-day IDE work, ECF Core gives agents durable local context across sessions through `ECF.md`, `.ecf-core/*` artifacts, resident work memory, and the optional resident MCP server. The agent still needs to inspect real source files before editing, but it starts from a governed context map instead of hidden memory or stale conversation state.
+
+The resident layer is a local file ledger for builders and IDE agents. It records active goals, checkpoints, changed files, validation, docs-sync plans, handoffs, and next prompts under `.ecf-core/`. It is not cloud sync, not a daemon, not hidden global memory, and not Full ECF. MCP-capable IDEs can read those artifacts through `ecf_core.worklog_status`, `ecf_core.handoff`, and `ecf_core.work_memory`.
 
 For product builders, ECF Core is the open self-hosted step between simple Micro ECF packets and hosted Agent OS deployment. It helps prove that a project has grounded context, citation evidence, policy boundaries, and preview-ready artifacts before any runtime, wallet, marketplace, or x402 capability is enabled.
 
@@ -295,9 +297,12 @@ Optional resident continuity:
 ```bash
 ecf-core worklog begin . --goal "current goal"
 ecf-core worklog checkpoint . --summary "what changed"
+ecf-core worklog status .
 ecf-core docs-sync plan .
 ecf-core handoff . --write
 ```
+
+Use this before closing a long IDE/Codex session or after a scoped commit. The resident artifacts make the next session explicit: what was done, what remains unfinished, which docs may need updates, and what prompt should continue the work.
 
 The compiler writes:
 
@@ -322,8 +327,11 @@ The compiler writes:
   grounding-eval.json
   grounding-eval.md
   worklog/current.json
+  worklog/history.jsonl
+  worklog/checkpoints.jsonl
   worklog/latest-summary.md
   docs-sync-plan.json
+  handoff.json
   handoff.md
   next-session.md
 ```
