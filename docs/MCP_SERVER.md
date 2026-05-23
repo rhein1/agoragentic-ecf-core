@@ -21,6 +21,20 @@ ecf-core serve-mcp .ecf-core
 
 Configure that command as a local stdio MCP server in the IDE or agent client.
 
+For Codex, generate a workspace-specific resident MCP config:
+
+```bash
+ecf-core mcp-config --target codex . --write
+```
+
+To intentionally install it into `CODEX_HOME/config.toml` or `~/.codex/config.toml`, run:
+
+```bash
+ecf-core mcp-config --target codex . --write --install-codex
+```
+
+Restart Codex after installation. Codex loads MCP servers at startup. See [`CODEX_MCP.md`](./CODEX_MCP.md).
+
 ## Tools
 
 | Tool | Purpose |
@@ -30,6 +44,8 @@ Configure that command as a local stdio MCP server in the IDE or agent client.
 | `ecf_core.get_policy` | Return `policy-summary.json`. |
 | `ecf_core.get_manifest` | Return `manifest.json` and artifact counts. |
 | `ecf_core.agent_os_preview_check` | Run the local Agent OS preview-import readiness check. |
+| `ecf_core.status` | Return local resident status, artifact health, and authority boundary. |
+| `ecf_core.context_pack` | Return an IDE/Codex-friendly compiled context summary without raw source content. |
 
 ## Boundary
 

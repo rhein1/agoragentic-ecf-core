@@ -15,6 +15,8 @@ const {
     writeEcfCoreResidentStatus,
     buildEcfCoreContextPack,
     writeEcfCoreContextPack,
+    buildEcfCoreMcpConfig,
+    writeEcfCoreMcpConfig,
 } = require('../src');
 
 function printHelp() {
@@ -27,6 +29,7 @@ Usage:
   ecf-core agent-os-preview [artifact-dir] [--json]
   ecf-core status [project] [--out .ecf-core] [--write] [--json]
   ecf-core context-pack [project] [--out .ecf-core] [--task "current task"] [--write] [--json]
+  ecf-core mcp-config --target codex [project] [--out .ecf-core] [--write] [--install-codex]
   ecf-core serve-mcp [artifact-dir]
   ecf-core validate [artifact-dir]
   ecf-core version
@@ -40,6 +43,8 @@ Commands:
   status    Print or write local resident status for IDE/Codex context handoff.
   context-pack
             Print or write a local IDE/Codex context-pack summary.
+  mcp-config
+            Generate or install a workspace-specific Codex MCP server entry.
   serve-mcp Serve compiled ECF Core artifacts over a local stdio MCP tool surface.
   validate  Validate required compiled artifacts exist and have expected schema versions.
   version   Print package version.
@@ -214,6 +219,25 @@ async function main() {
             console.log(`Sources: ${pack.summary.source_counts.allowed_sources}`);
         }
         if (!pack.ok) process.exitCode = 1;
+        return;
+    }
+
+    if (command === 'mcp-config') {
+        const [projectArg = '.'] = positional(args);
+        const projectRoot = path.resolve(projectArg);
+        const outDir = readFlag(args, '--out', '.ecf-core');
+        const options = {
+            projectRoot,
+            artifactDir: path.resolve(projectRoot, outDir),
+            target: readFlag(args, '--target', 'codex') || 'codex',
+            codexHome: readFlag(args, '--codex-home', null),
+            serverName: readFlag(args, '--server-name', null),
+            installCodex: args.includes('--install-codex'),
+        };
+        const config = (args.includes('--write') || args.includes('--install-codex'))
+            ? writeEcfCoreMcpConfig(options)
+            : buildEcfCoreMcpConfig(options);
+        console.log(JSON.stringify(config, null, 2));
         return;
     }
 

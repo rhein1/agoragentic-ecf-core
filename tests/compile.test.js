@@ -225,6 +225,45 @@ test('CLI resident status and context pack expose compiled local context without
     assert.equal(pack.summary.live_deploy_allowed, false);
     assert.ok(pack.assistant_bootstrap.read_order.includes('ecf.config.json'));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'context-pack.json')));
+
+    const codexHome = path.join(root, 'codex-home');
+    const mcpConfig = JSON.parse(execFileSync(process.execPath, [
+        cli,
+        'mcp-config',
+        '--target',
+        'codex',
+        root,
+        '--write',
+        '--codex-home',
+        codexHome,
+        '--server-name',
+        'test_ecf_core',
+    ], { encoding: 'utf8' }));
+    assert.equal(mcpConfig.schema_version, 'ecf-core.mcp-config.v1');
+    assert.equal(mcpConfig.server_name, 'test_ecf_core');
+    assert.match(mcpConfig.toml, /\[mcp_servers\.test_ecf_core\]/);
+    assert.match(mcpConfig.toml, /serve-mcp/);
+    assert.equal(mcpConfig.codex_config_updated, false);
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'codex-mcp.toml')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'CODEX_MCP_INSTALL.md')));
+
+    const installedConfig = JSON.parse(execFileSync(process.execPath, [
+        cli,
+        'mcp-config',
+        '--target',
+        'codex',
+        root,
+        '--install-codex',
+        '--codex-home',
+        codexHome,
+        '--server-name',
+        'test_ecf_core',
+    ], { encoding: 'utf8' }));
+    assert.equal(installedConfig.codex_config_updated, true);
+    const codexConfig = fs.readFileSync(path.join(codexHome, 'config.toml'), 'utf8');
+    assert.match(codexConfig, /BEGIN ECF Core resident test_ecf_core/);
+    assert.match(codexConfig, /\[mcp_servers\.test_ecf_core\]/);
+    assert.match(codexConfig, /ecf-core\.js/);
 });
 
 test('CLI eval writes deterministic JSON and Markdown reports', () => {
@@ -377,6 +416,7 @@ test('public package keeps durable handoff and workflow examples', () => {
     const boundary = fs.readFileSync(path.join(root, 'docs', 'BOUNDARY.md'), 'utf8');
     const imagesDoc = fs.readFileSync(path.join(root, 'docs', 'IMAGES.md'), 'utf8');
     const mcpDoc = fs.readFileSync(path.join(root, 'docs', 'MCP_SERVER.md'), 'utf8');
+    const codexMcpDoc = fs.readFileSync(path.join(root, 'docs', 'CODEX_MCP.md'), 'utf8');
     const evidenceUnitsDoc = fs.readFileSync(path.join(root, 'docs', 'EVIDENCE_UNITS.md'), 'utf8');
     const importerExample = fs.readFileSync(path.join(root, 'examples', 'importers', 'agent-os-import-consumer.example.json'), 'utf8');
 
@@ -392,6 +432,9 @@ test('public package keeps durable handoff and workflow examples', () => {
     assert.match(boundary, /contact path only/i);
     assert.match(imagesDoc, /ecf-core-hero\.gif/);
     assert.match(mcpDoc, /ecf_core\.search_context/);
+    assert.match(mcpDoc, /ecf-core mcp-config --target codex/);
+    assert.match(codexMcpDoc, /Resident MCP for Codex/);
+    assert.match(codexMcpDoc, /ecf_core\.context_pack/);
     assert.match(evidenceUnitsDoc, /Context Evidence Units/);
     assert.match(evidenceUnitsDoc, /live_deploy_allowed/);
     assert.match(readme, /docs\/EVIDENCE_UNITS\.md/);
