@@ -5,6 +5,10 @@ const path = require('node:path');
 const readline = require('node:readline');
 const { inspectAgentOsPreview } = require('./agent-os-preview');
 const { rankRecords } = require('./core/ranking');
+const {
+    buildEcfCoreContextPack,
+    buildEcfCoreResidentStatus,
+} = require('./resident');
 const { version: packageVersion } = require('../package.json');
 
 const SERVER_NAME = 'agoragentic-ecf-core';
@@ -57,6 +61,24 @@ const TOOLS = [
         inputSchema: {
             type: 'object',
             properties: {},
+        },
+    },
+    {
+        name: 'ecf_core.status',
+        description: 'Return local ECF Core resident status for the compiled artifact root.',
+        inputSchema: {
+            type: 'object',
+            properties: {},
+        },
+    },
+    {
+        name: 'ecf_core.context_pack',
+        description: 'Return an IDE/Codex-friendly compiled context pack summary without raw source content.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                task: { type: 'string' },
+            },
         },
     },
 ];
@@ -221,6 +243,19 @@ function callTool({ artifactDir, name, args }) {
     if (name === 'ecf_core.get_policy') return getPolicy(artifacts);
     if (name === 'ecf_core.get_manifest') return getManifest(artifacts);
     if (name === 'ecf_core.agent_os_preview_check') return inspectAgentOsPreview(artifacts.artifactDir);
+    if (name === 'ecf_core.status') {
+        return buildEcfCoreResidentStatus({
+            projectRoot: path.dirname(artifacts.artifactDir),
+            artifactDir: artifacts.artifactDir,
+        });
+    }
+    if (name === 'ecf_core.context_pack') {
+        return buildEcfCoreContextPack({
+            projectRoot: path.dirname(artifacts.artifactDir),
+            artifactDir: artifacts.artifactDir,
+            task: args.task,
+        });
+    }
     throw new Error(`unknown tool: ${name}`);
 }
 

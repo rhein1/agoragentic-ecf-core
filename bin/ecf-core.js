@@ -11,6 +11,12 @@ const {
     runMcpServer,
     validateCompiledArtifacts,
     inspectAgentOsPreview,
+    buildEcfCoreResidentStatus,
+    writeEcfCoreResidentStatus,
+    buildEcfCoreContextPack,
+    writeEcfCoreContextPack,
+    buildEcfCoreMcpConfig,
+    writeEcfCoreMcpConfig,
 } = require('../src');
 
 function printHelp() {
@@ -21,6 +27,9 @@ Usage:
   ecf-core compile [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--agent-os]
   ecf-core eval [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--grounding]
   ecf-core agent-os-preview [artifact-dir] [--json]
+  ecf-core status [project] [--out .ecf-core] [--write] [--json]
+  ecf-core context-pack [project] [--out .ecf-core] [--task "current task"] [--write] [--json]
+  ecf-core mcp-config --target codex [project] [--out .ecf-core] [--write] [--install-codex]
   ecf-core serve-mcp [artifact-dir]
   ecf-core validate [artifact-dir]
   ecf-core version
@@ -31,6 +40,11 @@ Commands:
   eval      Compile and write deterministic JSON/Markdown evaluation reports.
   agent-os-preview
             Check compiled ECF Core artifacts before Agent OS preview import.
+  status    Print or write local resident status for IDE/Codex context handoff.
+  context-pack
+            Print or write a local IDE/Codex context-pack summary.
+  mcp-config
+            Generate or install a workspace-specific Codex MCP server entry.
   serve-mcp Serve compiled ECF Core artifacts over a local stdio MCP tool surface.
   validate  Validate required compiled artifacts exist and have expected schema versions.
   version   Print package version.
@@ -159,6 +173,71 @@ async function main() {
             console.log(`Next step: ${report.next_step}`);
         }
         if (!report.ok) process.exitCode = 1;
+        return;
+    }
+
+    if (command === 'status') {
+        const [projectArg = '.'] = positional(args);
+        const projectRoot = path.resolve(projectArg);
+        const outDir = readFlag(args, '--out', '.ecf-core');
+        const options = {
+            projectRoot,
+            artifactDir: path.resolve(projectRoot, outDir),
+        };
+        const report = args.includes('--write')
+            ? writeEcfCoreResidentStatus(options)
+            : buildEcfCoreResidentStatus(options);
+        if (args.includes('--json') || args.includes('--write')) {
+            console.log(JSON.stringify(report, null, 2));
+        } else {
+            console.log(`ECF Core resident: ${report.resident_state}`);
+            console.log(`Artifact dir: ${report.artifact_dir}`);
+            console.log(`Context pack available: ${report.context_pack.available}`);
+        }
+        if (!report.ok) process.exitCode = 1;
+        return;
+    }
+
+    if (command === 'context-pack') {
+        const [projectArg = '.'] = positional(args);
+        const projectRoot = path.resolve(projectArg);
+        const outDir = readFlag(args, '--out', '.ecf-core');
+        const task = readFlag(args, '--task', '') || '';
+        const options = {
+            projectRoot,
+            artifactDir: path.resolve(projectRoot, outDir),
+            task,
+        };
+        const pack = args.includes('--write')
+            ? writeEcfCoreContextPack(options)
+            : buildEcfCoreContextPack(options);
+        if (args.includes('--json') || args.includes('--write')) {
+            console.log(JSON.stringify(pack, null, 2));
+        } else {
+            console.log(`ECF Core context pack: ${pack.ok ? 'ready' : 'attention required'}`);
+            console.log(`Task: ${pack.task}`);
+            console.log(`Sources: ${pack.summary.source_counts.allowed_sources}`);
+        }
+        if (!pack.ok) process.exitCode = 1;
+        return;
+    }
+
+    if (command === 'mcp-config') {
+        const [projectArg = '.'] = positional(args);
+        const projectRoot = path.resolve(projectArg);
+        const outDir = readFlag(args, '--out', '.ecf-core');
+        const options = {
+            projectRoot,
+            artifactDir: path.resolve(projectRoot, outDir),
+            target: readFlag(args, '--target', 'codex') || 'codex',
+            codexHome: readFlag(args, '--codex-home', null),
+            serverName: readFlag(args, '--server-name', null),
+            installCodex: args.includes('--install-codex'),
+        };
+        const config = (args.includes('--write') || args.includes('--install-codex'))
+            ? writeEcfCoreMcpConfig(options)
+            : buildEcfCoreMcpConfig(options);
+        console.log(JSON.stringify(config, null, 2));
         return;
     }
 
