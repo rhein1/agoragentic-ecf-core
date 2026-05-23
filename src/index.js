@@ -29,6 +29,12 @@ const {
     inspectAgentOsPreview,
 } = require('./agent-os-preview');
 const {
+    buildEcfCoreContextPack,
+    buildEcfCoreResidentStatus,
+    writeEcfCoreContextPack,
+    writeEcfCoreResidentStatus,
+} = require('./resident');
+const {
     TOOLS: MCP_TOOLS,
     callTool: callMcpTool,
     handleMcpRequest,
@@ -87,6 +93,8 @@ module.exports = {
     buildContextCompactionReport,
     buildContextEvidenceUnits,
     buildContextIndexes,
+    buildEcfCoreContextPack,
+    buildEcfCoreResidentStatus,
     callMcpTool,
     classifyPath,
     compileProject,
@@ -109,5 +117,7 @@ module.exports = {
     scoreRecord,
     scoreLocalVector,
     validateCompiledArtifacts,
+    writeEcfCoreContextPack,
+    writeEcfCoreResidentStatus,
     topK,
 };

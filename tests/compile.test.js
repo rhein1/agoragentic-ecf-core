@@ -190,6 +190,43 @@ test('CLI init compile and validate work without runtime dependencies', () => {
     assert.equal(JSON.parse(validation).ok, true);
 });
 
+test('CLI resident status and context pack expose compiled local context without hosted authority', () => {
+    const root = makeProject();
+    const cli = path.join(__dirname, '..', 'bin', 'ecf-core.js');
+    execFileSync(process.execPath, [cli, 'compile', root, '--agent-os'], { stdio: 'pipe' });
+
+    const status = JSON.parse(execFileSync(process.execPath, [cli, 'status', root, '--write'], { encoding: 'utf8' }));
+    assert.equal(status.schema_version, 'ecf-core.resident-status.v1');
+    assert.equal(status.ok, true);
+    assert.equal(status.resident_state, 'ready');
+    assert.equal(status.authority_boundary.local_only, true);
+    assert.equal(status.authority_boundary.no_spend, true);
+    assert.equal(status.authority_boundary.no_deploy, true);
+    assert.equal(status.authority_boundary.no_x402_settlement, true);
+    assert.equal(status.authority_boundary.full_ecf_private_internals_included, false);
+    assert.ok(status.mcp.tools.includes('ecf_core.status'));
+    assert.ok(status.mcp.tools.includes('ecf_core.context_pack'));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'resident-status.json')));
+
+    const pack = JSON.parse(execFileSync(process.execPath, [
+        cli,
+        'context-pack',
+        root,
+        '--task',
+        'inspect current session',
+        '--write',
+    ], { encoding: 'utf8' }));
+    assert.equal(pack.schema_version, 'ecf-core.context-pack.v1');
+    assert.equal(pack.ok, true);
+    assert.equal(pack.task, 'inspect current session');
+    assert.equal(pack.authority_boundary.no_wallet_mutation, true);
+    assert.equal(pack.authority_boundary.no_marketplace_publication, true);
+    assert.equal(pack.summary.source_counts.allowed_sources > 0, true);
+    assert.equal(pack.summary.live_deploy_allowed, false);
+    assert.ok(pack.assistant_bootstrap.read_order.includes('ecf.config.json'));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'context-pack.json')));
+});
+
 test('CLI eval writes deterministic JSON and Markdown reports', () => {
     const root = makeProject();
     const cli = path.join(__dirname, '..', 'bin', 'ecf-core.js');
@@ -547,6 +584,24 @@ test('local MCP server exposes read-only compiled context tools', () => {
                 arguments: {},
             },
         },
+        {
+            jsonrpc: '2.0',
+            id: 5,
+            method: 'tools/call',
+            params: {
+                name: 'ecf_core.status',
+                arguments: {},
+            },
+        },
+        {
+            jsonrpc: '2.0',
+            id: 6,
+            method: 'tools/call',
+            params: {
+                name: 'ecf_core.context_pack',
+                arguments: { task: 'mcp context' },
+            },
+        },
     ].map((item) => JSON.stringify(item)).join('\n');
     const result = spawnSync(process.execPath, [cli, 'serve-mcp', path.join(root, '.ecf-core')], {
         input: `${requests}\n`,
@@ -556,6 +611,8 @@ test('local MCP server exposes read-only compiled context tools', () => {
     const responses = result.stdout.trim().split('\n').map((line) => JSON.parse(line));
     assert.equal(responses[0].result.serverInfo.name, 'agoragentic-ecf-core');
     assert.ok(responses[1].result.tools.some((tool) => tool.name === 'ecf_core.search_context'));
+    assert.ok(responses[1].result.tools.some((tool) => tool.name === 'ecf_core.status'));
+    assert.ok(responses[1].result.tools.some((tool) => tool.name === 'ecf_core.context_pack'));
     const searchPayload = JSON.parse(responses[2].result.content[0].text);
     assert.equal(searchPayload.boundary.read_only, true);
     assert.equal(searchPayload.boundary.live_deploy_allowed, false);
@@ -564,4 +621,10 @@ test('local MCP server exposes read-only compiled context tools', () => {
     const policyPayload = JSON.parse(responses[3].result.content[0].text);
     assert.equal(policyPayload.boundary.hosted_runtime, false);
     assert.equal(policyPayload.boundary.full_ecf_private_internals, false);
+    const statusPayload = JSON.parse(responses[4].result.content[0].text);
+    assert.equal(statusPayload.resident_state, 'ready');
+    assert.equal(statusPayload.authority_boundary.no_cloud_call, true);
+    const packPayload = JSON.parse(responses[5].result.content[0].text);
+    assert.equal(packPayload.task, 'mcp context');
+    assert.equal(packPayload.summary.live_deploy_allowed, false);
 });
