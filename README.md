@@ -8,6 +8,14 @@ It helps builders compile local repos, docs, and small data sources into citatio
 
 It does not deploy agents, handle wallets, route marketplace calls, or include private Full ECF internals.
 
+## What This Means For Builders
+
+Installing ECF Core on a codebase gives builders a self-hosted context-governance compiler. Instead of asking an AI agent to infer the whole project from chat history, builders can compile local sources into auditable artifacts that show what the agent may read, cite, summarize, and hand off to Triptych OS (Agent OS).
+
+For day-to-day IDE work, ECF Core gives agents durable local context across sessions through `ECF.md`, `.ecf-core/*` artifacts, and the optional resident MCP server. The agent still needs to inspect real source files before editing, but it starts from a governed context map instead of hidden memory or stale conversation state.
+
+For product builders, ECF Core is the open self-hosted step between simple Micro ECF packets and hosted Agent OS deployment. It helps prove that a project has grounded context, citation evidence, policy boundaries, and preview-ready artifacts before any runtime, wallet, marketplace, or x402 capability is enabled.
+
 ECF Core helps answer:
 
 - What context is allowed?
