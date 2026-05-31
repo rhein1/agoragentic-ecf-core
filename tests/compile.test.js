@@ -276,6 +276,8 @@ test('CLI worklog docs-sync and handoff persist local-only resident work memory'
     const root = makeProject();
     const cli = path.join(__dirname, '..', 'bin', 'ecf-core.js');
     execFileSync(process.execPath, [cli, 'compile', root, '--agent-os'], { stdio: 'pipe' });
+    execFileSync('git', ['init'], { cwd: root, stdio: 'pipe' });
+    execFileSync('git', ['add', 'src/app.js'], { cwd: root, stdio: 'pipe' });
 
     const begin = JSON.parse(execFileSync(process.execPath, [
         cli,
@@ -305,10 +307,14 @@ test('CLI worklog docs-sync and handoff persist local-only resident work memory'
         'bin/ecf-core.js,src/work-memory.js',
         '--validation',
         'node --check src/work-memory.js',
+        '--unfinished',
+        'Full ECF resident manager',
         '--json',
     ], { encoding: 'utf8' }));
     assert.equal(checkpoint.checkpoint.schema_version, 'ecf-core.worklog-checkpoint.v1');
     assert.ok(checkpoint.current.changed_files.includes('src/work-memory.js'));
+    assert.ok(checkpoint.current.changed_files.includes('src/app.js'));
+    assert.ok(checkpoint.current.unfinished_work.includes('Full ECF resident manager'));
 
     const finished = JSON.parse(execFileSync(process.execPath, [
         cli,
@@ -321,8 +327,6 @@ test('CLI worklog docs-sync and handoff persist local-only resident work memory'
         'abc1234',
         '--tests',
         'npm test',
-        '--unfinished',
-        'Full ECF resident manager',
         '--next-prompt',
         'Implement private Full ECF resident workspace manager',
         '--json',
@@ -330,6 +334,8 @@ test('CLI worklog docs-sync and handoff persist local-only resident work memory'
     assert.equal(finished.finished.schema_version, 'ecf-core.worklog-finished.v1');
     assert.equal(finished.finished.status, 'finished');
     assert.ok(finished.finished.validation.includes('npm test'));
+    assert.ok(finished.finished.changed_files.includes('src/app.js'));
+    assert.ok(finished.finished.unfinished_work.includes('Full ECF resident manager'));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'worklog', 'latest-summary.md')));
 
     const docsPlan = JSON.parse(execFileSync(process.execPath, [

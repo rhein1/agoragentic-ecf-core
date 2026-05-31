@@ -112,6 +112,13 @@ function gitSnapshot(projectRoot) {
     };
 }
 
+function gitTrackedChanges(snapshot = {}) {
+    return [...new Set([
+        ...((snapshot.changed_files || []).filter(Boolean)),
+        ...((snapshot.staged_files || []).filter(Boolean)),
+    ])];
+}
+
 function authorityBoundary() {
     return {
         local_only: true,
@@ -211,7 +218,7 @@ function checkpointWorklog(options = {}) {
     };
     current.updated_at = checkpoint.at;
     current.decisions = [...new Set([...(current.decisions || []), ...checkpoint.decisions])];
-    current.changed_files = [...new Set([...(current.changed_files || []), ...checkpoint.changed_files, ...checkpoint.git.changed_files])];
+    current.changed_files = [...new Set([...(current.changed_files || []), ...checkpoint.changed_files, ...gitTrackedChanges(checkpoint.git)])];
     current.validation = [...new Set([...(current.validation || []), ...checkpoint.validation])];
     current.unfinished_work = checkpoint.unfinished_work.length ? checkpoint.unfinished_work : current.unfinished_work;
     current.next_prompt = checkpoint.next_prompt || current.next_prompt;
@@ -235,6 +242,8 @@ function checkpointWorklog(options = {}) {
 function finishWorklog(options = {}) {
     const { projectRoot, worklogDir } = resolveWorkspace(options);
     const current = requireCurrent(worklogDir);
+    const git = gitSnapshot(projectRoot);
+    const unfinishedWork = splitList(options.unfinished);
     const finished = {
         ...current,
         schema_version: 'ecf-core.worklog-finished.v1',
@@ -242,11 +251,12 @@ function finishWorklog(options = {}) {
         summary: String(options.summary || '').trim() || current.summary || 'Work finished.',
         completed_at: nowIso(),
         updated_at: nowIso(),
+        changed_files: [...new Set([...(current.changed_files || []), ...gitTrackedChanges(git)])],
         validation: [...new Set([...(current.validation || []), ...splitList(options.validation), ...splitList(options.tests)])],
         commits: [...new Set([...(current.commits || []), ...splitList(options.commit)])],
-        unfinished_work: splitList(options.unfinished),
+        unfinished_work: unfinishedWork.length ? unfinishedWork : (current.unfinished_work || []),
         next_prompt: String(options.nextPrompt || '').trim() || current.next_prompt || null,
-        git: gitSnapshot(projectRoot),
+        git,
         authority_boundary: authorityBoundary(),
     };
     writeJson(currentWorkPath(worklogDir), finished);
