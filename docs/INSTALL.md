@@ -28,6 +28,17 @@ ecf-core serve-mcp .ecf-core
 
 The MCP server reads local compiled artifacts only. It does not deploy agents, spend funds, call remote models, or call Agoragentic Cloud.
 
+Optional resident work memory for session continuity:
+
+```bash
+ecf-core worklog begin . --goal "current goal"
+ecf-core worklog checkpoint . --summary "what changed" --validation "npm test"
+ecf-core docs-sync plan .
+ecf-core handoff . --write
+```
+
+These commands write local `.ecf-core/` worklog, docs-sync, handoff, and next-session files. They do not auto-edit docs, deploy agents, spend funds, call x402, or expose private Full ECF internals.
+
 ## From GitHub
 
 ```bash
@@ -69,6 +80,11 @@ The compile/eval flow writes:
   eval-report.md
   grounding-eval.json
   grounding-eval.md
+  worklog/current.json
+  worklog/latest-summary.md
+  docs-sync-plan.json
+  handoff.md
+  next-session.md
 ```
 
 ## Safety Defaults

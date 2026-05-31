@@ -37,7 +37,20 @@ The generated server exposes:
 - `ecf_core.get_policy`
 - `ecf_core.get_manifest`
 - `ecf_core.agent_os_preview_check`
+- `ecf_core.worklog_status`
+- `ecf_core.handoff`
+- `ecf_core.work_memory`
+
+Resident work memory can be refreshed before a restart with:
+
+```bash
+ecf-core worklog checkpoint . --summary "current progress"
+ecf-core docs-sync plan .
+ecf-core handoff . --write
+```
 
 ## Boundary
 
 The resident MCP server is local-only. It reads compiled ECF Core artifacts and does not deploy, spend, mutate wallets, settle x402, publish marketplace listings, route marketplace calls, provision hosted Agent OS runtime, or expose Full ECF private internals.
+
+`docs-sync plan` writes only a local plan. It does not auto-edit documentation unless a future explicit apply command is added and run intentionally.

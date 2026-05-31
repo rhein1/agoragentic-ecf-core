@@ -46,6 +46,9 @@ Restart Codex after installation. Codex loads MCP servers at startup. See [`CODE
 | `ecf_core.agent_os_preview_check` | Run the local Agent OS preview-import readiness check. |
 | `ecf_core.status` | Return local resident status, artifact health, and authority boundary. |
 | `ecf_core.context_pack` | Return an IDE/Codex-friendly compiled context summary without raw source content. |
+| `ecf_core.worklog_status` | Return local worklog status for next-session continuity. |
+| `ecf_core.handoff` | Return the local next-session handoff without writing files. |
+| `ecf_core.work_memory` | Return local worklog, docs-sync, handoff, and latest-summary artifacts. |
 
 ## Boundary
 
@@ -56,6 +59,7 @@ The MCP server only reads compiled local artifacts:
 - `policy-summary.json`
 - `manifest.json`
 - Agent OS preview/import files when requested by the readiness check
+- resident worklog, docs-sync, and handoff artifacts when requested by work-memory tools
 
 It does not:
 
@@ -76,6 +80,7 @@ At the start of work, the assistant should disclose whether it is using:
 
 - ECF Core MCP tools
 - generated `.ecf-core/*` artifacts
+- resident `.ecf-core/worklog/*` and `.ecf-core/handoff.md` artifacts
 - direct repo reads
 - none of them
 

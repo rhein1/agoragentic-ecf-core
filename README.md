@@ -12,7 +12,9 @@ It does not deploy agents, handle wallets, route marketplace calls, or include p
 
 Installing ECF Core on a codebase gives builders a self-hosted context-governance compiler. Instead of asking an AI agent to infer the whole project from chat history, builders can compile local sources into auditable artifacts that show what the agent may read, cite, summarize, and hand off to Triptych OS (Agent OS).
 
-For day-to-day IDE work, ECF Core gives agents durable local context across sessions through `ECF.md`, `.ecf-core/*` artifacts, and the optional resident MCP server. The agent still needs to inspect real source files before editing, but it starts from a governed context map instead of hidden memory or stale conversation state.
+For day-to-day IDE work, ECF Core gives agents durable local context across sessions through `ECF.md`, `.ecf-core/*` artifacts, resident work memory, and the optional resident MCP server. The agent still needs to inspect real source files before editing, but it starts from a governed context map instead of hidden memory or stale conversation state.
+
+The resident layer is a local file ledger for builders and IDE agents. It records active goals, checkpoints, changed files, validation, docs-sync plans, handoffs, and next prompts under `.ecf-core/`. It is not cloud sync, not a daemon, not hidden global memory, and not Full ECF. MCP-capable IDEs can read those artifacts through `ecf_core.worklog_status`, `ecf_core.handoff`, and `ecf_core.work_memory`.
 
 For product builders, ECF Core is the open self-hosted step between simple Micro ECF packets and hosted Agent OS deployment. It helps prove that a project has grounded context, citation evidence, policy boundaries, and preview-ready artifacts before any runtime, wallet, marketplace, or x402 capability is enabled.
 
@@ -131,6 +133,7 @@ Do not treat that contact path as a SOC 2, audit, enterprise-readiness, hosted r
 - Agent OS Harness and deployment-preview exports
 - Agent OS preview/import readiness check
 - Local stdio MCP server for active context serving from compiled artifacts
+- Local resident worklog, docs-sync plan, and handoff artifacts for session continuity
 - Safe examples for local projects
 
 ## What Is Not Included
@@ -289,6 +292,18 @@ ecf-core agent-os-preview .ecf-core
 ecf-core validate .ecf-core
 ```
 
+Optional resident continuity:
+
+```bash
+ecf-core worklog begin . --goal "current goal"
+ecf-core worklog checkpoint . --summary "what changed"
+ecf-core worklog status .
+ecf-core docs-sync plan .
+ecf-core handoff . --write
+```
+
+Use this before closing a long IDE/Codex session or after a scoped commit. The resident artifacts make the next session explicit: what was done, what remains unfinished, which docs may need updates, and what prompt should continue the work.
+
 The compiler writes:
 
 ```text
@@ -311,6 +326,14 @@ The compiler writes:
   eval-report.md
   grounding-eval.json
   grounding-eval.md
+  worklog/current.json
+  worklog/history.jsonl
+  worklog/checkpoints.jsonl
+  worklog/latest-summary.md
+  docs-sync-plan.json
+  handoff.json
+  handoff.md
+  next-session.md
 ```
 
 Review `ecf.config.json` before compiling sensitive repositories.
@@ -388,6 +411,15 @@ ecf-core init [project] [--force]
 ecf-core compile [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--agent-os]
 ecf-core eval [project] [--config ecf.config.json] [--out .ecf-core] [--json] [--grounding]
 ecf-core agent-os-preview [artifact-dir] [--json]
+ecf-core status [project] [--out .ecf-core] [--write] [--json]
+ecf-core context-pack [project] [--out .ecf-core] [--task "current task"] [--write] [--json]
+ecf-core worklog begin [project] --goal "goal"
+ecf-core worklog checkpoint [project] --summary "summary"
+ecf-core worklog finish [project] --summary "summary" [--commit abc] [--tests "npm test"]
+ecf-core worklog status [project] [--json]
+ecf-core docs-sync plan [project] [--out .ecf-core] [--json]
+ecf-core handoff [project] [--out .ecf-core] [--write] [--json]
+ecf-core mcp-config --target codex [project] [--out .ecf-core] [--write] [--install-codex]
 ecf-core serve-mcp [artifact-dir]
 ecf-core validate [artifact-dir]
 ecf-core version
@@ -429,6 +461,7 @@ npm run pack:dry
 - [Custom Adapters](docs/CUSTOM_ADAPTERS.md)
 - [Evaluation](docs/EVALUATION.md)
 - [Local MCP Server](docs/MCP_SERVER.md)
+- [Resident Work Memory](docs/RESIDENT_WORK_MEMORY.md)
 - [Context Evidence Units](docs/EVIDENCE_UNITS.md)
 - [.NET Support](docs/DOTNET.md)
 - [Versioning](docs/VERSIONING.md)
