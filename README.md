@@ -132,6 +132,7 @@ Do not treat that contact path as a SOC 2, audit, enterprise-readiness, hosted r
 - Deterministic compression experiment metrics
 - Agent OS Harness and deployment-preview exports
 - Agent OS preview/import readiness check
+- Preview-only importer example for pairing Agent OS Harness evidence with a local Agoragentic Rust framework HTTP/JSON runtime
 - Local stdio MCP server for active context serving from compiled artifacts
 - Local resident worklog, docs-sync plan, and handoff artifacts for session continuity
 - Safe examples for local projects
