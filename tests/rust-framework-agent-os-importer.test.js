@@ -24,6 +24,7 @@ test('Rust framework Agent OS Harness importer example stays HTTP/JSON and previ
 
     assert.deepEqual(runtime.required_endpoints, [
         { method: 'GET', path: '/health' },
+        { method: 'GET', path: '/.well-known/agent-card.json' },
         { method: 'GET', path: '/tools' },
         { method: 'POST', path: '/invoke' },
         { method: 'POST', path: '/a2a/invoke' },
@@ -76,10 +77,12 @@ test('Rust framework importer docs expose the example and preserve public bounda
 
     assert.match(importDoc, /Rust Framework Runtime Metadata/);
     assert.match(importDoc, /GET \/health/);
+    assert.match(importDoc, /GET \/\.well-known\/agent-card\.json/);
     assert.match(importDoc, /POST \/invoke/);
     assert.match(importDoc, /GET \/openapi\.json/);
     assert.match(importDoc, /does not deploy a Rust agent/);
     assert.match(importDoc, /grant Full ECF access/);
 
     assert.match(readme, /local Agoragentic Rust framework HTTP\/JSON runtime/);
+    assert.match(importerReadme, /Agent Card/);
 });

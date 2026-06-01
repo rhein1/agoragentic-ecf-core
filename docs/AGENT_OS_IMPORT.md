@@ -57,13 +57,14 @@ An importer may pair `agent-os-harness.json` with a local Agoragentic Rust frame
 The local Rust runtime compatibility surface is:
 
 - `GET /health`
+- `GET /.well-known/agent-card.json`
 - `GET /tools`
 - `POST /invoke`
 - `POST /a2a/invoke`
 - `GET /schema/agoragentic-rust-framework.json`
 - `GET /openapi.json`
 
-Consumers should verify the runtime health response, tool manifest, JSON Schema, and OpenAPI profile before showing runtime readiness. They should use the stable HTTP/JSON, JSON Schema, TypeScript declaration, and Python model boundaries rather than requiring PyO3, N-API, WASM, local model downloads, wallet access, or hosted provider calls.
+Consumers should verify the runtime health response, Agent Card, tool manifest, JSON Schema, and OpenAPI profile before showing runtime readiness. They should use the stable HTTP/JSON, JSON Schema, TypeScript declaration, and Python model boundaries rather than requiring PyO3, N-API, WASM, local model downloads, wallet access, or hosted provider calls.
 
 See [`../examples/importers/rust-framework-agent-os-harness-import.example.json`](../examples/importers/rust-framework-agent-os-harness-import.example.json) for a preview-only importer fixture. The fixture does not deploy a Rust agent, expose a public API, publish a marketplace listing, enable x402, mutate trust, change hosted Router routes, or grant Full ECF access.
 

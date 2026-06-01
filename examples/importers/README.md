@@ -32,9 +32,9 @@ When an importer also receives a local Agoragentic Rust framework runtime, it sh
 
 - keep `agent-os-harness.json` as preview evidence only
 - require the Rust runtime boundary to be HTTP/JSON
-- verify local `/health`, `/tools`, `/invoke`, `/a2a/invoke`, schema, and OpenAPI endpoints before showing runtime readiness
+- verify local `/health`, `/.well-known/agent-card.json`, `/tools`, `/invoke`, `/a2a/invoke`, schema, and OpenAPI endpoints before showing runtime readiness
 - use JSON Schema, TypeScript declarations, or Python models as compatibility artifacts instead of native bindings
-- show runtime health and tool metadata in the owner report without invoking paid or side-effecting work
+- show runtime health, Agent Card, and tool metadata in the owner report without invoking paid or side-effecting work
 
 An importer must not:
 
