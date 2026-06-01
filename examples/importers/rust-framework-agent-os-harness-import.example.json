@@ -1,0 +1,90 @@
+{
+  "schema_version": "ecf-core.rust-framework-agent-os-harness-import-example.v1",
+  "input": {
+    "agent_os_harness_artifact": ".ecf-core/agent-os-harness.json",
+    "required_harness_schema_version": "ecf-core.agent-os-harness.v1",
+    "rust_framework_runtime": {
+      "framework": "agoragentic-rust-framework",
+      "integration_boundary": "http_json",
+      "base_url": "http://127.0.0.1:3030",
+      "health_url": "http://127.0.0.1:3030/health",
+      "tools_url": "http://127.0.0.1:3030/tools",
+      "invoke_url": "http://127.0.0.1:3030/invoke",
+      "a2a_invoke_url": "http://127.0.0.1:3030/a2a/invoke",
+      "schema_url": "http://127.0.0.1:3030/schema/agoragentic-rust-framework.json",
+      "openapi_url": "http://127.0.0.1:3030/openapi.json",
+      "public_schema_id": "https://agoragentic.com/schema/agoragentic-rust-framework.v1.json",
+      "required_endpoints": [
+        { "method": "GET", "path": "/health" },
+        { "method": "GET", "path": "/tools" },
+        { "method": "POST", "path": "/invoke" },
+        { "method": "POST", "path": "/a2a/invoke" },
+        { "method": "GET", "path": "/schema/agoragentic-rust-framework.json" },
+        { "method": "GET", "path": "/openapi.json" }
+      ]
+    }
+  },
+  "required_harness_checks": [
+    "read_agent_os_harness_json",
+    "require_ecf_core_agent_os_harness_v1",
+    "require_harness_boundary_preview_only",
+    "show_context_compile_readiness",
+    "show_context_index_readiness",
+    "preserve_agent_os_preview_requires_user_review"
+  ],
+  "required_runtime_checks": [
+    "fetch_local_rust_health_when_runtime_is_running",
+    "verify_runtime_language_is_rust",
+    "verify_runtime_transport_is_http",
+    "verify_runtime_harness_compatible_true",
+    "fetch_tool_manifest_without_invoking_tools",
+    "fetch_rust_framework_json_schema",
+    "fetch_rust_framework_openapi_profile",
+    "verify_openapi_paths_match_required_endpoints"
+  ],
+  "compatibility_artifacts": {
+    "json_schema": "https://agoragentic.com/schema/agoragentic-rust-framework.v1.json",
+    "typescript_declarations": "agoragentic/rust-framework.generated.d.ts",
+    "python_models": "agoragentic.rust_framework_types",
+    "native_bindings_required": false
+  },
+  "authority_boundary": {
+    "hosted_agent_os_provisioning_enabled": false,
+    "wallet_or_settlement_enabled": false,
+    "x402_settlement_enabled": false,
+    "marketplace_publication_enabled": false,
+    "trust_mutation_enabled": false,
+    "router_ranking_enabled": false,
+    "full_ecf_private_internals_included": false,
+    "global_execute_route_mutation_enabled": false,
+    "global_invoke_route_mutation_enabled": false
+  },
+  "forbidden_side_effects": [
+    "auto_deploy",
+    "hosted_runtime_provisioning",
+    "wallet_funding",
+    "wallet_spend",
+    "x402_enablement",
+    "marketplace_publish",
+    "trust_mutation",
+    "router_ranking_mutation",
+    "public_api_exposure",
+    "full_ecf_access",
+    "global_execute_route_mutation",
+    "global_invoke_route_mutation"
+  ],
+  "owner_report": {
+    "sections": [
+      "ecf_core_context_readiness",
+      "ecf_core_context_index_readiness",
+      "rust_runtime_health",
+      "rust_runtime_tool_manifest",
+      "rust_runtime_schema_compatibility",
+      "rust_runtime_openapi_profile",
+      "preview_readiness",
+      "missing_runtime_checks",
+      "required_owner_approvals"
+    ]
+  },
+  "next_step": "create_agent_os_preview_report_only"
+}
