@@ -74,7 +74,7 @@ class OpenApiAdapter extends ContextAdapter {
         const fileInventory = input.fileInventory || walkFiles(projectRoot, config);
         for (const fullPath of fileInventory) {
             const relativePath = normalizePath(path.relative(projectRoot, fullPath));
-            if (!/(openapi|swagger).*\.(json|ya?ml)$/i.test(path.basename(relativePath))) continue;
+            if (!/^[a-z0-9_-]*(?:openapi|swagger)[^.]*\.(?:json|ya?ml)$/i.test(path.basename(relativePath))) continue;
             const policy = classifyPath(relativePath, config);
             if (policy.classification !== 'allowed') continue;
 
