@@ -13,10 +13,20 @@ const {
 } = require('../src');
 
 const POLICY_SENTENCE = 'No customer PII leaves the repo.';
+const ROOT_CONFIG_SECRET = 'sk-test-config-secret-do-not-leak';
+
+function escapeRegex(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function portablePath(filePath) {
+    return String(filePath || '').replace(/\\/g, '/');
+}
 
 function makeFirstRunProject() {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ecf-core-adoption-'));
     fs.mkdirSync(path.join(root, 'docs'), { recursive: true });
+    fs.mkdirSync(path.join(root, 'private-connectors'), { recursive: true });
     fs.mkdirSync(path.join(root, '.micro-ecf'), { recursive: true });
     fs.writeFileSync(path.join(root, 'agent.js'), [
         'export async function run(input) {',
@@ -24,10 +34,18 @@ function makeFirstRunProject() {
         '}',
         '',
     ].join('\n'));
+    fs.writeFileSync(path.join(root, 'config.json'), JSON.stringify({
+        apiKey: ROOT_CONFIG_SECRET,
+        publicName: 'first-run fixture',
+    }, null, 2));
     fs.writeFileSync(path.join(root, 'docs', 'policy.md'), [
         '# Policy',
         '',
         POLICY_SENTENCE,
+        '',
+    ].join('\n'));
+    fs.writeFileSync(path.join(root, 'private-connectors', 'stripe.js'), [
+        'export const stripeConnector = true;',
         '',
     ].join('\n'));
     fs.writeFileSync(path.join(root, '.env'), 'API_KEY=sk-test-fake-secret-do-not-leak\n');
@@ -51,10 +69,17 @@ test('first-run compile preserves policy text, indexes code, and blocks secrets 
         manifest: result.manifest,
     });
 
-    assert.match(artifactText, new RegExp(POLICY_SENTENCE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-    assert.doesNotMatch(artifactText, /sk-test-fake-secret|API_KEY/);
+    const configSource = result.contextPacket.sources.find((source) => source.path === 'config.json');
+    assert.ok(configSource);
+    assert.match(configSource.content_preview, /\[REDACTED\]/);
+    assert.doesNotMatch(configSource.content_preview, new RegExp(escapeRegex(ROOT_CONFIG_SECRET)));
+
+    assert.match(artifactText, new RegExp(escapeRegex(POLICY_SENTENCE)));
+    assert.doesNotMatch(artifactText, new RegExp(`sk-test-fake-secret|API_KEY|${escapeRegex(ROOT_CONFIG_SECRET)}`));
     assert.ok(result.sourceMap.sources.some((source) => source.path === '.env' && source.classification === 'blocked'));
     assert.ok(result.contextPacket.sources.some((source) => source.path === 'agent.js' && source.type === 'code'));
+    assert.ok(result.sourceMap.sources.some((source) => source.path === 'private-connectors/stripe.js' && source.classification === 'review_required'));
+    assert.ok(!result.contextPacket.sources.some((source) => source.path === 'private-connectors/stripe.js'));
     assert.ok(result.contextPacket.sources.some((source) => source.path === 'docs/policy.md'));
     assert.ok(result.contextPacket.sources.some((source) => source.path === 'docs/policy.md#policy'));
     assert.ok(!result.sourceMap.sources.some((source) => source.path.startsWith('.micro-ecf/')));
@@ -72,7 +97,7 @@ test('MCP search retrieves the first-run policy sentence with provenance', async
     });
     const hit = search.results.find((result) => result.path === 'docs/policy.md#policy' || result.path === 'docs/policy.md');
     assert.ok(hit);
-    assert.match(hit.summary, new RegExp(POLICY_SENTENCE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(hit.summary, new RegExp(escapeRegex(POLICY_SENTENCE)));
 
     const source = callMcpTool({
         artifactDir: outDir,
@@ -80,7 +105,7 @@ test('MCP search retrieves the first-run policy sentence with provenance', async
         args: { path: hit.path },
     });
     assert.match(JSON.stringify(source), /docs\/policy\.md/);
-    assert.match(JSON.stringify(source), new RegExp(POLICY_SENTENCE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(JSON.stringify(source), new RegExp(escapeRegex(POLICY_SENTENCE)));
 });
 
 test('Agent OS preview off-ramp gives a real command and URL', async () => {
@@ -91,7 +116,7 @@ test('Agent OS preview off-ramp gives a real command and URL', async () => {
     const report = inspectAgentOsPreview(outDir);
     assert.equal(report.ok, true);
     assert.match(report.next_step, /AGORAGENTIC_API_KEY=amk_/);
-    assert.match(report.next_step, /npx -y agoragentic-os preview \.ecf-core\/agent-os-import\.json/);
+    assert.match(report.next_step, new RegExp(`npx -y agoragentic-os preview ${escapeRegex(portablePath(path.join(outDir, 'agent-os-import.json')))}`));
     assert.match(report.next_step_url, /^https:\/\/agoragentic\.com\/agent-os\/start/);
 });
 

@@ -21,8 +21,8 @@ function portablePath(filePath) {
 }
 
 function agentOsImportPath(resolvedDir) {
-    const basename = path.basename(resolvedDir);
-    if (basename === '.ecf-core') return '.ecf-core/agent-os-import.json';
+    const cwdArtifactDir = path.resolve('.ecf-core');
+    if (path.resolve(resolvedDir) === cwdArtifactDir) return '.ecf-core/agent-os-import.json';
     return portablePath(path.join(resolvedDir, 'agent-os-import.json'));
 }
 

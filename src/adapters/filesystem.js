@@ -79,8 +79,42 @@ function stripMarkdownHeading(line) {
     return line.replace(/^#{1,6}\s+/, '').trim();
 }
 
+const SENSITIVE_KEY_PATTERN = /\b(api[_-]?key|access[_-]?token|auth[_-]?token|authorization|bearer|client[_-]?secret|connection[_-]?string|connectionstrings?|password|passwd|private[_-]?key|secret|token|webhook[_-]?secret|azurewebjobsstorage|openai)\b/i;
+const SENSITIVE_VALUE_PATTERN = /\b(sk-(?:live|test|proj)?-?[A-Za-z0-9_-]{8,}|gh[opsu]_[A-Za-z0-9_]{8,}|github_pat_[A-Za-z0-9_]{8,}|AKIA[0-9A-Z]{12,}|xox[baprs]-[A-Za-z0-9-]{8,})\b/g;
+
+function isSensitiveKey(key) {
+    return SENSITIVE_KEY_PATTERN.test(String(key || ''));
+}
+
+function redactSensitiveLine(line) {
+    const text = String(line || '');
+    const jsonPair = text.match(/^(\s*"([^"]+)"\s*:\s*)("(?:\\.|[^"\\])*"|[^,\r\n}]*)(.*)$/);
+    if (jsonPair && isSensitiveKey(jsonPair[2])) {
+        return `${jsonPair[1]}"[REDACTED]"${jsonPair[4]}`;
+    }
+
+    const yamlPair = text.match(/^(\s*([A-Za-z0-9_.-]+)\s*:\s*)(.*)$/);
+    if (yamlPair && isSensitiveKey(yamlPair[2])) {
+        return `${yamlPair[1]}[REDACTED]`;
+    }
+
+    const assignment = text.match(/^(\s*([A-Za-z0-9_.-]+)\s*=\s*)(.*)$/);
+    if (assignment && isSensitiveKey(assignment[2])) {
+        return `${assignment[1]}[REDACTED]`;
+    }
+
+    return text.replace(SENSITIVE_VALUE_PATTERN, '[REDACTED]');
+}
+
+function redactSensitiveText(text) {
+    return String(text || '')
+        .split('\n')
+        .map((line) => redactSensitiveLine(line))
+        .join('\n');
+}
+
 function previewText(text, maxChars = 1600) {
-    const normalized = text
+    const normalized = redactSensitiveText(text)
         .replace(/\r\n/g, '\n')
         .split('\n')
         .map((line) => line.trimEnd())
@@ -294,6 +328,7 @@ module.exports = {
     isTextFile,
     isGeneratedEcfArtifactPath,
     previewText,
+    redactSensitiveText,
     summarizeText,
     walkFiles,
 };
