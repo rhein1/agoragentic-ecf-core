@@ -4,6 +4,36 @@ const { rankingOptionsFromConfig, tokenize, topK } = require('./core/ranking');
 const { findTreeNodesForSource } = require('./context-index');
 
 const DEFAULT_UNSUPPORTED_RESPONSE = "I don't know based on the allowed context.";
+const SUPPORT_STOPWORDS = new Set([
+    'a',
+    'an',
+    'and',
+    'are',
+    'as',
+    'at',
+    'be',
+    'by',
+    'can',
+    'do',
+    'does',
+    'for',
+    'from',
+    'how',
+    'is',
+    'it',
+    'of',
+    'on',
+    'or',
+    'say',
+    'the',
+    'to',
+    'what',
+    'when',
+    'where',
+    'who',
+    'why',
+    'with',
+]);
 
 function normalizeQuestion(value) {
     return String(value || '').trim();
@@ -29,13 +59,18 @@ function includesBlockedTerm(query, sourceMap) {
     });
 }
 
+function supportTokens(value) {
+    return [...tokenize(value)].filter((token) => !SUPPORT_STOPWORDS.has(token));
+}
+
 function selectSentence(summary, query) {
-    const queryTokens = tokenize(query);
+    const queryTokens = supportTokens(query);
+    if (queryTokens.length === 0) return null;
     const sentences = String(summary || '').split(/(?<=[.!?])\s+|\n+/).map((sentence) => sentence.trim()).filter(Boolean);
     let best = null;
     let bestScore = 0;
     for (const sentence of sentences.length ? sentences : [String(summary || '').trim()].filter(Boolean)) {
-        const sentenceTokens = tokenize(sentence);
+        const sentenceTokens = new Set(supportTokens(sentence));
         let score = 0;
         for (const token of queryTokens) {
             if (sentenceTokens.has(token)) score += 1;

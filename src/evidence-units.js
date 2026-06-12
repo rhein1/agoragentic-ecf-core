@@ -71,6 +71,7 @@ function sourceBytes(source) {
         hash: source.hash,
         heading: source.heading || null,
         summary: source.summary || '',
+        content_preview: source.content_preview || '',
         provenance: source.provenance || {},
     }));
 }
@@ -92,8 +93,9 @@ function buildContextEvidenceUnits({ contextPacket, createdAt = new Date().toISO
     const citationsBySource = new Map((contextPacket.citations || []).map((citation) => [citation.source_id, citation]));
     const units = (contextPacket.sources || []).map((source) => {
         const citation = citationsBySource.get(source.id);
-        const claim = firstSentence(source.summary) || `Source ${source.path} is available as allowed local context.`;
-        const supportedAnswer = compact(source.summary || claim);
+        const sourceText = normalizeText(`${source.summary || ''} ${source.content_preview || ''}`);
+        const claim = firstSentence(sourceText) || `Source ${source.path} is available as allowed local context.`;
+        const supportedAnswer = compact(sourceText || claim);
         const hash = sha256(`${source.id}:${source.hash}:${claim}:${supportedAnswer}`);
         return {
             unit_id: `ceu_${hash.slice(0, 16)}`,
@@ -103,6 +105,7 @@ function buildContextEvidenceUnits({ contextPacket, createdAt = new Date().toISO
             source_hash: source.hash,
             claim,
             supported_answer: supportedAnswer,
+            content_preview: source.content_preview || null,
             summary: `${claim} ${supportedAnswer}`,
             citations: citation ? [citation.path] : [],
             citation_labels: citation?.label ? [citation.label] : [],

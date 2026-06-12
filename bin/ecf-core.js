@@ -71,7 +71,7 @@ function readFlag(args, name, fallback = null) {
     const index = args.indexOf(name);
     if (index === -1) return fallback;
     const value = args[index + 1];
-    if (!value || value.startsWith('--')) return true;
+    if (!value || value.startsWith('--')) throw new Error(`${name} requires a value`);
     return value;
 }
 
@@ -123,7 +123,7 @@ async function main() {
         if (args.includes('--json')) {
             console.log(JSON.stringify(report.summary, null, 2));
         } else {
-            console.log(`ECF Core eval verdict: ${report.summary.verdict}`);
+            console.log(`ECF Core packet-readiness verdict: ${report.summary.verdict}`);
             console.log(`JSON report: ${report.files.json}`);
             console.log(`Markdown report: ${report.files.markdown}`);
         }
@@ -194,6 +194,7 @@ async function main() {
                 for (const error of report.errors) console.log(`- ${error}`);
             }
             console.log(`Next step: ${report.next_step}`);
+            console.log(`Agent OS start: ${report.next_step_url}`);
         }
         if (!report.ok) process.exitCode = 1;
         return;

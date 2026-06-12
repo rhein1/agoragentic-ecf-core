@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { ContextAdapter } = require('./base');
-const { fileType, summarizeText, walkFiles } = require('./filesystem');
+const { fileType, previewText, summarizeText, walkFiles } = require('./filesystem');
 const { sha256, sourceId } = require('../core/hash');
 const { classifyPath, normalizePath } = require('../core/policy');
 
@@ -74,6 +74,7 @@ class MarkdownDocsAdapter extends ContextAdapter {
                     reason: 'markdown section extracted from allowed document',
                     hash: sha256(sectionText),
                     summary: summarizeText(sectionText, fileType(relativePath)),
+                    content_preview: previewText(sectionText),
                     heading: section.heading,
                     byte_count: Buffer.byteLength(sectionText),
                     line_count: section.lines.length,

@@ -180,6 +180,7 @@ function sourceRecords(contextPacket) {
     return (contextPacket.sources || []).map((source) => ({
         ...source,
         summary: source.summary || '',
+        content_preview: source.content_preview || '',
         provenance: source.provenance || {},
     }));
 }
@@ -204,6 +205,7 @@ function searchContext(artifacts, args = {}) {
             score: hit.score,
             type: source?.type || null,
             summary: source?.summary || null,
+            content_preview: source?.content_preview || null,
             citation_id: citation?.id || null,
             provenance: source?.provenance || {},
         };

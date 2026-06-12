@@ -8,20 +8,27 @@ const { classifyPath, normalizePath, shouldSkipDirectory } = require('../core/po
 
 const TEXT_EXTENSIONS = new Set([
     '.cjs',
+    '.cs',
     '.css',
     '.csv',
+    '.go',
     '.html',
+    '.java',
     '.js',
     '.json',
     '.jsx',
+    '.kt',
+    '.kts',
     '.md',
     '.mjs',
+    '.php',
     '.ps1',
     '.py',
     '.rb',
     '.rs',
     '.sh',
     '.sql',
+    '.swift',
     '.ts',
     '.tsx',
     '.txt',
@@ -35,7 +42,7 @@ function fileType(filePath) {
     if (ext === '.json') return 'json';
     if (ext === '.yaml' || ext === '.yml') return 'yaml';
     if (ext === '.sql') return 'sql';
-    if (['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.py', '.rb', '.rs', '.sh', '.ps1'].includes(ext)) return 'code';
+    if (['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx', '.py', '.rb', '.rs', '.sh', '.ps1', '.go', '.java', '.cs', '.php', '.swift', '.kt', '.kts'].includes(ext)) return 'code';
     if (['.html', '.css'].includes(ext)) return 'web';
     if (['.txt', '.csv'].includes(ext)) return 'text';
     return 'file';
@@ -61,19 +68,77 @@ function firstMarkdownHeading(text) {
     return line ? line.replace(/^#{1,6}\s+/, '').trim() : null;
 }
 
+function meaningfulLines(text) {
+    return text
+        .split(/\r?\n/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
+
+function stripMarkdownHeading(line) {
+    return line.replace(/^#{1,6}\s+/, '').trim();
+}
+
+const SENSITIVE_KEY_PATTERN = /\b(api[_-]?key|access[_-]?token|auth[_-]?token|authorization|bearer|client[_-]?secret|connection[_-]?string|connectionstrings?|password|passwd|private[_-]?key|secret|token|webhook[_-]?secret|azurewebjobsstorage|openai)\b/i;
+const SENSITIVE_VALUE_PATTERN = /\b(sk-(?:live|test|proj)?-?[A-Za-z0-9_-]{8,}|gh[opsu]_[A-Za-z0-9_]{8,}|github_pat_[A-Za-z0-9_]{8,}|AKIA[0-9A-Z]{12,}|xox[baprs]-[A-Za-z0-9-]{8,})\b/g;
+
+function isSensitiveKey(key) {
+    return SENSITIVE_KEY_PATTERN.test(String(key || ''));
+}
+
+function redactSensitiveLine(line) {
+    const text = String(line || '');
+    const jsonPair = text.match(/^(\s*"([^"]+)"\s*:\s*)("(?:\\.|[^"\\])*"|[^,\r\n}]*)(.*)$/);
+    if (jsonPair && isSensitiveKey(jsonPair[2])) {
+        return `${jsonPair[1]}"[REDACTED]"${jsonPair[4]}`;
+    }
+
+    const yamlPair = text.match(/^(\s*([A-Za-z0-9_.-]+)\s*:\s*)(.*)$/);
+    if (yamlPair && isSensitiveKey(yamlPair[2])) {
+        return `${yamlPair[1]}[REDACTED]`;
+    }
+
+    const assignment = text.match(/^(\s*([A-Za-z0-9_.-]+)\s*=\s*)(.*)$/);
+    if (assignment && isSensitiveKey(assignment[2])) {
+        return `${assignment[1]}[REDACTED]`;
+    }
+
+    return text.replace(SENSITIVE_VALUE_PATTERN, '[REDACTED]');
+}
+
+function redactSensitiveText(text) {
+    return String(text || '')
+        .split('\n')
+        .map((line) => redactSensitiveLine(line))
+        .join('\n');
+}
+
+function previewText(text, maxChars = 1600) {
+    const normalized = redactSensitiveText(text)
+        .replace(/\r\n/g, '\n')
+        .split('\n')
+        .map((line) => line.trimEnd())
+        .join('\n')
+        .trim();
+    if (!normalized) return '';
+    return normalized.length > maxChars ? `${normalized.slice(0, maxChars - 1).trimEnd()}…` : normalized;
+}
+
 function summarizeText(text, type) {
     if (type === 'json') {
         const jsonSummary = summarizeJson(text);
         if (jsonSummary) return jsonSummary;
     }
-    const heading = firstMarkdownHeading(text);
-    if (heading) return heading;
-    const line = text
-        .split(/\r?\n/)
-        .map((item) => item.trim())
-        .find(Boolean);
-    if (!line) return 'Empty text file.';
-    return line.length > 240 ? `${line.slice(0, 237)}...` : line;
+    const lines = meaningfulLines(text);
+    if (lines.length === 0) return 'Empty text file.';
+    const heading = type === 'markdown' && /^#{1,6}\s+/.test(lines[0])
+        ? stripMarkdownHeading(lines[0])
+        : null;
+    const bodyLine = lines.find((line, index) => !(index === 0 && /^#{1,6}\s+/.test(line)));
+    const summary = heading && bodyLine
+        ? `${heading}: ${bodyLine.replace(/^#{1,6}\s+/, '').trim()}`
+        : (heading || lines[0]);
+    return summary.length > 240 ? `${summary.slice(0, 237)}...` : summary;
 }
 
 function recordSkippedDirectory(root, dir, error, state) {
@@ -94,6 +159,25 @@ function isNestedGitRepository(root, dir) {
     }
 }
 
+function normalizeArtifactPath(relativePath) {
+    const withForwardSlashes = String(relativePath || '').split('\\').join('/');
+    let end = withForwardSlashes.length;
+    while (end > 0 && withForwardSlashes[end - 1] === '/') {
+        end -= 1;
+    }
+    return end === withForwardSlashes.length
+        ? withForwardSlashes
+        : withForwardSlashes.slice(0, end);
+}
+
+function isGeneratedEcfArtifactPath(relativePath) {
+    const normalized = normalizeArtifactPath(relativePath);
+    return normalized === '.ecf-core'
+        || normalized.startsWith('.ecf-core/')
+        || normalized === '.micro-ecf'
+        || normalized.startsWith('.micro-ecf/');
+}
+
 function walkFiles(root, config, dir = root, output = [], state = null) {
     let entries = [];
     try {
@@ -107,7 +191,13 @@ function walkFiles(root, config, dir = root, output = [], state = null) {
         const fullPath = path.join(dir, entry.name);
         const relativePath = normalizePath(path.relative(root, fullPath));
         if (entry.isDirectory()) {
-            if (!shouldSkipDirectory(relativePath, config) && !isNestedGitRepository(root, fullPath)) {
+            if (shouldSkipDirectory(relativePath, config) || isNestedGitRepository(root, fullPath)) {
+                if (state && isGeneratedEcfArtifactPath(relativePath)) {
+                    state.generatedArtifactsExcluded = (state.generatedArtifactsExcluded || 0) + 1;
+                    state.generatedArtifactPaths = state.generatedArtifactPaths || [];
+                    state.generatedArtifactPaths.push(relativePath);
+                }
+            } else {
                 walkFiles(root, config, fullPath, output, state);
             }
             continue;
@@ -223,6 +313,7 @@ class FilesystemAdapter extends ContextAdapter {
                 ...baseRecord,
                 hash: sha256(text),
                 summary: summarizeText(text, type),
+                content_preview: previewText(text),
                 heading: firstMarkdownHeading(text),
                 line_count: text.length ? text.split(/\r?\n/).length : 0,
             });
@@ -235,6 +326,9 @@ module.exports = {
     FilesystemAdapter,
     fileType,
     isTextFile,
+    isGeneratedEcfArtifactPath,
+    previewText,
+    redactSensitiveText,
     summarizeText,
     walkFiles,
 };

@@ -1,7 +1,5 @@
 'use strict';
 
-const path = require('node:path');
-
 function normalizePath(input) {
     return String(input || '')
         .replace(/\\/g, '/')
@@ -42,9 +40,8 @@ function matchesPattern(relativePath, pattern) {
         const prefix = normalizedPattern.slice(0, -3);
         if (normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`)) return true;
     }
-    const basename = path.posix.basename(normalizedPath);
-    const target = normalizedPattern.includes('/') ? normalizedPath : basename;
-    return globToRegex(normalizedPattern).test(target) || globToRegex(normalizedPattern).test(normalizedPath);
+    if (!normalizedPattern.includes('/') && normalizedPath.includes('/')) return false;
+    return globToRegex(normalizedPattern).test(normalizedPath);
 }
 
 function matchesAny(relativePath, patterns = []) {

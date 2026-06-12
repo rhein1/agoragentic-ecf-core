@@ -98,7 +98,7 @@ function sectionTypeForSource(source) {
 }
 
 function claimsFromSource(source) {
-    const summary = String(source.summary || '').trim();
+    const summary = String(source.content_preview || source.summary || '').trim();
     if (!summary) return [];
     return [summary.length > 320 ? `${summary.slice(0, 317)}...` : summary];
 }
@@ -207,6 +207,7 @@ function buildTreeIndex({ groups, providers, createdAt, sourceMap }) {
                 children: [],
                 heading: source.heading || source.provenance?.source_kind || source.type,
                 summary: source.summary,
+                content_preview: source.content_preview || null,
                 citations: [source.path],
                 policy_flags: source.policy_flags,
             });

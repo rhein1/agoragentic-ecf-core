@@ -1,6 +1,6 @@
 {
   "name": "agoragentic-ecf-core",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Local-first context and policy compiler for safer agents and Agent OS preview exports.",
   "license": "Apache-2.0",
   "type": "commonjs",
@@ -17,8 +17,7 @@
   },
   "bin": {
     "agoragentic-ecf-core": "bin/ecf-core.js",
-    "ecf-core": "bin/ecf-core.js",
-    "micro-ecf": "bin/ecf-core.js"
+    "ecf-core": "bin/ecf-core.js"
   },
   "main": "./src/index.js",
   "files": [

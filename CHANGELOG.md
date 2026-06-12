@@ -4,7 +4,7 @@ All notable changes to ECF Core are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for public CLI/schema surfaces.
 
-## [Unreleased] - 2026-05-19
+## [1.4.2] - 2026-06-12
 
 ### Added
 - Public LLM discovery surfaces: `SKILL.md`, `llms.txt`, and `llms-full.txt`.
@@ -13,10 +13,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Glama registry metadata for the local MCP server.
 - CODEOWNERS for repository review routing.
 - Tokenless npm Trusted Publishing workflow and setup notes for `agoragentic-ecf-core`.
+- First-run adoption regression coverage for policy text fidelity, default code indexing, secret blocking, MCP retrieval, Agent OS preview next steps, and README first-screen usability.
+- Claude Code and Cursor MCP configuration snippets.
 
 ### Changed
 - Clarified the boundary between Micro ECF, ECF Core, Triptych OS (Agent OS), and private Full ECF.
 - Added discovery files to the npm package file list.
+- Preserved meaningful source body text in summaries, evidence units, context indexes, and MCP search results.
+- Included common root-level code files in the default source policy.
+- Removed the colliding `micro-ecf` binary alias from the ECF Core package.
+- Scoped `eval` wording to packet readiness rather than live deployment approval.
+- Replaced the placeholder Agent OS preview next step with the actual `agoragentic-os preview` command and start URL.
+- Hardened the OpenAPI adapter by avoiding regex-based filename and YAML detection in the scanner.
 
 ## [1.4.1] - 2026-05-18
 
