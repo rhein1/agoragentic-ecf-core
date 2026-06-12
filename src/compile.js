@@ -30,6 +30,54 @@ function relativeArtifact(projectRoot, outDir, fileName) {
     return path.relative(projectRoot, path.join(outDir, fileName)).replace(/\\/g, '/');
 }
 
+const GENERATED_MICRO_ECF_ROOT_FILES = new Set([
+    'AGENTS.md',
+    'ECF.md',
+    'MICRO_ECF_LLM_BOOTSTRAP.md',
+]);
+
+function rootSourcePath(sourcePath) {
+    return String(sourcePath || '').split('#')[0];
+}
+
+function looksLikeGeneratedMicroEcfFile(projectRoot, sourcePath) {
+    const rootPath = rootSourcePath(sourcePath);
+    if (!GENERATED_MICRO_ECF_ROOT_FILES.has(rootPath)) return false;
+    const filePath = path.join(projectRoot, rootPath);
+    if (!fs.existsSync(filePath)) return false;
+    let text = '';
+    try {
+        text = fs.readFileSync(filePath, 'utf8');
+    } catch {
+        return false;
+    }
+    if (rootPath === 'MICRO_ECF_LLM_BOOTSTRAP.md') return /Micro ECF LLM Bootstrap/i.test(text);
+    if (rootPath === 'AGENTS.md') return /uses Micro ECF as a local context wedge/i.test(text);
+    if (rootPath === 'ECF.md') {
+        return /^---\s*\n[\s\S]{0,400}version:\s*["']?0\.1["']?/m.test(text)
+            && /Micro ECF Contract|local context wedge/i.test(text);
+    }
+    return false;
+}
+
+function filterGeneratedEcfArtifacts(records, projectRoot) {
+    const generated = [];
+    const kept = [];
+    for (const record of records) {
+        const sourcePath = rootSourcePath(record.path);
+        if (sourcePath.startsWith('.ecf-core/') || sourcePath.startsWith('.micro-ecf/')) {
+            generated.push(record);
+            continue;
+        }
+        if (looksLikeGeneratedMicroEcfFile(projectRoot, record.path)) {
+            generated.push(record);
+            continue;
+        }
+        kept.push(record);
+    }
+    return { kept, generated };
+}
+
 function buildPolicySummary(config) {
     return {
         schema_version: 'ecf-core.policy-summary.v1',
@@ -504,7 +552,9 @@ async function compileProject(options = {}) {
 
     const walkState = { skippedDirectories: [] };
     const fileInventory = walkFiles(projectRoot, config, projectRoot, [], walkState);
-    const records = await registry.discoverAll({ projectRoot, config, fileInventory, walkState });
+    const discoveredRecords = await registry.discoverAll({ projectRoot, config, fileInventory, walkState });
+    const generatedArtifactFilter = filterGeneratedEcfArtifacts(discoveredRecords, projectRoot);
+    const records = generatedArtifactFilter.kept;
     const allowed = records.filter((record) => record.classification === 'allowed');
     const blocked = records.filter((record) => record.classification === 'blocked');
     const reviewRequired = records.filter((record) => record.classification === 'review_required');
@@ -515,6 +565,7 @@ async function compileProject(options = {}) {
         type: record.type,
         hash: record.hash,
         summary: record.summary,
+        content_preview: record.content_preview || null,
         heading: record.heading || null,
         byte_count: record.byte_count,
         line_count: record.line_count,
@@ -635,9 +686,11 @@ async function compileProject(options = {}) {
         },
         counts: {
             total_sources: records.length,
+            discovered_sources: discoveredRecords.length,
             allowed_sources: allowed.length,
             blocked_sources: blocked.length,
             review_required_sources: reviewRequired.length,
+            generated_sources_excluded: generatedArtifactFilter.generated.length + Number(walkState.generatedArtifactsExcluded || 0),
             citations: citations.length,
             evidence_units: compileStageEvidenceUnits.units.length,
             context_evidence_units: evidenceUnits.units.length,

@@ -35,6 +35,49 @@ ecf-core mcp-config --target codex . --write --install-codex
 
 Restart Codex after installation. Codex loads MCP servers at startup. See [`CODEX_MCP.md`](./CODEX_MCP.md).
 
+### Claude Code
+
+Use the generated command as a stdio MCP server. A workspace config should look like:
+
+```json
+{
+  "mcpServers": {
+    "ecf-core": {
+      "command": "node",
+      "args": ["/absolute/path/to/node_modules/agoragentic-ecf-core/bin/ecf-core.js", "serve-mcp", "/absolute/path/to/project/.ecf-core"]
+    }
+  }
+}
+```
+
+If `ecf-core` is installed globally and available on `PATH`, this shorter form is equivalent:
+
+```json
+{
+  "mcpServers": {
+    "ecf-core": {
+      "command": "ecf-core",
+      "args": ["serve-mcp", "/absolute/path/to/project/.ecf-core"]
+    }
+  }
+}
+```
+
+### Cursor
+
+Add the same stdio server to the workspace MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "ecf-core": {
+      "command": "ecf-core",
+      "args": ["serve-mcp", "/absolute/path/to/project/.ecf-core"]
+    }
+  }
+}
+```
+
 ## Tools
 
 | Tool | Purpose |

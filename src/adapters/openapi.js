@@ -21,27 +21,45 @@ function parseJsonOpenApi(text) {
     }
 }
 
+function leadingSpaces(line) {
+    let count = 0;
+    while (line[count] === ' ') count += 1;
+    return count;
+}
+
+function yamlRootKey(line) {
+    const trimmed = line.trim();
+    if (!trimmed.endsWith(':')) return null;
+    return trimmed.slice(0, -1).trim();
+}
+
 function parseYamlOpenApi(text) {
-    if (!/^\s*(openapi|swagger)\s*:/m.test(text)) return null;
+    const lines = text.split('\n').map((line) => line.endsWith('\r') ? line.slice(0, -1) : line);
+    const hasOpenApiHeader = lines.some((line) => {
+        const trimmed = line.trimStart();
+        return trimmed.startsWith('openapi:') || trimmed.startsWith('swagger:');
+    });
+    if (!hasOpenApiHeader) return null;
     const endpoints = [];
-    const lines = text.split(/\r?\n/);
     let inPaths = false;
     let currentPath = null;
+    const methods = new Set(['get', 'post', 'put', 'patch', 'delete', 'head', 'options']);
     for (const line of lines) {
-        if (/^paths\s*:\s*$/.test(line)) {
+        const indent = leadingSpaces(line);
+        const trimmed = line.trim();
+        if (yamlRootKey(line) === 'paths') {
             inPaths = true;
             continue;
         }
         if (!inPaths) continue;
-        const pathMatch = /^\s{2}(\/[^:]+):\s*$/.exec(line);
-        if (pathMatch) {
-            currentPath = pathMatch[1];
+        if (indent === 2 && trimmed.startsWith('/') && trimmed.endsWith(':')) {
+            currentPath = trimmed.slice(0, -1);
             continue;
         }
-        const methodMatch = /^\s{4}(get|post|put|patch|delete|head|options):\s*$/i.exec(line);
-        if (methodMatch && currentPath) {
+        const method = trimmed.endsWith(':') ? trimmed.slice(0, -1).toLowerCase() : '';
+        if (indent === 4 && methods.has(method) && currentPath) {
             endpoints.push({
-                method: methodMatch[1].toUpperCase(),
+                method: method.toUpperCase(),
                 path: currentPath,
             });
         }

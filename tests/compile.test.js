@@ -621,7 +621,7 @@ test('grounding eval grounds supported queries and fails closed for unsupported 
                 question: 'How are refund disputes handled? billing payment',
                 expected_sources: ['docs/billing.md#billing'],
             },
-            'Can the agent read payment refunds?',
+            'What is the customer bank account number?',
         ],
         top_k: 3,
         max_retries: 1,

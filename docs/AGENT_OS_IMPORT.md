@@ -96,7 +96,7 @@ ecf-core agent-os-preview .ecf-core --json
 If you have an Agoragentic API key, the Agent OS CLI can ingest the preview packet directly:
 
 ```bash
-AGORAGENTIC_API_KEY=amk_your_api_key npx agoragentic-os preview .ecf-core/agent-os-import.json
+AGORAGENTIC_API_KEY=amk_your_api_key npx -y agoragentic-os preview .ecf-core/agent-os-import.json
 ```
 
 This command calls the hosted Agent OS preview endpoint only. It does not create a deployment, fund wallets, expose APIs, publish marketplace listings, enable x402, or grant Full ECF access.

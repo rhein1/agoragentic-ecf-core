@@ -1,12 +1,35 @@
 # ECF Core
 
+Give a coding agent a local, searchable map of your repo before it edits.
+
+ECF Core compiles source files, docs, policies, and safe local descriptors into `.ecf-core/` artifacts with citations, blocked-source proof, evidence units, and an MCP server your IDE can query.
+
+```bash
+npm install -g agoragentic-ecf-core
+ecf-core init .
+ecf-core compile . --agent-os
+ecf-core eval .
+ecf-core serve-mcp .ecf-core
+```
+
+No cloud call, wallet, marketplace route, hosted runtime, or private Full ECF internals are included.
+
+Use it when a coding agent needs to answer: what files exist, what policy applies, what source supports this answer, and what must stay blocked.
+
+MCP quickstart:
+
+```bash
+ecf-core mcp-config --target codex . --write
+ecf-core serve-mcp .ecf-core
+```
+
+Agent OS preview off-ramp:
+
+```bash
+AGORAGENTIC_API_KEY=amk_your_api_key npx -y agoragentic-os preview .ecf-core/agent-os-import.json
+```
+
 ![ECF Core local context governance animation](docs/images/ecf-core-hero.gif)
-
-ECF Core is the open-source self-hosted context governance runtime: a local-first context and policy compile stage for safer agents.
-
-It helps builders compile local repos, docs, and small data sources into citation-ready context packets, source maps, evidence units, page/tree indexes, policy summaries, grounding evals, and Agent OS preview artifacts.
-
-It does not deploy agents, handle wallets, route marketplace calls, or include private Full ECF internals.
 
 ## What This Means For Builders
 
@@ -14,23 +37,7 @@ Installing ECF Core on a codebase gives builders a self-hosted context-governanc
 
 For day-to-day IDE work, ECF Core gives agents durable local context across sessions through `ECF.md`, `.ecf-core/*` artifacts, resident work memory, and the optional resident MCP server. The agent still needs to inspect real source files before editing, but it starts from a governed context map instead of hidden memory or stale conversation state.
 
-The resident layer is a local file ledger for builders and IDE agents. It records active goals, checkpoints, changed files, validation, docs-sync plans, handoffs, and next prompts under `.ecf-core/`. It is not cloud sync, not a daemon, not hidden global memory, and not Full ECF. MCP-capable IDEs can read those artifacts through `ecf_core.worklog_status`, `ecf_core.handoff`, and `ecf_core.work_memory`.
-
-For product builders, ECF Core is the open self-hosted step between simple Micro ECF packets and hosted Agent OS deployment. It helps prove that a project has grounded context, citation evidence, policy boundaries, and preview-ready artifacts before any runtime, wallet, marketplace, or x402 capability is enabled.
-
-ECF Core helps answer:
-
-- What context is allowed?
-- Where did it come from?
-- What must be blocked?
-- What can be cited?
-- What evidence can safely support an agent answer?
-- What can be handed to an agent safely?
-- What should be exported into Agent OS later?
-
 ## Product Boundary
-
-ECF Core is not private Full ECF.
 
 ECF Core is:
 
@@ -426,12 +433,7 @@ ecf-core validate [artifact-dir]
 ecf-core version
 ```
 
-The package also exposes `micro-ecf` as a CLI alias for the same local tool:
-
-```bash
-micro-ecf init .
-micro-ecf compile . --agent-os
-```
+ECF Core intentionally does not expose a `micro-ecf` executable. Use the separate `agoragentic-micro-ecf` package when you want the lightweight Micro ECF local wedge.
 
 ## Paste Into Your IDE LLM
 

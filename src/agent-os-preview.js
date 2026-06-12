@@ -16,6 +16,20 @@ function readJson(filePath, errors) {
     }
 }
 
+function portablePath(filePath) {
+    return String(filePath || '').replace(/\\/g, '/');
+}
+
+function agentOsImportPath(resolvedDir) {
+    const basename = path.basename(resolvedDir);
+    if (basename === '.ecf-core') return '.ecf-core/agent-os-import.json';
+    return portablePath(path.join(resolvedDir, 'agent-os-import.json'));
+}
+
+function previewCommand(resolvedDir) {
+    return `AGORAGENTIC_API_KEY=amk_your_api_key npx -y agoragentic-os preview ${agentOsImportPath(resolvedDir)}`;
+}
+
 function inspectAgentOsPreview(artifactDir) {
     const resolvedDir = path.resolve(artifactDir || '.ecf-core');
     const errors = [];
@@ -81,6 +95,10 @@ function inspectAgentOsPreview(artifactDir) {
         && deploymentPreview?.live_deploy_allowed === false;
     if (!boundarySafe) errors.push('Agent OS import boundary is not preview-only');
 
+    const command = previewCommand(resolvedDir);
+    const nextStep = errors.length === 0
+        ? command
+        : `Fix the reported ECF Core artifact errors, rerun ecf-core compile . --agent-os, then run: ${command}`;
     return {
         schema_version: 'ecf-core.agent-os-preview-check.v1',
         ok: errors.length === 0,
@@ -97,9 +115,9 @@ function inspectAgentOsPreview(artifactDir) {
         context_compile_readiness: agentOsImport?.context_compile_readiness || deploymentPreview?.context_compile_readiness || null,
         context_index_readiness: agentOsImport?.context_index_readiness || deploymentPreview?.context_index_readiness || null,
         boundary_safe: boundarySafe,
-        next_step: errors.length === 0
-            ? 'send_artifact_dir_to_agent_os_preview_import'
-            : 'fix_ecf_core_artifacts_before_agent_os_preview',
+        next_step: nextStep,
+        next_step_url: 'https://agoragentic.com/agent-os/start/',
+        agent_os_preview_command: command,
         errors,
     };
 }

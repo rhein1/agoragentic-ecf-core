@@ -27,7 +27,9 @@ function markdownReport(summary) {
     const lines = [
         '# ECF Core Evaluation Report',
         '',
-        `Verdict: **${summary.verdict}**`,
+        `Packet-readiness verdict: **${summary.verdict}**`,
+        '',
+        'Scope: local artifact integrity, policy exclusion, citation coverage, and retrieval preservation. This is not live deployment approval or production answer-quality certification.',
         '',
         '## Metrics',
         '',
@@ -180,6 +182,7 @@ function evaluateCompiled({ result, topKSize }) {
 
     return {
         schema_version: 'ecf-core.eval-report.v1',
+        evaluation_scope: 'local_packet_readiness_not_live_deployment_approval',
         verdict,
         metrics: {
             policy_block: {

@@ -39,6 +39,7 @@ function recordText(record) {
         record.path,
         record.type,
         record.summary,
+        record.content_preview,
         record.heading,
         record.provenance?.adapter,
         record.provenance?.source_type,
