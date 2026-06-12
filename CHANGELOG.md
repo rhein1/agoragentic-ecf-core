@@ -4,6 +4,11 @@ All notable changes to ECF Core are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for public CLI/schema surfaces.
 
+## [1.4.3] - 2026-06-12
+
+### Fixed
+- Agent OS preview command now always uses the inspected artifact directory path instead of comparing against the caller's working directory, preventing wrong-path references when running `ecf-core agent-os-preview` against external artifact directories.
+
 ## [1.4.2] - 2026-06-12
 
 ### Added
