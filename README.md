@@ -12,6 +12,8 @@ ecf-core eval .
 ecf-core serve-mcp .ecf-core
 ```
 
+Expected output: `.ecf-core/source-map.json`, `.ecf-core/evidence-units.json`, `.ecf-core/policy-summary.json`, `.ecf-core/agent-os-import.json`, and local MCP-ready context with blocked sources such as `.env` recorded as policy evidence instead of served as source text.
+
 No cloud call, wallet, marketplace route, hosted runtime, or private Full ECF internals are included.
 
 Use it when a coding agent needs to answer: what files exist, what policy applies, what source supports this answer, and what must stay blocked.
@@ -23,13 +25,42 @@ ecf-core mcp-config --target codex . --write
 ecf-core serve-mcp .ecf-core
 ```
 
+Claude Code / Cursor-style stdio config:
+
+```json
+{
+  "mcpServers": {
+    "ecf-core": {
+      "command": "ecf-core",
+      "args": ["serve-mcp", "/absolute/path/to/project/.ecf-core"]
+    }
+  }
+}
+```
+
+Retrieval example:
+
+```text
+ecf_core.search_context({"query":"What policy applies before editing?"})
+-> source_id="docs/security.md#policy", path="docs/security.md", citation="policy-summary.json:allowed_sources[0]", policy.allowed=true
+```
+
+Policy-boundary example:
+
+```text
+ecf_core.get_policy({})
+-> blocked_paths include ".env", private keys, local databases, node_modules, build output, and generated ECF artifacts
+```
+
+MCP registry checklist: [`docs/MCP_REGISTRY_CHECKLIST.md`](docs/MCP_REGISTRY_CHECKLIST.md).
+
+![ECF Core local context governance animation](docs/images/ecf-core-hero.gif)
+
 Agent OS preview off-ramp:
 
 ```bash
 AGORAGENTIC_API_KEY=amk_your_api_key npx -y agoragentic-os preview .ecf-core/agent-os-import.json
 ```
-
-![ECF Core local context governance animation](docs/images/ecf-core-hero.gif)
 
 ## What This Means For Builders
 
@@ -464,6 +495,7 @@ npm run pack:dry
 - [Custom Adapters](docs/CUSTOM_ADAPTERS.md)
 - [Evaluation](docs/EVALUATION.md)
 - [Local MCP Server](docs/MCP_SERVER.md)
+- [MCP Registry Checklist](docs/MCP_REGISTRY_CHECKLIST.md)
 - [Resident Work Memory](docs/RESIDENT_WORK_MEMORY.md)
 - [Context Evidence Units](docs/EVIDENCE_UNITS.md)
 - [.NET Support](docs/DOTNET.md)
