@@ -4,6 +4,11 @@ All notable changes to ECF Core are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for public CLI/schema surfaces.
 
+## [1.4.4] - 2026-06-14
+
+### Changed
+- Updated the npm README launch path so ECF Core's local MCP quickstart, copy/paste install flow, and no-hosted-runtime boundary are visible from the package page.
+
 ## [1.4.3] - 2026-06-12
 
 ### Fixed
