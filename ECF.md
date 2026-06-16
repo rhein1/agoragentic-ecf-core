@@ -4,7 +4,7 @@ This file is the durable handoff for IDE assistants, coding agents, and local LL
 
 ## What ECF Core Is
 
-ECF Core is the open-source Micro ECF runtime for local context governance.
+ECF Core is the open-source self-hosted context-governance runtime - the tier above Micro ECF and below hosted Triptych OS (Agent OS). It does not provide a `micro-ecf` executable; use the separate `agoragentic-micro-ecf` package for the local wedge.
 
 It compiles a local repo, docs folder, or small data source into:
 
