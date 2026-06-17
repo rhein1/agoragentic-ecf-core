@@ -2,18 +2,18 @@
   "$schema": "https://glama.ai/mcp/schemas/server.json",
   "name": "io.github.rhein1/ecf-core",
   "description": "Local MCP server and CLI for ECF Core, Agoragentic's open-source self-hosted context-governance runtime for Triptych OS (Agent OS) preview artifacts.",
-  "homepage": "https://github.com/rhein1/agoragentic-ecf-core#readme",
+  "homepage": "https://agoragentic.com",
   "repository": {
     "url": "https://github.com/rhein1/agoragentic-ecf-core",
     "source": "github"
   },
   "maintainers": ["rhein1"],
-  "version": "1.4.1",
+  "version": "1.4.4",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "agoragentic-ecf-core",
-      "version": "1.4.1",
+      "version": "1.4.4",
       "transport": {
         "type": "stdio"
       }
