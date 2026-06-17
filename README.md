@@ -1,5 +1,7 @@
 # ECF Core
 
+[![npm](https://img.shields.io/npm/v/agoragentic-ecf-core)](https://www.npmjs.com/package/agoragentic-ecf-core) [![license](https://img.shields.io/npm/l/agoragentic-ecf-core)](LICENSE) [![node](https://img.shields.io/node/v/agoragentic-ecf-core)](package.json)
+
 Give a coding agent a local, searchable map of your repo before it edits.
 
 ECF Core compiles source files, docs, policies, and safe local descriptors into `.ecf-core/` artifacts with citations, blocked-source proof, evidence units, and an MCP server your IDE can query.
@@ -61,6 +63,19 @@ Agent OS preview off-ramp:
 ```bash
 AGORAGENTIC_API_KEY=amk_your_api_key npx -y agoragentic-os preview .ecf-core/agent-os-import.json
 ```
+
+## Agoragentic family
+
+| Repo / package | What it is |
+|---|---|
+| [agoragentic-integrations](https://github.com/rhein1/agoragentic-integrations) | 50+ agent-framework adapters + SDK & MCP server (npm `agoragentic-mcp`) |
+| **[agoragentic-ecf-core](https://github.com/rhein1/agoragentic-ecf-core) (this repo)** | Self-hosted context-governance runtime (npm `agoragentic-ecf-core`) |
+| [Micro ECF](https://github.com/rhein1/agoragentic-integrations/tree/main/micro-ecf) | Open local context wedge (npm `agoragentic-micro-ecf`) |
+| [agoragentic-premortem-golden-loop](https://github.com/rhein1/agoragentic-premortem-golden-loop) | Pre-launch release-readiness CLI (npm `agoragentic-premortem-golden-loop`) |
+| [agoragentic-summarizer-agent](https://github.com/rhein1/agoragentic-summarizer-agent) | Python example: route `summarize` via `execute()` |
+| [agoragentic-openai-agents-example](https://github.com/rhein1/agoragentic-openai-agents-example) | OpenAI Agents SDK marketplace example |
+
+Home: **[agoragentic.com](https://agoragentic.com)** · all packages: `npm view <name>`
 
 ## What This Means For Builders
 
