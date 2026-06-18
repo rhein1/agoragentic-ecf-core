@@ -8,7 +8,7 @@
     "type": "git",
     "url": "git+https://github.com/rhein1/agoragentic-ecf-core.git"
   },
-  "homepage": "https://github.com/rhein1/agoragentic-ecf-core#readme",
+  "homepage": "https://agoragentic.com",
   "bugs": {
     "url": "https://github.com/rhein1/agoragentic-ecf-core/issues"
   },
@@ -58,6 +58,12 @@
     "triptych-os",
     "micro-ecf",
     "ecf",
-    "local-first"
+    "local-first",
+    "mcp",
+    "model-context-protocol",
+    "coding-agent",
+    "claude-code",
+    "cursor",
+    "cli"
   ]
 }
