@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/source-manifest.v1.json",
+  "title": "ECF Core Source Manifest",
+  "type": "object",
+  "required": ["schema_version", "generated_by", "generated_at", "entries", "summary", "boundary"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "const": "ecf-core.source-manifest.v1" },
+    "generated_by": { "const": "ecf-core" },
+    "generated_at": { "type": "string" },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "path", "classification", "included_in_context_packet", "hash"],
+        "additionalProperties": true,
+        "properties": {
+          "id": { "type": "string" },
+          "path": { "type": "string" },
+          "type": { "type": "string" },
+          "classification": { "enum": ["allowed", "blocked", "review_required"] },
+          "included_in_context_packet": { "type": "boolean" },
+          "reason": { "type": "string" },
+          "hash": { "type": "string" },
+          "byte_count": { "type": "number" },
+          "line_count": { "type": "number" },
+          "has_content_preview": { "type": "boolean" },
+          "has_code_facts": { "type": "boolean" }
+        }
+      }
+    },
+    "generated_artifacts_excluded": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "summary": { "type": "object", "additionalProperties": true },
+    "boundary": { "type": "object", "additionalProperties": true }
+  }
+}

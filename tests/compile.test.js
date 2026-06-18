@@ -62,12 +62,15 @@ test('compileProject emits source map, context packet, policy summary, and hando
     assert.equal(result.contextPacket.schema_version, 'ecf-core.context-packet.v1');
     assert.equal(result.sourceMap.schema_version, 'ecf-core.source-map.v1');
     assert.equal(result.policySummary.schema_version, 'ecf-core.policy-summary.v1');
+    assert.equal(result.sourceManifest.schema_version, 'ecf-core.source-manifest.v1');
     assert.equal(result.compileStageEvidenceUnits.schema_version, 'ecf-core.evidence-units.v1');
     assert.equal(result.evidenceUnits.schema_version, 'ecf-core.context-evidence-units.v1');
     assert.equal(result.compactionReport.schema_version, 'ecf-core.context-compaction-report.v1');
     assert.equal(result.pageIndex.schema_version, 'ecf-core.page-index.v1');
     assert.equal(result.treeIndex.schema_version, 'ecf-core.tree-index.v1');
     assert.equal(result.retrievalPlan.schema_version, 'ecf-core.retrieval-plan.v1');
+    assert.equal(result.codeIndex.schema_version, 'ecf-core.code-index.v1');
+    assert.equal(result.contextRouter.schema_version, 'ecf-core.context-router.v1');
     assert.equal(result.agentOsHandoff.schema_version, 'ecf-core.agent-os-handoff.v1');
     assert.equal(result.deploymentPreview.schema_version, 'ecf-core.deployment-preview.v1');
     assert.equal(result.agentOsHarness.schema_version, 'ecf-core.agent-os-harness.v1');
@@ -78,15 +81,24 @@ test('compileProject emits source map, context packet, policy summary, and hando
     assert.equal(result.agentOsImport.evidence.evidence_units, 'evidence-units.json');
     assert.equal(result.agentOsImport.evidence.context_evidence_units, 'context-evidence-units.json');
     assert.equal(result.agentOsImport.evidence.context_compaction_report, 'context-compaction-report.json');
+    assert.equal(result.agentOsImport.evidence.source_manifest, 'source-manifest.json');
     assert.equal(result.agentOsImport.evidence.page_index, 'page-index.json');
     assert.equal(result.agentOsImport.evidence.tree_index, 'tree-index.json');
+    assert.equal(result.agentOsImport.evidence.code_index, 'code-index.json');
+    assert.equal(result.agentOsImport.evidence.context_router, 'context-router.json');
     assert.equal(result.agentOsImport.required_files.includes('page-index.json'), true);
     assert.equal(result.agentOsImport.required_files.includes('tree-index.json'), true);
+    assert.equal(result.agentOsImport.required_files.includes('source-manifest.json'), true);
+    assert.equal(result.agentOsImport.required_files.includes('code-index.json'), true);
+    assert.equal(result.agentOsImport.required_files.includes('context-router.json'), true);
     assert.equal(result.agentOsImport.required_files.includes('evidence-units.json'), true);
     assert.equal(result.agentOsImport.context_compile_readiness.context_compile_verdict, 'preview_ready');
     assert.equal(result.deploymentPreview.context_compile_readiness.evidence_units, result.compileStageEvidenceUnits.units.length);
     assert.equal(result.agentOsHandoff.page_index, 'page-index.json');
     assert.equal(result.agentOsHandoff.evidence_units, 'evidence-units.json');
+    assert.equal(result.agentOsHandoff.source_manifest, 'source-manifest.json');
+    assert.equal(result.agentOsHandoff.code_index, 'code-index.json');
+    assert.equal(result.agentOsHandoff.context_router, 'context-router.json');
 
     const sourcePaths = result.contextPacket.sources.map((source) => source.path).sort();
     assert.ok(sourcePaths.includes('README.md'));
@@ -106,12 +118,20 @@ test('compileProject emits source map, context packet, policy summary, and hando
     assert.equal(result.compactionReport.dependency_status, 'baseline_only');
     assert.equal(result.compactionReport.citation_survival, 1);
     assert.ok(result.treeIndex.nodes.some((node) => node.type === 'section' && node.heading === 'Billing'));
+    assert.ok(result.sourceManifest.entries.some((entry) => entry.path === 'src/app.js' && entry.included_in_context_packet));
+    assert.equal(result.sourceManifest.summary.code_sources > 0, true);
+    assert.ok(result.codeIndex.sources.some((source) => source.path === 'src/app.js'
+        && source.symbols.some((symbol) => symbol.name === 'run')));
+    assert.ok(result.contextRouter.routes.some((route) => route.id === 'code_symbol_lookup'));
     assert.ok(!result.pageIndex.sources.some((source) => source.path === '.env'));
     assert.ok(!result.treeIndex.nodes.some((node) => node.source_path === '.env'));
     const billingNode = result.treeIndex.nodes.find((node) => node.source_path === 'docs/billing.md#billing');
     assert.equal(billingNode.policy_flags.allowed_for_agent, true);
     assert.equal(billingNode.policy_flags.live_deploy_allowed, false);
     assert.equal(result.deploymentPreview.artifacts.page_index, 'page-index.json');
+    assert.equal(result.deploymentPreview.artifacts.source_manifest, 'source-manifest.json');
+    assert.equal(result.deploymentPreview.artifacts.code_index, 'code-index.json');
+    assert.equal(result.deploymentPreview.artifacts.context_router, 'context-router.json');
     assert.equal(result.deploymentPreview.context_index_readiness.tree_node_count, result.treeIndex.summary.node_count);
     assert.ok(result.sourceMap.sources.some((source) => source.path === '.env' && source.classification === 'blocked'));
     assert.ok(!result.contextPacket.sources.some((source) => source.path.includes('node_modules')));
@@ -401,6 +421,9 @@ test('CLI eval writes deterministic JSON and Markdown reports', () => {
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'page-index.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'tree-index.json')));
     assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'retrieval-plan.json')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'source-manifest.json')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'code-index.json')));
+    assert.ok(fs.existsSync(path.join(root, '.ecf-core', 'context-router.json')));
     assert.equal(summary.metrics.context_evidence_units.evidence_unit_count > 0, true);
     assert.equal(summary.metrics.context_evidence_units.file, 'evidence-units.json');
     assert.equal(summary.metrics.context_evidence_units.legacy_file, 'context-evidence-units.json');
@@ -410,6 +433,9 @@ test('CLI eval writes deterministic JSON and Markdown reports', () => {
     assert.equal(summary.metrics.context_evidence_units.citation_survival, 1);
     assert.equal(summary.metrics.context_index.tree_node_count > 0, true);
     assert.equal(summary.metrics.context_index.dependency_status, 'builtin_local_only');
+    assert.equal(summary.metrics.source_manifest.included_sources > 0, true);
+    assert.equal(summary.metrics.code_index.symbol_count > 0, true);
+    assert.equal(summary.metrics.context_router.route_count >= 6, true);
 
     const preview = execFileSync(process.execPath, [cli, 'agent-os-preview', path.join(root, '.ecf-core'), '--json'], { encoding: 'utf8' });
     const previewCheck = JSON.parse(preview);
@@ -513,6 +539,9 @@ test('stable schema manifest lists every generated artifact contract', () => {
         'ecf-core.page-index.v1',
         'ecf-core.tree-index.v1',
         'ecf-core.retrieval-plan.v1',
+        'ecf-core.source-manifest.v1',
+        'ecf-core.code-index.v1',
+        'ecf-core.context-router.v1',
     ];
     assert.equal(manifest.stability, 'stable');
     assert.deepEqual(manifest.schemas.sort(), expected.sort());

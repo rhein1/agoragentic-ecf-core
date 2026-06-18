@@ -30,6 +30,9 @@ Starting with `1.0.0`, these artifact schemas are stable:
 - `ecf-core.page-index.v1`
 - `ecf-core.tree-index.v1`
 - `ecf-core.retrieval-plan.v1`
+- `ecf-core.source-manifest.v1`
+- `ecf-core.code-index.v1`
+- `ecf-core.context-router.v1`
 
 Stable means existing required fields remain compatible within the same major package line. New optional fields may be added in minor releases.
 
@@ -48,6 +51,10 @@ Stable means existing required fields remain compatible within the same major pa
 ## 1.4 Additions
 
 `1.4.x` adds deterministic local page/tree context index artifacts and retrieval-plan metadata. The public package emits `page-index.json`, `tree-index.json`, and `retrieval-plan.json` for Agent OS preview readiness without adding OCR/VLM dependencies, hosted RAG, vector databases, wallet settlement, marketplace routing, or Full ECF internals.
+
+## 1.5 Additions
+
+`1.5.x` adds deterministic `source-manifest.json`, `code-index.json`, and `context-router.json` artifacts plus the MCP `ecf_core.route_query` tool. These additions route local questions to exact evidence, policy lookup, code-symbol lookup, source-manifest facts, deterministic stats, or semantic fallback without adding hosted RAG, external vector databases, wallet settlement, marketplace routing, or Full ECF internals.
 
 ## Compile-Stage Evidence Addition
 

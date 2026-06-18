@@ -16,6 +16,7 @@ Use this index when navigating the public ECF Core docs.
 - [Custom Adapters](CUSTOM_ADAPTERS.md)
 - [Evaluation](EVALUATION.md)
 - [Context Evidence Units](EVIDENCE_UNITS.md)
+- [Source Manifest, Code Index, And Context Router](CONTEXT_ROUTER.md)
 - [Local MCP Server](MCP_SERVER.md)
 - [MCP Registry Checklist](MCP_REGISTRY_CHECKLIST.md)
 - [Resident Work Memory](RESIDENT_WORK_MEMORY.md)

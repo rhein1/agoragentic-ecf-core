@@ -5,6 +5,7 @@ const path = require('node:path');
 const { ContextAdapter } = require('./base');
 const { sha256, sourceId } = require('../core/hash');
 const { classifyPath, normalizePath, shouldSkipDirectory } = require('../core/policy');
+const { extractCodeFacts } = require('../context-router');
 
 const TEXT_EXTENSIONS = new Set([
     '.cjs',
@@ -314,6 +315,7 @@ class FilesystemAdapter extends ContextAdapter {
                 hash: sha256(text),
                 summary: summarizeText(text, type),
                 content_preview: previewText(text),
+                code_facts: type === 'code' ? extractCodeFacts(text, relativePath) : null,
                 heading: firstMarkdownHeading(text),
                 line_count: text.length ? text.split(/\r?\n/).length : 0,
             });

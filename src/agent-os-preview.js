@@ -38,11 +38,17 @@ function inspectAgentOsPreview(artifactDir) {
     const pageIndexPath = path.join(resolvedDir, 'page-index.json');
     const treeIndexPath = path.join(resolvedDir, 'tree-index.json');
     const retrievalPlanPath = path.join(resolvedDir, 'retrieval-plan.json');
+    const sourceManifestPath = path.join(resolvedDir, 'source-manifest.json');
+    const codeIndexPath = path.join(resolvedDir, 'code-index.json');
+    const contextRouterPath = path.join(resolvedDir, 'context-router.json');
     const evidenceUnitsPath = path.join(resolvedDir, 'evidence-units.json');
     const evidenceUnits = fs.existsSync(evidenceUnitsPath) ? readJson(evidenceUnitsPath, errors) : null;
     const pageIndex = fs.existsSync(pageIndexPath) ? readJson(pageIndexPath, errors) : null;
     const treeIndex = fs.existsSync(treeIndexPath) ? readJson(treeIndexPath, errors) : null;
     const retrievalPlan = fs.existsSync(retrievalPlanPath) ? readJson(retrievalPlanPath, errors) : null;
+    const sourceManifest = fs.existsSync(sourceManifestPath) ? readJson(sourceManifestPath, errors) : null;
+    const codeIndex = fs.existsSync(codeIndexPath) ? readJson(codeIndexPath, errors) : null;
+    const contextRouter = fs.existsSync(contextRouterPath) ? readJson(contextRouterPath, errors) : null;
 
     if (agentOsImport && agentOsImport.schema_version !== 'ecf-core.agent-os-import.v1') {
         errors.push('agent-os-import.json has unsupported schema_version');
@@ -64,6 +70,15 @@ function inspectAgentOsPreview(artifactDir) {
     }
     if (retrievalPlan && retrievalPlan.schema_version !== 'ecf-core.retrieval-plan.v1') {
         errors.push('retrieval-plan.json has unsupported schema_version');
+    }
+    if (sourceManifest && sourceManifest.schema_version !== 'ecf-core.source-manifest.v1') {
+        errors.push('source-manifest.json has unsupported schema_version');
+    }
+    if (codeIndex && codeIndex.schema_version !== 'ecf-core.code-index.v1') {
+        errors.push('code-index.json has unsupported schema_version');
+    }
+    if (contextRouter && contextRouter.schema_version !== 'ecf-core.context-router.v1') {
+        errors.push('context-router.json has unsupported schema_version');
     }
 
     const requiredFiles = Array.isArray(agentOsImport?.required_files) ? agentOsImport.required_files : [];

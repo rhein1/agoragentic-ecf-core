@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.agoragentic.com/ecf-core/context-router.v1.json",
+  "title": "ECF Core Context Router",
+  "type": "object",
+  "required": ["schema_version", "generated_by", "generated_at", "dependency_status", "preferred_order", "routes", "artifact_summary", "boundary"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": { "const": "ecf-core.context-router.v1" },
+    "generated_by": { "const": "ecf-core" },
+    "generated_at": { "type": "string" },
+    "dependency_status": { "const": "builtin_local_only" },
+    "preferred_order": { "type": "array", "items": { "type": "string" } },
+    "routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "strategy", "when", "artifacts"],
+        "additionalProperties": true,
+        "properties": {
+          "id": { "type": "string" },
+          "strategy": { "type": "string" },
+          "when": { "type": "string" },
+          "artifacts": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "artifact_summary": { "type": "object", "additionalProperties": true },
+    "sample_queries": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "boundary": { "type": "object", "additionalProperties": true }
+  }
+}

@@ -83,6 +83,7 @@ Add the same stdio server to the workspace MCP configuration:
 | Tool | Purpose |
 | --- | --- |
 | `ecf_core.search_context` | Rank compiled context sources for a query with deterministic semantic-lite scoring. |
+| `ecf_core.route_query` | Route a question to exact evidence, policy, code symbols, source-manifest facts, deterministic stats, or semantic summary. |
 | `ecf_core.get_source` | Read one compiled source record by `source_id` or `path`. |
 | `ecf_core.get_policy` | Return `policy-summary.json`. |
 | `ecf_core.get_manifest` | Return `manifest.json` and artifact counts. |
@@ -99,7 +100,10 @@ The MCP server only reads compiled local artifacts:
 
 - `context-packet.json`
 - `source-map.json`
+- `source-manifest.json`
 - `policy-summary.json`
+- `code-index.json`
+- `context-router.json`
 - `manifest.json`
 - Agent OS preview/import files when requested by the readiness check
 - resident worklog, docs-sync, and handoff artifacts when requested by work-memory tools

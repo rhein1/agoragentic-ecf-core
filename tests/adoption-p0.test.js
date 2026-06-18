@@ -66,6 +66,9 @@ test('first-run compile preserves policy text, indexes code, and blocks secrets 
         evidenceUnits: result.compileStageEvidenceUnits,
         pageIndex: result.pageIndex,
         treeIndex: result.treeIndex,
+        sourceManifest: result.sourceManifest,
+        codeIndex: result.codeIndex,
+        contextRouter: result.contextRouter,
         manifest: result.manifest,
     });
 
@@ -78,6 +81,10 @@ test('first-run compile preserves policy text, indexes code, and blocks secrets 
     assert.doesNotMatch(artifactText, new RegExp(`sk-test-fake-secret|API_KEY|${escapeRegex(ROOT_CONFIG_SECRET)}`));
     assert.ok(result.sourceMap.sources.some((source) => source.path === '.env' && source.classification === 'blocked'));
     assert.ok(result.contextPacket.sources.some((source) => source.path === 'agent.js' && source.type === 'code'));
+    assert.ok(result.codeIndex.sources.some((source) => source.path === 'agent.js'
+        && source.symbols.some((symbol) => symbol.name === 'run')));
+    assert.ok(result.sourceManifest.entries.some((entry) => entry.path === 'agent.js' && entry.included_in_context_packet));
+    assert.ok(result.contextRouter.routes.some((route) => route.id === 'source_manifest_query'));
     assert.ok(result.sourceMap.sources.some((source) => source.path === 'private-connectors/stripe.js' && source.classification === 'review_required'));
     assert.ok(!result.contextPacket.sources.some((source) => source.path === 'private-connectors/stripe.js'));
     assert.ok(result.contextPacket.sources.some((source) => source.path === 'docs/policy.md'));
@@ -106,6 +113,24 @@ test('MCP search retrieves the first-run policy sentence with provenance', async
     });
     assert.match(JSON.stringify(source), /docs\/policy\.md/);
     assert.match(JSON.stringify(source), new RegExp(escapeRegex(POLICY_SENTENCE)));
+
+    const routed = callMcpTool({
+        artifactDir: outDir,
+        name: 'ecf_core.route_query',
+        args: { query: 'Where does it say customer PII cannot leave the repo?', top_k: 5 },
+    });
+    assert.equal(routed.route.id, 'policy_lookup');
+    assert.match(JSON.stringify(routed.results), /docs\/policy\.md/);
+    assert.match(JSON.stringify(routed.results), new RegExp(escapeRegex(POLICY_SENTENCE)));
+
+    const codeRoute = callMcpTool({
+        artifactDir: outDir,
+        name: 'ecf_core.route_query',
+        args: { query: 'What code files are indexed?', top_k: 5 },
+    });
+    assert.equal(codeRoute.route.id, 'code_symbol_lookup');
+    assert.ok(codeRoute.results.some((result) => result.path === 'agent.js'
+        && result.symbols.some((symbol) => symbol.name === 'run')));
 });
 
 test('Agent OS preview off-ramp gives a real command and URL', async () => {
