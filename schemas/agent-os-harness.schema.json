@@ -16,6 +16,7 @@
       "properties": {
         "context_packet": { "type": "string" },
         "source_map": { "type": "string" },
+        "source_manifest": { "type": ["string", "null"] },
         "policy_summary": { "type": "string" },
         "evidence_units": { "type": "string" },
         "context_evidence_units": { "type": "string" },
@@ -23,6 +24,8 @@
         "page_index": { "type": ["string", "null"] },
         "tree_index": { "type": ["string", "null"] },
         "retrieval_plan": { "type": ["string", "null"] },
+        "code_index": { "type": ["string", "null"] },
+        "context_router": { "type": ["string", "null"] },
         "deployment_preview": { "type": "string" },
         "grounding_eval": { "type": ["string", "null"] }
       }

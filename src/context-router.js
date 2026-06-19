@@ -19,6 +19,25 @@ function safeLine(line) {
     return String(line || '').slice(0, 400);
 }
 
+function normalizeTopK(topK, fallback = 5) {
+    const value = Number(topK);
+    if (!Number.isFinite(value)) return fallback;
+    return Math.max(1, Math.min(Math.floor(value), 20));
+}
+
+function limitUniqueResults(results, topK) {
+    const seen = new Set();
+    const output = [];
+    for (const result of results) {
+        const key = result.source_id || result.id || result.path;
+        if (key && seen.has(key)) continue;
+        if (key) seen.add(key);
+        output.push(result);
+        if (output.length >= topK) break;
+    }
+    return output;
+}
+
 function capture(line, regex, type, output) {
     const match = safeLine(line).match(regex);
     if (!match || !match[1]) return;
@@ -239,16 +258,18 @@ function buildContextRouter({ sourceManifest, codeIndex, retrievalPlan, createdA
 function classifyQuery(query) {
     const normalized = String(query || '').toLowerCase();
     if (/["'`].{6,}["'`]/.test(query) || normalized.includes('exact')) return 'exact_text_lookup';
+    if (/\b(count|counts|stats?|statistics)\b/.test(normalized) || /\bhow many\b/.test(normalized)) return 'deterministic_stats';
     if (/\b(policy|pii|secret|blocked|blocklist|approval|boundary|allowed|customer)\b/.test(normalized)) return 'policy_lookup';
     if (/\b(code|function|class|import|entrypoint|symbol|agent\.js|implementation)\b/.test(normalized)) return 'code_symbol_lookup';
     if (/\b(files?|sources?|included|excluded|manifest|hash|provenance)\b/.test(normalized)) return 'source_manifest_query';
-    if (/\b(count|how many|stats?|statistics|summary)\b/.test(normalized)) return 'deterministic_stats';
+    if (/\bsummary\b/.test(normalized)) return 'deterministic_stats';
     return 'semantic_summary';
 }
 
 function sourceResults(contextPacket, query, topK, rankingProvider) {
     const records = contextPacket?.sources || [];
-    return rankRecords(records, query, topK, { provider: rankingProvider || 'semantic_lite' }).hits.map((hit) => {
+    const limit = normalizeTopK(topK);
+    return rankRecords(records, query, limit, { provider: rankingProvider || 'semantic_lite' }).hits.map((hit) => {
         const source = records.find((record) => record.id === hit.id);
         return {
             source_id: hit.id,
@@ -261,7 +282,95 @@ function sourceResults(contextPacket, query, topK, rankingProvider) {
     });
 }
 
-function codeResults(codeIndex, query) {
+function extractExactNeedle(query) {
+    const text = String(query || '');
+    const quoted = text.match(/["'`]([^"'`]{6,400})["'`]/);
+    if (quoted && quoted[1]) return quoted[1].trim();
+    if (!/\bexact(?:ly)?\b/i.test(text)) return null;
+    const cleaned = text
+        .replace(/\b(?:find|lookup|search|show|match|exact|exactly|text|quote|quoted|string|for|the)\b/gi, ' ')
+        .replace(/[?:]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    return cleaned.length >= 6 ? cleaned : null;
+}
+
+function exactTextResults(contextPacket, query, topK) {
+    const limit = normalizeTopK(topK);
+    const needle = extractExactNeedle(query);
+    if (!needle) {
+        return {
+            results: [],
+            stats: {
+                exact_text: {
+                    exact_match_required: true,
+                    needle_present: false,
+                    matches: 0,
+                },
+            },
+        };
+    }
+    const records = contextPacket?.sources || [];
+    const results = records
+        .filter((source) => [source.summary, source.content_preview].some((value) => String(value || '').includes(needle)))
+        .map((source) => ({
+            source_id: source.id,
+            path: source.path,
+            score: 1,
+            summary: source.summary || null,
+            content_preview: source.content_preview || null,
+            provenance: source.provenance || {},
+        }));
+    return {
+        results: results.slice(0, limit),
+        stats: {
+            exact_text: {
+                exact_match_required: true,
+                needle_present: true,
+                matches: results.length,
+            },
+        },
+    };
+}
+
+function manifestResult(entry, score = 1) {
+    return {
+        source_id: entry.id,
+        path: entry.path,
+        type: entry.type,
+        classification: entry.classification,
+        included_in_context_packet: entry.included_in_context_packet,
+        reason: entry.reason,
+        hash: entry.hash,
+        score,
+        provenance: entry.provenance || {},
+    };
+}
+
+function policyResults(sourceManifest, contextPacket, query, topK, rankingProvider) {
+    const limit = normalizeTopK(topK);
+    const normalized = String(query || '').toLowerCase();
+    const entries = sourceManifest?.entries || [];
+    const wantsBlocked = /\b(blocked|blocklist|secret|secrets|env|excluded|denied|private)\b/.test(normalized);
+    const wantsReview = /\b(review|approval|approve|boundary|allowed|allowlist|policy)\b/.test(normalized);
+    const manifestEntries = entries.filter((entry) => {
+        if (wantsBlocked) return entry.classification !== 'allowed';
+        if (wantsReview) {
+            return entry.classification !== 'allowed'
+                || /\b(policy|privacy|security|governance|rules?)\b/i.test(entry.path)
+                || entry.path.startsWith('docs/');
+        }
+        return entry.classification !== 'allowed';
+    });
+    const manifestRows = manifestEntries.map((entry) => manifestResult(entry, entry.classification === 'allowed' ? 0.5 : 1));
+    const contextRows = sourceResults(contextPacket, query, limit, rankingProvider)
+        .map((result) => ({ ...result, classification: 'allowed', included_in_context_packet: true }));
+    const ordered = wantsBlocked ? [...manifestRows, ...contextRows] : [...contextRows, ...manifestRows];
+    return limitUniqueResults(ordered, limit);
+}
+
+function codeResults(codeIndex, query, topK) {
+    const limit = normalizeTopK(topK);
     const terms = String(query || '').toLowerCase().split(/[^a-z0-9_$.-]+/).filter(Boolean);
     const sources = codeIndex?.sources || [];
     const ranked = sources.map((source) => {
@@ -275,24 +384,25 @@ function codeResults(codeIndex, query) {
         return { ...source, score };
     }).filter((source) => source.score > 0)
         .sort((a, b) => b.score - a.score || a.path.localeCompare(b.path))
-        .slice(0, 10);
+        .slice(0, limit);
     if (ranked.length) return ranked;
     return sources
         .map((source) => ({ ...source, score: 0 }))
         .sort((a, b) => a.path.localeCompare(b.path))
-        .slice(0, 10);
+        .slice(0, limit);
 }
 
-function manifestResults(sourceManifest, query) {
+function manifestResults(sourceManifest, query, topK) {
+    const limit = normalizeTopK(topK);
     const normalized = String(query || '').toLowerCase();
     const entries = sourceManifest?.entries || [];
     if (/\bblocked|excluded|secret|env\b/.test(normalized)) {
-        return entries.filter((entry) => entry.classification !== 'allowed').slice(0, 20);
+        return entries.filter((entry) => entry.classification !== 'allowed').slice(0, limit);
     }
     if (/\bcode|function|class|symbol\b/.test(normalized)) {
-        return entries.filter((entry) => entry.type === 'code').slice(0, 20);
+        return entries.filter((entry) => entry.type === 'code').slice(0, limit);
     }
-    return entries.slice(0, 20);
+    return entries.slice(0, limit);
 }
 
 function routeCompiledQuery({ query, contextPacket, sourceManifest, codeIndex, contextRouter, topK = 5, rankingProvider = 'semantic_lite' }) {
@@ -302,15 +412,28 @@ function routeCompiledQuery({ query, contextPacket, sourceManifest, codeIndex, c
     let results = [];
     let stats = null;
     if (strategy === 'code_symbol_lookup') {
-        results = codeResults(codeIndex, query);
+        results = codeResults(codeIndex, query, topK);
     } else if (strategy === 'source_manifest_query') {
-        results = manifestResults(sourceManifest, query);
+        results = manifestResults(sourceManifest, query, topK);
     } else if (strategy === 'deterministic_stats') {
         stats = {
             source_manifest: sourceManifest?.summary || null,
             code_index: codeIndex?.summary || null,
             context_router: contextRouter?.artifact_summary || null,
         };
+    } else if (strategy === 'policy_lookup') {
+        results = policyResults(sourceManifest, contextPacket, query, topK, rankingProvider);
+        stats = {
+            policy_lookup: {
+                blocked_sources: sourceManifest?.summary?.blocked_sources || 0,
+                review_required_sources: sourceManifest?.summary?.review_required_sources || 0,
+                raw_blocked_source_content_included: false,
+            },
+        };
+    } else if (strategy === 'exact_text_lookup') {
+        const exact = exactTextResults(contextPacket, query, topK);
+        results = exact.results;
+        stats = exact.stats;
     } else {
         results = sourceResults(contextPacket, query, topK, rankingProvider);
     }

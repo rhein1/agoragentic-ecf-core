@@ -14,6 +14,7 @@ const {
 
 const POLICY_SENTENCE = 'No customer PII leaves the repo.';
 const ROOT_CONFIG_SECRET = 'sk-test-config-secret-do-not-leak';
+const CODE_IMPORT_SECRET = 'sk-test-fake-import-secret-do-not-leak';
 
 function escapeRegex(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -29,8 +30,9 @@ function makeFirstRunProject() {
     fs.mkdirSync(path.join(root, 'private-connectors'), { recursive: true });
     fs.mkdirSync(path.join(root, '.micro-ecf'), { recursive: true });
     fs.writeFileSync(path.join(root, 'agent.js'), [
+        `const riskyModule = require("${CODE_IMPORT_SECRET}");`,
         'export async function run(input) {',
-        '  return { ok: true, input };',
+        '  return { ok: true, input, riskyModule: Boolean(riskyModule) };',
         '}',
         '',
     ].join('\n'));
@@ -78,11 +80,14 @@ test('first-run compile preserves policy text, indexes code, and blocks secrets 
     assert.doesNotMatch(configSource.content_preview, new RegExp(escapeRegex(ROOT_CONFIG_SECRET)));
 
     assert.match(artifactText, new RegExp(escapeRegex(POLICY_SENTENCE)));
-    assert.doesNotMatch(artifactText, new RegExp(`sk-test-fake-secret|API_KEY|${escapeRegex(ROOT_CONFIG_SECRET)}`));
+    assert.doesNotMatch(artifactText, new RegExp(`sk-test-fake-secret|${escapeRegex(CODE_IMPORT_SECRET)}|API_KEY|${escapeRegex(ROOT_CONFIG_SECRET)}`));
     assert.ok(result.sourceMap.sources.some((source) => source.path === '.env' && source.classification === 'blocked'));
     assert.ok(result.contextPacket.sources.some((source) => source.path === 'agent.js' && source.type === 'code'));
-    assert.ok(result.codeIndex.sources.some((source) => source.path === 'agent.js'
-        && source.symbols.some((symbol) => symbol.name === 'run')));
+    const agentIndex = result.codeIndex.sources.find((source) => source.path === 'agent.js');
+    assert.ok(agentIndex);
+    assert.ok(agentIndex.symbols.some((symbol) => symbol.name === 'run'));
+    assert.equal(agentIndex.imports.some((item) => item.includes('sk-test')), false);
+    assert.ok(agentIndex.imports.includes('[REDACTED]'));
     assert.ok(result.sourceManifest.entries.some((entry) => entry.path === 'agent.js' && entry.included_in_context_packet));
     assert.ok(result.contextRouter.routes.some((route) => route.id === 'source_manifest_query'));
     assert.ok(result.sourceMap.sources.some((source) => source.path === 'private-connectors/stripe.js' && source.classification === 'review_required'));
@@ -123,14 +128,60 @@ test('MCP search retrieves the first-run policy sentence with provenance', async
     assert.match(JSON.stringify(routed.results), /docs\/policy\.md/);
     assert.match(JSON.stringify(routed.results), new RegExp(escapeRegex(POLICY_SENTENCE)));
 
+    const blockedRoute = callMcpTool({
+        artifactDir: outDir,
+        name: 'ecf_core.route_query',
+        args: { query: 'What secrets are blocked?', top_k: 1 },
+    });
+    assert.equal(blockedRoute.route.id, 'policy_lookup');
+    assert.equal(blockedRoute.results.length, 1);
+    assert.equal(blockedRoute.results[0].path, '.env');
+    assert.equal(blockedRoute.results[0].classification, 'blocked');
+    assert.doesNotMatch(JSON.stringify(blockedRoute.results), /API_KEY|sk-test/);
+
+    const exactRoute = callMcpTool({
+        artifactDir: outDir,
+        name: 'ecf_core.route_query',
+        args: { query: `"${POLICY_SENTENCE}"`, top_k: 5 },
+    });
+    assert.equal(exactRoute.route.id, 'exact_text_lookup');
+    assert.ok(exactRoute.results.some((result) => result.path === 'docs/policy.md' || result.path === 'docs/policy.md#policy'));
+    assert.ok(exactRoute.results.every((result) => JSON.stringify(result).includes(POLICY_SENTENCE)));
+
+    const missingExactRoute = callMcpTool({
+        artifactDir: outDir,
+        name: 'ecf_core.route_query',
+        args: { query: '"No customer passport leaves the repo."', top_k: 5 },
+    });
+    assert.equal(missingExactRoute.route.id, 'exact_text_lookup');
+    assert.deepEqual(missingExactRoute.results, []);
+
     const codeRoute = callMcpTool({
         artifactDir: outDir,
         name: 'ecf_core.route_query',
-        args: { query: 'What code files are indexed?', top_k: 5 },
+        args: { query: 'What code files are indexed?', top_k: 1 },
     });
     assert.equal(codeRoute.route.id, 'code_symbol_lookup');
+    assert.equal(codeRoute.results.length, 1);
     assert.ok(codeRoute.results.some((result) => result.path === 'agent.js'
         && result.symbols.some((symbol) => symbol.name === 'run')));
+
+    const manifestRoute = callMcpTool({
+        artifactDir: outDir,
+        name: 'ecf_core.route_query',
+        args: { query: 'List source manifest entries', top_k: 1 },
+    });
+    assert.equal(manifestRoute.route.id, 'source_manifest_query');
+    assert.equal(manifestRoute.results.length, 1);
+
+    const countRoute = callMcpTool({
+        artifactDir: outDir,
+        name: 'ecf_core.route_query',
+        args: { query: 'How many generated ECF artifacts were excluded?', top_k: 5 },
+    });
+    assert.equal(countRoute.route.id, 'deterministic_stats');
+    assert.equal(countRoute.results.length, 0);
+    assert.equal(countRoute.stats.source_manifest.generated_sources_excluded > 0, true);
 });
 
 test('Agent OS preview off-ramp gives a real command and URL', async () => {
@@ -169,4 +220,17 @@ test('README first screen is installable and MCP-ready without taxonomy overload
     assert.match(`${readme}\n${mcpDoc}`, /Cursor/);
     assert.match(`${readme}\n${mcpDoc}`, /mcpServers/);
     assert.doesNotMatch(`${readme}\n${mcpDoc}`, /WORKFLOW\.md|github\.com\/agoragentic/);
+});
+
+test('Agent OS schemas declare context-router artifact keys', () => {
+    const root = path.join(__dirname, '..');
+    const harness = JSON.parse(fs.readFileSync(path.join(root, 'schemas', 'agent-os-harness.schema.json'), 'utf8'));
+    const handoff = JSON.parse(fs.readFileSync(path.join(root, 'schemas', 'agent-os-handoff.schema.json'), 'utf8'));
+    const agentImport = JSON.parse(fs.readFileSync(path.join(root, 'schemas', 'agent-os-import.schema.json'), 'utf8'));
+
+    for (const key of ['source_manifest', 'code_index', 'context_router']) {
+        assert.ok(harness.properties.artifacts.properties[key], `harness artifacts missing ${key}`);
+        assert.ok(handoff.properties[key], `handoff missing ${key}`);
+        assert.ok(agentImport.properties.evidence.properties[key], `agent-os import evidence missing ${key}`);
+    }
 });

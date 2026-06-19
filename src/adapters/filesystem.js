@@ -310,13 +310,14 @@ class FilesystemAdapter extends ContextAdapter {
             }
 
             const text = raw.toString('utf8');
+            const redactedText = redactSensitiveText(text);
             records.push({
                 ...baseRecord,
                 hash: sha256(text),
-                summary: summarizeText(text, type),
+                summary: summarizeText(redactedText, type),
                 content_preview: previewText(text),
-                code_facts: type === 'code' ? extractCodeFacts(text, relativePath) : null,
-                heading: firstMarkdownHeading(text),
+                code_facts: type === 'code' ? extractCodeFacts(redactedText, relativePath) : null,
+                heading: firstMarkdownHeading(redactedText),
                 line_count: text.length ? text.split(/\r?\n/).length : 0,
             });
         }
