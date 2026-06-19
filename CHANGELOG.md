@@ -4,6 +4,19 @@ All notable changes to ECF Core are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for public CLI/schema surfaces.
 
+## [1.5.0] - 2026-06-18
+
+### Added
+- `source-manifest.json` for included, blocked, review-required, and generated-excluded source facts without copying blocked raw content.
+- `code-index.json` for dependency-free symbols, imports, and entrypoint hints from indexed code files.
+- `context-router.json` plus MCP `ecf_core.route_query` for routing questions to exact evidence, policy lookup, code-symbol lookup, source-manifest facts, deterministic stats, or semantic summary fallback.
+- Schema contracts and deterministic regression coverage for source-manifest, code-index, and context-router artifacts.
+- Context-router documentation with an optional future Gortex adapter path that does not add a required dependency.
+
+### Changed
+- Agent OS preview/import artifacts now include the new manifest, code-index, and router evidence files.
+- Eval reports now include source-manifest, code-index, and context-router readiness metrics while staying scoped to local packet readiness.
+
 ## [1.4.4] - 2026-06-14
 
 ### Changed

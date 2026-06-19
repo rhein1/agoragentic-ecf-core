@@ -52,6 +52,9 @@ function markdownReport(summary) {
         `- Context evidence citation survival: ${summary.metrics.context_evidence_units.citation_survival}`,
         `- Context index tree nodes: ${summary.metrics.context_index.tree_node_count}`,
         `- Context index retrieval queries: ${summary.metrics.context_index.retrieval_query_count}`,
+        `- Source manifest included sources: ${summary.metrics.source_manifest.included_sources}`,
+        `- Code index symbols: ${summary.metrics.code_index.symbol_count}`,
+        `- Context router routes: ${summary.metrics.context_router.route_count}`,
         ...(summary.metrics.grounding_eval ? [
             `- Grounding eval verdict: ${summary.metrics.grounding_eval.verdict}`,
             `- Grounded queries: ${summary.metrics.grounding_eval.summary.grounded}/${summary.metrics.grounding_eval.summary.queries}`,
@@ -173,6 +176,27 @@ function evaluateCompiled({ result, topKSize }) {
             ? 'preview_ready'
             : 'needs_review',
     };
+    const sourceManifestMetrics = {
+        file: 'source-manifest.json',
+        included_sources: result.sourceManifest.summary.included_sources,
+        blocked_sources: result.sourceManifest.summary.blocked_sources,
+        review_required_sources: result.sourceManifest.summary.review_required_sources,
+        generated_sources_excluded: result.sourceManifest.summary.generated_sources_excluded,
+        secrets_blocked_by_default: result.sourceManifest.summary.secrets_blocked_by_default,
+    };
+    const codeIndexMetrics = {
+        file: 'code-index.json',
+        source_count: result.codeIndex.summary.source_count,
+        symbol_count: result.codeIndex.summary.symbol_count,
+        import_count: result.codeIndex.summary.import_count,
+        entrypoint_hint_count: result.codeIndex.summary.entrypoint_hint_count,
+    };
+    const contextRouterMetrics = {
+        file: 'context-router.json',
+        route_count: result.contextRouter.routes.length,
+        preferred_order: result.contextRouter.preferred_order,
+        dependency_status: result.contextRouter.dependency_status,
+    };
     const verdict = policyPass
         && citationCoverage >= 0.95
         && provenanceCoverage >= 0.95
@@ -213,6 +237,9 @@ function evaluateCompiled({ result, topKSize }) {
             compression_experiment: compressionExperiment,
             context_evidence_units: contextEvidenceMetrics,
             context_index: contextIndexMetrics,
+            source_manifest: sourceManifestMetrics,
+            code_index: codeIndexMetrics,
+            context_router: contextRouterMetrics,
         },
         files: result.manifest.files,
     };

@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const readline = require('node:readline');
 const { inspectAgentOsPreview } = require('./agent-os-preview');
+const { routeCompiledQuery } = require('./context-router');
 const { rankRecords } = require('./core/ranking');
 const {
     buildEcfCoreContextPack,
@@ -69,6 +70,19 @@ const TOOLS = [
         },
     },
     {
+        name: 'ecf_core.route_query',
+        description: 'Route a question to exact evidence, policy, code symbols, source manifest facts, deterministic stats, or semantic summary.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                query: { type: 'string' },
+                top_k: { type: 'integer', minimum: 1, maximum: 20, default: 5 },
+                ranking_provider: { type: 'string', enum: ['semantic_lite', 'lexical', 'local_vector'] },
+            },
+            required: ['query'],
+        },
+    },
+    {
         name: 'ecf_core.status',
         description: 'Return local ECF Core resident status for the compiled artifact root.',
         inputSchema: {
@@ -115,7 +129,10 @@ const TOOLS = [
 const ARTIFACT_FILES = [
     'context-packet.json',
     'source-map.json',
+    'source-manifest.json',
     'policy-summary.json',
+    'code-index.json',
+    'context-router.json',
     'manifest.json',
 ];
 
@@ -163,7 +180,10 @@ function loadArtifacts(artifactDir) {
         artifactDir: resolvedDir,
         contextPacket: readJson(path.join(resolvedDir, 'context-packet.json')),
         sourceMap: readJson(path.join(resolvedDir, 'source-map.json')),
+        sourceManifest: readJson(path.join(resolvedDir, 'source-manifest.json')),
         policySummary: readJson(path.join(resolvedDir, 'policy-summary.json')),
+        codeIndex: readJson(path.join(resolvedDir, 'code-index.json')),
+        contextRouter: readJson(path.join(resolvedDir, 'context-router.json')),
         manifest: readJson(path.join(resolvedDir, 'manifest.json')),
     });
     artifactCache.set(resolvedDir, { signature, artifacts });
@@ -267,9 +287,29 @@ function getManifest(artifacts) {
     };
 }
 
+function routeQuery(artifacts, args = {}) {
+    requireArtifact(artifacts.contextPacket, 'context-packet.json');
+    requireArtifact(artifacts.sourceManifest, 'source-manifest.json');
+    requireArtifact(artifacts.codeIndex, 'code-index.json');
+    requireArtifact(artifacts.contextRouter, 'context-router.json');
+    const query = String(args.query || '').trim();
+    if (!query) throw new Error('query is required');
+    const topLimit = Math.max(1, Math.min(Number(args.top_k || 5), 20));
+    return routeCompiledQuery({
+        query,
+        contextPacket: artifacts.contextPacket,
+        sourceManifest: artifacts.sourceManifest,
+        codeIndex: artifacts.codeIndex,
+        contextRouter: artifacts.contextRouter,
+        topK: topLimit,
+        rankingProvider: args.ranking_provider || 'semantic_lite',
+    });
+}
+
 function callTool({ artifactDir, name, args }) {
     const artifacts = loadArtifacts(artifactDir);
     if (name === 'ecf_core.search_context') return searchContext(artifacts, args);
+    if (name === 'ecf_core.route_query') return routeQuery(artifacts, args);
     if (name === 'ecf_core.get_source') return getSource(artifacts, args);
     if (name === 'ecf_core.get_policy') return getPolicy(artifacts);
     if (name === 'ecf_core.get_manifest') return getManifest(artifacts);

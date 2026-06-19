@@ -20,7 +20,10 @@
     "ecf-core.context-compaction-report.v1",
     "ecf-core.page-index.v1",
     "ecf-core.tree-index.v1",
-    "ecf-core.retrieval-plan.v1"
+    "ecf-core.retrieval-plan.v1",
+    "ecf-core.source-manifest.v1",
+    "ecf-core.code-index.v1",
+    "ecf-core.context-router.v1"
   ],
   "compatibility": {
     "required_fields_stable_within_major": true,

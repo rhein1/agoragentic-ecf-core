@@ -2,9 +2,9 @@
 
 [![npm](https://img.shields.io/npm/v/agoragentic-ecf-core)](https://www.npmjs.com/package/agoragentic-ecf-core) [![license](https://img.shields.io/npm/l/agoragentic-ecf-core)](LICENSE) [![node](https://img.shields.io/node/v/agoragentic-ecf-core)](package.json)
 
-Give a coding agent a local, searchable map of your repo before it edits.
+Give a coding agent a source-preserving context router before it edits.
 
-ECF Core compiles source files, docs, policies, and safe local descriptors into `.ecf-core/` artifacts with citations, blocked-source proof, evidence units, and an MCP server your IDE can query.
+ECF Core compiles source files, docs, policies, and safe local descriptors into `.ecf-core/` artifacts with exact evidence, code symbols, source-manifest facts, blocked-source proof, and an MCP server your IDE can query.
 
 ```bash
 npm install -g agoragentic-ecf-core
@@ -14,7 +14,7 @@ ecf-core eval .
 ecf-core serve-mcp .ecf-core
 ```
 
-Expected output: `.ecf-core/source-map.json`, `.ecf-core/evidence-units.json`, `.ecf-core/policy-summary.json`, `.ecf-core/agent-os-import.json`, and local MCP-ready context with blocked sources such as `.env` recorded as policy evidence instead of served as source text.
+Expected output: `.ecf-core/source-map.json`, `.ecf-core/source-manifest.json`, `.ecf-core/code-index.json`, `.ecf-core/context-router.json`, `.ecf-core/evidence-units.json`, `.ecf-core/policy-summary.json`, `.ecf-core/agent-os-import.json`, and local MCP-ready context with blocked sources such as `.env` recorded as policy evidence instead of served as source text.
 
 No cloud call, wallet, marketplace route, hosted runtime, or private Full ECF internals are included.
 
@@ -45,6 +45,9 @@ Retrieval example:
 ```text
 ecf_core.search_context({"query":"What policy applies before editing?"})
 -> source_id="docs/security.md#policy", path="docs/security.md", citation="policy-summary.json:allowed_sources[0]", policy.allowed=true
+
+ecf_core.route_query({"query":"What code files are indexed?"})
+-> route="code_symbol_lookup", file="code-index.json", results include symbols/imports with source provenance
 ```
 
 Policy-boundary example:
@@ -164,6 +167,7 @@ Do not treat that contact path as a SOC 2, audit, enterprise-readiness, hosted r
 - Context packet schema
 - Policy summary schema
 - Source map schema
+- Source manifest schema
 - Provenance and citation contract
 - Local/self-hosted context-provider boundary
 - Connector adapter contracts
@@ -180,6 +184,7 @@ Do not treat that contact path as a SOC 2, audit, enterprise-readiness, hosted r
 - ECF Compile Stage readiness summaries for Agent OS preview cards
 - Deterministic context compaction reports with duplicate-claim and citation-survival metrics
 - Page, tree, and retrieval-plan index artifacts for local source-grounded review
+- Source-manifest, code-index, and context-router artifacts for exact evidence, code-symbol lookup, deterministic stats, and semantic fallback
 - Optional dependency-free ranking provider contracts (`local_vector`, Qdrant/Chroma precomputed results, GitNexus/code graph, MCP context provider)
 - Source-preview .NET lane for C#, ASP.NET Core, EF Core, and Agent OS-ready artifact compatibility
 - Deterministic compression experiment metrics
@@ -247,10 +252,12 @@ The compile stage turns local sources into deployment-readiness artifacts:
 ```text
 sources
 -> source-map.json
+-> source-manifest.json
 -> policy-summary.json
 -> evidence-units.json
 -> page-index.json / tree-index.json
 -> retrieval-plan.json
+-> code-index.json / context-router.json
 -> grounding-eval.json
 -> agent-os-import.json
 ```
@@ -309,6 +316,8 @@ The `1.3` surface adds optional dependency-free ranking provider contracts: buil
 
 The `1.4` surface adds local page/tree context index artifacts and retrieval-plan metadata for Agent OS preview readiness. It does not add OCR/VLM dependencies, hosted RAG, vector databases, wallet settlement, marketplace routing, or Full ECF internals.
 
+The current compile surface also adds `source-manifest.json`, `code-index.json`, and `context-router.json` so coding agents can route questions to exact evidence, policy lookup, code-symbol lookup, deterministic source stats, or semantic summaries without treating larger context as the answer.
+
 The compile-stage surface now also emits `evidence-units.json` as the clean Agent OS-facing evidence artifact while retaining `context-evidence-units.json` for compatibility with earlier consumers.
 
 The `.NET` source-preview lane adds artifact-compatible C#, ASP.NET Core, and EF Core scanners plus an `ecfnet` CLI scaffold. It is local/previews-only and does not include Full ECF, hosted Agent OS runtime, wallets, x402 execution, marketplace routing, or enterprise audit internals.
@@ -364,6 +373,7 @@ The compiler writes:
 .ecf-core/
   context-packet.json
   source-map.json
+  source-manifest.json
   policy-summary.json
   evidence-units.json
   context-evidence-units.json
@@ -371,6 +381,8 @@ The compiler writes:
   page-index.json
   tree-index.json
   retrieval-plan.json
+  code-index.json
+  context-router.json
   manifest.json
   deployment-preview.json
   agent-os-harness.json
@@ -458,6 +470,22 @@ These artifacts preserve document, page, section, and tree-node structure where 
 
 Triptych OS (Agent OS) preview import can use these files to show context index readiness, unsupported grounding questions, and sources requiring owner review before any public exposure. Live deployment remains a separate owner-reviewed Agent OS flow.
 
+## Source Manifest, Code Index, And Context Router
+
+ECF Core does not rely on larger prompts as the retrieval strategy. Compile emits:
+
+```text
+.ecf-core/source-manifest.json
+.ecf-core/code-index.json
+.ecf-core/context-router.json
+```
+
+`source-manifest.json` records included, blocked, review-required, and generated-excluded source facts without copying blocked raw content. `code-index.json` records dependency-free symbols, imports, and entrypoint hints for indexed code files. `context-router.json` declares the local route order: exact text lookup, policy lookup, code-symbol lookup, source-manifest query, deterministic stats, then semantic summary fallback.
+
+Use `ecf_core.route_query` over MCP when a coding agent should choose the right local artifact instead of stuffing all context into a prompt.
+
+Optional external code-graph tools such as Gortex can be evaluated as adapters later. Treat them as source-index providers that may enrich `code-index.json` or `context-router.json`; do not make them a required dependency until the local first-run artifact is already useful.
+
 ## CLI
 
 ```text
@@ -513,6 +541,7 @@ npm run pack:dry
 - [MCP Registry Checklist](docs/MCP_REGISTRY_CHECKLIST.md)
 - [Resident Work Memory](docs/RESIDENT_WORK_MEMORY.md)
 - [Context Evidence Units](docs/EVIDENCE_UNITS.md)
+- [Source Manifest, Code Index, And Context Router](docs/CONTEXT_ROUTER.md)
 - [.NET Support](docs/DOTNET.md)
 - [Versioning](docs/VERSIONING.md)
 - [Docs Index](docs/README.md)

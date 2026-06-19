@@ -16,6 +16,11 @@ const {
     buildContextEvidenceUnits,
 } = require('./evidence-units');
 const { buildContextIndexes } = require('./context-index');
+const {
+    buildCodeIndex,
+    buildContextRouter,
+    buildSourceManifest,
+} = require('./context-router');
 
 function nowIso() {
     return new Date().toISOString();
@@ -198,7 +203,17 @@ function buildCompileReadinessSummary({ contextPacket, sourceMap, evidenceUnits,
     };
 }
 
-function buildDeploymentPreview({ contextPacket, sourceMap, config, evidenceUnits = null, contextIndexes = null, groundingSummary = null }) {
+function buildDeploymentPreview({
+    contextPacket,
+    sourceMap,
+    config,
+    evidenceUnits = null,
+    contextIndexes = null,
+    sourceManifest = null,
+    codeIndex = null,
+    contextRouter = null,
+    groundingSummary = null,
+}) {
     const checks = buildReadinessChecks({ contextPacket, sourceMap, config });
     const contextIndexReadiness = buildContextIndexReadiness(contextIndexes, evidenceUnits);
     if (contextIndexReadiness) {
@@ -233,6 +248,7 @@ function buildDeploymentPreview({ contextPacket, sourceMap, config, evidenceUnit
         artifacts: {
             context_packet: 'context-packet.json',
             source_map: 'source-map.json',
+            source_manifest: sourceManifest ? 'source-manifest.json' : null,
             policy_summary: 'policy-summary.json',
             evidence_units: 'evidence-units.json',
             context_evidence_units: 'context-evidence-units.json',
@@ -240,6 +256,8 @@ function buildDeploymentPreview({ contextPacket, sourceMap, config, evidenceUnit
             page_index: contextIndexes ? 'page-index.json' : null,
             tree_index: contextIndexes ? 'tree-index.json' : null,
             retrieval_plan: contextIndexes ? 'retrieval-plan.json' : null,
+            code_index: codeIndex ? 'code-index.json' : null,
+            context_router: contextRouter ? 'context-router.json' : null,
             grounding_eval: groundingSummary ? 'grounding-eval.json' : null,
         },
         context_compile_readiness: contextCompileReadiness,
@@ -258,6 +276,7 @@ function buildAgentOsHarness({ deploymentPreview }) {
         artifacts: {
             context_packet: 'context-packet.json',
             source_map: 'source-map.json',
+            source_manifest: deploymentPreview.artifacts.source_manifest,
             policy_summary: 'policy-summary.json',
             evidence_units: 'evidence-units.json',
             context_evidence_units: 'context-evidence-units.json',
@@ -265,6 +284,8 @@ function buildAgentOsHarness({ deploymentPreview }) {
             page_index: deploymentPreview.artifacts.page_index,
             tree_index: deploymentPreview.artifacts.tree_index,
             retrieval_plan: deploymentPreview.artifacts.retrieval_plan,
+            code_index: deploymentPreview.artifacts.code_index,
+            context_router: deploymentPreview.artifacts.context_router,
             deployment_preview: 'deployment-preview.json',
             grounding_eval: deploymentPreview.artifacts.grounding_eval,
         },
@@ -286,10 +307,13 @@ function buildAgentOsImport({ deploymentPreview }) {
     const requiredFiles = [
         'context-packet.json',
         'source-map.json',
+        'source-manifest.json',
         'policy-summary.json',
         'evidence-units.json',
         'context-evidence-units.json',
         'context-compaction-report.json',
+        'code-index.json',
+        'context-router.json',
         'deployment-preview.json',
         'agent-os-harness.json',
         'agent-os-handoff.json',
@@ -312,9 +336,12 @@ function buildAgentOsImport({ deploymentPreview }) {
             evidence_units: deploymentPreview.artifacts.evidence_units,
             context_evidence_units: deploymentPreview.artifacts.context_evidence_units,
             context_compaction_report: deploymentPreview.artifacts.context_compaction_report,
+            source_manifest: deploymentPreview.artifacts.source_manifest,
             page_index: deploymentPreview.artifacts.page_index,
             tree_index: deploymentPreview.artifacts.tree_index,
             retrieval_plan: deploymentPreview.artifacts.retrieval_plan,
+            code_index: deploymentPreview.artifacts.code_index,
+            context_router: deploymentPreview.artifacts.context_router,
             grounding_eval: deploymentPreview.artifacts.grounding_eval,
         },
         context_compile_readiness: deploymentPreview.context_compile_readiness,
@@ -326,10 +353,13 @@ function buildAgentOsImport({ deploymentPreview }) {
 function buildAgentOsHandoff({
     contextPacketPath,
     sourceMapPath,
+    sourceManifestPath,
     policySummaryPath,
     pageIndexPath,
     treeIndexPath,
     retrievalPlanPath,
+    codeIndexPath,
+    contextRouterPath,
     evidenceUnitsPath,
     deploymentPreviewPath,
     agentOsHarnessPath,
@@ -339,11 +369,14 @@ function buildAgentOsHandoff({
         schema_version: 'ecf-core.agent-os-handoff.v1',
         context_packet: contextPacketPath,
         source_map: sourceMapPath,
+        source_manifest: sourceManifestPath,
         policy_summary: policySummaryPath,
         evidence_units: evidenceUnitsPath,
         page_index: pageIndexPath,
         tree_index: treeIndexPath,
         retrieval_plan: retrievalPlanPath,
+        code_index: codeIndexPath,
+        context_router: contextRouterPath,
         deployment_preview: deploymentPreviewPath,
         agent_os_harness: agentOsHarnessPath,
         agent_os_preview: {
@@ -479,6 +512,9 @@ function validateCompiledArtifacts(artifactDir) {
     const pageIndexPath = path.join(artifactDir, 'page-index.json');
     const treeIndexPath = path.join(artifactDir, 'tree-index.json');
     const retrievalPlanPath = path.join(artifactDir, 'retrieval-plan.json');
+    const sourceManifestPath = path.join(artifactDir, 'source-manifest.json');
+    const codeIndexPath = path.join(artifactDir, 'code-index.json');
+    const contextRouterPath = path.join(artifactDir, 'context-router.json');
     const compileStageEvidenceUnitsPath = path.join(artifactDir, 'evidence-units.json');
 
     validateSchemaVersion(contextPacket, 'ecf-core.context-packet.v1', 'context-packet.json', errors);
@@ -528,6 +564,24 @@ function validateCompiledArtifacts(artifactDir) {
         validateSchemaVersion(retrievalPlan, 'ecf-core.retrieval-plan.v1', 'retrieval-plan.json', errors);
         if (retrievalPlan && !Array.isArray(retrievalPlan.queries)) errors.push('retrieval-plan.json queries must be an array');
     }
+    if (fs.existsSync(sourceManifestPath)) {
+        const sourceManifest = readJsonIfPresent(sourceManifestPath, errors);
+        validateSchemaVersion(sourceManifest, 'ecf-core.source-manifest.v1', 'source-manifest.json', errors);
+        if (sourceManifest && !Array.isArray(sourceManifest.entries)) errors.push('source-manifest.json entries must be an array');
+        if (sourceManifest && !sourceManifest.summary) errors.push('source-manifest.json summary is required');
+    }
+    if (fs.existsSync(codeIndexPath)) {
+        const codeIndex = readJsonIfPresent(codeIndexPath, errors);
+        validateSchemaVersion(codeIndex, 'ecf-core.code-index.v1', 'code-index.json', errors);
+        if (codeIndex && !Array.isArray(codeIndex.sources)) errors.push('code-index.json sources must be an array');
+        if (codeIndex && !codeIndex.summary) errors.push('code-index.json summary is required');
+    }
+    if (fs.existsSync(contextRouterPath)) {
+        const contextRouter = readJsonIfPresent(contextRouterPath, errors);
+        validateSchemaVersion(contextRouter, 'ecf-core.context-router.v1', 'context-router.json', errors);
+        if (contextRouter && !Array.isArray(contextRouter.routes)) errors.push('context-router.json routes must be an array');
+        if (contextRouter && !contextRouter.artifact_summary) errors.push('context-router.json artifact_summary is required');
+    }
 
     return {
         ok: errors.length === 0,
@@ -566,6 +620,7 @@ async function compileProject(options = {}) {
         hash: record.hash,
         summary: record.summary,
         content_preview: record.content_preview || null,
+        code_facts: record.code_facts || null,
         heading: record.heading || null,
         byte_count: record.byte_count,
         line_count: record.line_count,
@@ -624,6 +679,21 @@ async function compileProject(options = {}) {
         config,
         createdAt,
     });
+    const codeIndex = buildCodeIndex({ contextPacket, createdAt });
+    const sourceManifest = buildSourceManifest({
+        records,
+        generatedRecords: generatedArtifactFilter.generated,
+        walkState,
+        contextPacket,
+        codeIndex,
+        createdAt,
+    });
+    const contextRouter = buildContextRouter({
+        sourceManifest,
+        codeIndex,
+        retrievalPlan: contextIndexes.retrievalPlan,
+        createdAt,
+    });
 
     const contextPacketPath = path.join(outDir, 'context-packet.json');
     const sourceMapPath = path.join(outDir, 'source-map.json');
@@ -637,13 +707,25 @@ async function compileProject(options = {}) {
     writeJson(path.join(outDir, 'page-index.json'), contextIndexes.pageIndex);
     writeJson(path.join(outDir, 'tree-index.json'), contextIndexes.treeIndex);
     writeJson(path.join(outDir, 'retrieval-plan.json'), contextIndexes.retrievalPlan);
+    writeJson(path.join(outDir, 'source-manifest.json'), sourceManifest);
+    writeJson(path.join(outDir, 'code-index.json'), codeIndex);
+    writeJson(path.join(outDir, 'context-router.json'), contextRouter);
 
     let agentOsHandoff = null;
     let deploymentPreview = null;
     let agentOsHarness = null;
     let agentOsImport = null;
     if (options.emitAgentOs) {
-        deploymentPreview = buildDeploymentPreview({ contextPacket, sourceMap, config, evidenceUnits: compileStageEvidenceUnits, contextIndexes });
+        deploymentPreview = buildDeploymentPreview({
+            contextPacket,
+            sourceMap,
+            config,
+            evidenceUnits: compileStageEvidenceUnits,
+            contextIndexes,
+            sourceManifest,
+            codeIndex,
+            contextRouter,
+        });
         agentOsHarness = buildAgentOsHarness({ deploymentPreview });
         agentOsImport = buildAgentOsImport({ deploymentPreview });
         writeJson(path.join(outDir, 'deployment-preview.json'), deploymentPreview);
@@ -652,11 +734,14 @@ async function compileProject(options = {}) {
         agentOsHandoff = buildAgentOsHandoff({
             contextPacketPath: 'context-packet.json',
             sourceMapPath: 'source-map.json',
+            sourceManifestPath: 'source-manifest.json',
             policySummaryPath: 'policy-summary.json',
             evidenceUnitsPath: 'evidence-units.json',
             pageIndexPath: 'page-index.json',
             treeIndexPath: 'tree-index.json',
             retrievalPlanPath: 'retrieval-plan.json',
+            codeIndexPath: 'code-index.json',
+            contextRouterPath: 'context-router.json',
             deploymentPreviewPath: 'deployment-preview.json',
             agentOsHarnessPath: 'agent-os-harness.json',
             config,
@@ -672,6 +757,7 @@ async function compileProject(options = {}) {
         files: {
             context_packet: relativeArtifact(projectRoot, outDir, 'context-packet.json'),
             source_map: relativeArtifact(projectRoot, outDir, 'source-map.json'),
+            source_manifest: relativeArtifact(projectRoot, outDir, 'source-manifest.json'),
             policy_summary: relativeArtifact(projectRoot, outDir, 'policy-summary.json'),
             evidence_units: relativeArtifact(projectRoot, outDir, 'evidence-units.json'),
             context_evidence_units: relativeArtifact(projectRoot, outDir, 'context-evidence-units.json'),
@@ -679,6 +765,8 @@ async function compileProject(options = {}) {
             page_index: relativeArtifact(projectRoot, outDir, 'page-index.json'),
             tree_index: relativeArtifact(projectRoot, outDir, 'tree-index.json'),
             retrieval_plan: relativeArtifact(projectRoot, outDir, 'retrieval-plan.json'),
+            code_index: relativeArtifact(projectRoot, outDir, 'code-index.json'),
+            context_router: relativeArtifact(projectRoot, outDir, 'context-router.json'),
             agent_os_handoff: agentOsHandoff ? relativeArtifact(projectRoot, outDir, 'agent-os-handoff.json') : null,
             deployment_preview: deploymentPreview ? relativeArtifact(projectRoot, outDir, 'deployment-preview.json') : null,
             agent_os_harness: agentOsHarness ? relativeArtifact(projectRoot, outDir, 'agent-os-harness.json') : null,
@@ -697,6 +785,9 @@ async function compileProject(options = {}) {
             page_index_sources: contextIndexes.pageIndex.summary.source_count,
             tree_index_nodes: contextIndexes.treeIndex.summary.node_count,
             retrieval_plan_queries: contextIndexes.retrievalPlan.summary.query_count,
+            code_index_sources: codeIndex.summary.source_count,
+            code_index_symbols: codeIndex.summary.symbol_count,
+            context_router_routes: contextRouter.routes.length,
         },
     };
     writeJson(path.join(outDir, 'manifest.json'), manifest);
@@ -710,6 +801,9 @@ async function compileProject(options = {}) {
         compileStageEvidenceUnits,
         compactionReport,
         contextIndexes,
+        sourceManifest,
+        codeIndex,
+        contextRouter,
         pageIndex: contextIndexes.pageIndex,
         treeIndex: contextIndexes.treeIndex,
         retrievalPlan: contextIndexes.retrievalPlan,

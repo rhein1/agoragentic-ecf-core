@@ -16,6 +16,7 @@ ECF Core writes:
 .ecf-core/
   context-packet.json
   source-map.json
+  source-manifest.json
   policy-summary.json
   evidence-units.json
   context-evidence-units.json
@@ -23,6 +24,8 @@ ECF Core writes:
   page-index.json
   tree-index.json
   retrieval-plan.json
+  code-index.json
+  context-router.json
   deployment-preview.json
   agent-os-harness.json
   agent-os-handoff.json
@@ -42,13 +45,14 @@ It declares:
 - acceptance checks for preview import
 - compile-stage readiness summary for owner-facing Agent OS preview cards
 - context index readiness from `page-index.json`, `tree-index.json`, and `retrieval-plan.json`
+- source-manifest, code-index, and context-router evidence for deterministic first-run retrieval
 - explicit boundary flags proving the export does not include hosted runtime, settlement, marketplace routing, or Full ECF private internals
 
 ## Consumer Rule
 
 Any Agent OS importer should treat ECF Core artifacts as preview evidence only. A separate Agent OS deployment flow must perform its own owner review, policy checks, runtime provisioning, billing/spend authorization, and launch gates.
 
-Agent OS can use `evidence-units.json`, `page-index.json`, `tree-index.json`, `retrieval-plan.json`, and `grounding-eval.json` as preview evidence when deciding whether a deployment has enough allowed context to launch safely. A passing grounding eval is not deployment approval; it is evidence for the owner-facing readiness report.
+Agent OS can use `evidence-units.json`, `source-manifest.json`, `code-index.json`, `context-router.json`, `page-index.json`, `tree-index.json`, `retrieval-plan.json`, and `grounding-eval.json` as preview evidence when deciding whether a deployment has enough allowed context to launch safely. A passing grounding eval is not deployment approval; it is evidence for the owner-facing readiness report.
 
 ## Rust Framework Runtime Metadata
 
