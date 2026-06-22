@@ -57,13 +57,19 @@ They are local evidence for Agent OS preview only.
   "entities": ["Refund Window", "refunds.md"],
   "policy": {
     "allowed_for_agent": true,
-    "public_safe": true,
+    "public_safe": false,
     "requires_review": false,
-    "requires_public_exposure_review": false,
+    "requires_public_exposure_review": true,
     "live_deploy_allowed": false
   }
 }
 ```
+
+`allowed_for_agent` (a local agent may read this source) is independent of
+`public_safe` (the source is cleared for public export). An allowed source is
+emitted with `public_safe: false` and `requires_public_exposure_review: true`,
+matching the posture the context index assigns to the same source. Public
+exposure stays gated until an explicit review clears it.
 
 ## Agent OS Handoff
 

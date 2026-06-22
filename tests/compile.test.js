@@ -115,6 +115,20 @@ test('compileProject emits source map, context packet, policy summary, and hando
     assert.equal(result.evidenceUnits.units.length, result.contextPacket.sources.length);
     assert.ok(result.evidenceUnits.units.every((unit) => unit.policy.live_deploy_allowed === false));
     assert.ok(result.evidenceUnits.units.every((unit) => unit.citations.length > 0));
+    // Allowed-for-agent must not imply public-safe: evidence units gate public
+    // exposure (public_safe:false / requires_public_exposure_review:true) so they
+    // agree with the context index instead of contradicting it.
+    assert.ok(result.evidenceUnits.units.every((unit) => unit.policy.public_safe === false));
+    assert.ok(result.evidenceUnits.units.every((unit) => unit.policy.requires_public_exposure_review === true));
+    for (const unit of result.evidenceUnits.units) {
+        const indexNode = result.treeIndex.nodes.find((node) => node.source_id === unit.source_id);
+        assert.ok(indexNode, `tree-index node missing for source ${unit.source_id}`);
+        assert.equal(unit.policy.public_safe, indexNode.policy_flags.public_safe);
+        assert.equal(
+            unit.policy.requires_public_exposure_review,
+            indexNode.policy_flags.requires_public_exposure_review,
+        );
+    }
     assert.equal(result.compactionReport.dependency_status, 'baseline_only');
     assert.equal(result.compactionReport.citation_survival, 1);
     assert.ok(result.treeIndex.nodes.some((node) => node.type === 'section' && node.heading === 'Billing'));
