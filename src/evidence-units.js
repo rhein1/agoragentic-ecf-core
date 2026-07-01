@@ -111,11 +111,15 @@ function buildContextEvidenceUnits({ contextPacket, createdAt = new Date().toISO
             citation_labels: citation?.label ? [citation.label] : [],
             tags: tagsForSource(source),
             entities: entitiesForSource(source),
+            // Allowed for a local agent does NOT imply safe for public export.
+            // Mirror the conservative posture the context index assigns to the
+            // same sources (context-index.js policyFlagsForSource): public
+            // exposure stays gated behind an explicit review until cleared.
             policy: {
                 allowed_for_agent: true,
-                public_safe: true,
+                public_safe: false,
                 requires_review: false,
-                requires_public_exposure_review: false,
+                requires_public_exposure_review: true,
                 live_deploy_allowed: false,
             },
             provenance: source.provenance || {},
