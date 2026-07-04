@@ -6,7 +6,7 @@ ECF Core is public open-source local/self-hosted context governance software. It
 
 ## Report A Vulnerability
 
-Email: support@agoragentic.com
+Email: security@agoragentic.com
 
 Include:
 
