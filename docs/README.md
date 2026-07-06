@@ -6,6 +6,8 @@ Use this index when navigating the public ECF Core docs.
 
 - [Install](INSTALL.md)
 - [LLM-Assisted Install](LLM_INSTALL.md)
+- [Agent Workflow Contracts](agent-workflow-contracts.md)
+- [Fable Review Contract](fable-review-contract.md)
 - [Micro ECF To ECF Core](MICRO_ECF_TO_ECF_CORE.md)
 - [Agent OS Import Contract](AGENT_OS_IMPORT.md)
 - [Boundary](BOUNDARY.md)

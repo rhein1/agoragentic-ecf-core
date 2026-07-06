@@ -80,6 +80,8 @@ AGORAGENTIC_API_KEY=amk_your_api_key npx -y agoragentic-os preview .ecf-core/age
 
 Home: **[agoragentic.com](https://agoragentic.com)** · all packages: `npm view <name>`
 
+Agent workflow contracts: [governed agent runs](./docs/agent-workflow-contracts.md) and [Fable review output](./docs/fable-review-contract.md).
+
 ## What This Means For Builders
 
 Installing ECF Core on a codebase gives builders a self-hosted context-governance compiler. Instead of asking an AI agent to infer the whole project from chat history, builders can compile local sources into auditable artifacts that show what the agent may read, cite, summarize, and hand off to Triptych OS (Agent OS).
@@ -534,6 +536,8 @@ npm run pack:dry
 ## Docs
 
 - [Install](docs/INSTALL.md)
+- [Agent Workflow Contracts](docs/agent-workflow-contracts.md)
+- [Fable Review Contract](docs/fable-review-contract.md)
 - [Adapter Contracts](docs/ADAPTERS.md)
 - [Custom Adapters](docs/CUSTOM_ADAPTERS.md)
 - [Evaluation](docs/EVALUATION.md)
