@@ -27,6 +27,7 @@
     "examples/",
     "dotnet/",
     "docs/",
+    "AGENTS.md",
     "ECF.md",
     "SKILL.md",
     "llms.txt",

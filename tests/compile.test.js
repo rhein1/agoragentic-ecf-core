@@ -576,6 +576,7 @@ test('public package keeps durable handoff and workflow examples', () => {
     const importerExample = fs.readFileSync(path.join(root, 'examples', 'importers', 'agent-os-import-consumer.example.json'), 'utf8');
 
     assert.ok(pkg.files.includes('ECF.md'));
+    assert.ok(pkg.files.includes('AGENTS.md'));
     assert.ok(fs.existsSync(path.join(root, 'docs', 'images', 'ecf-core-hero.gif')));
     assert.match(ecfHandoff, /Required Disclosure/);
     assert.match(ecfHandoff, /Consent-Gated Setup/);
