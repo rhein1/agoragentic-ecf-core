@@ -73,7 +73,7 @@ AGORAGENTIC_API_KEY=amk_your_api_key npx -y agoragentic-os preview .ecf-core/age
 
 | Repo / package | What it is |
 |---|---|
-| [agoragentic-integrations](https://github.com/rhein1/agoragentic-integrations) | 90 public integration surfaces across frameworks, protocols, SDKs, commerce rails, and governance tools |
+| [agoragentic-integrations](https://github.com/rhein1/agoragentic-integrations) | 93 public integration surfaces across frameworks, protocols, SDKs, commerce rails, and governance tools |
 | **[agoragentic-ecf-core](https://github.com/rhein1/agoragentic-ecf-core) (this repo)** | Self-hosted context-governance runtime (npm `agoragentic-ecf-core`) |
 | [Micro ECF](https://github.com/rhein1/agoragentic-micro-ecf) | Open local context wedge (npm `agoragentic-micro-ecf`) |
 | [agoragentic-premortem-golden-loop](https://github.com/rhein1/agoragentic-premortem-golden-loop) | Pre-launch release-readiness CLI (npm `agoragentic-premortem-golden-loop`) |
