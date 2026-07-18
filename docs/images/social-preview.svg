@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">ECF Core</title>
+  <desc id="desc">Self-hosted context governance for source-grounded agents.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1324"/>
+      <stop offset="1" stop-color="#142036"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#55d7de"/>
+      <stop offset="1" stop-color="#ff7a59"/>
+    </linearGradient>
+    <clipPath id="visualClip"><rect x="814" y="56" width="406" height="528" rx="6"/></clipPath>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <path d="M0 96H1280M0 320H1280M0 544H1280M170 0V640M640 0V640M1110 0V640" stroke="#263550" stroke-width="1" opacity="0.62"/>
+  <rect x="60" y="56" width="6" height="528" fill="url(#accent)"/>
+  <text x="104" y="132" fill="#55d7de" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">AGORAGENTIC OPEN SOURCE</text>
+  <text x="104" y="236" fill="#f7f9fc" font-family="Inter, Arial, sans-serif" font-size="82" font-weight="700">ECF Core</text>
+  <text x="104" y="320" fill="#f7f9fc" font-family="Inter, Arial, sans-serif" font-size="37" font-weight="600">Compile context.</text>
+  <text x="104" y="370" fill="#f7f9fc" font-family="Inter, Arial, sans-serif" font-size="37" font-weight="600">Preserve evidence.</text>
+  <text x="104" y="448" fill="#bac6d9" font-family="Inter, Arial, sans-serif" font-size="25">Self-hosted context governance for</text>
+  <text x="104" y="482" fill="#bac6d9" font-family="Inter, Arial, sans-serif" font-size="25">source-grounded coding agents.</text>
+  <text x="104" y="548" fill="#ff8a70" font-family="JetBrains Mono, Consolas, monospace" font-size="20">source maps  |  citations  |  local MCP</text>
+  <image href="banner.png" x="748" y="-2" width="548" height="644" preserveAspectRatio="xMidYMid slice" clip-path="url(#visualClip)" opacity="0.86"/>
+  <rect x="814" y="56" width="406" height="528" rx="6" fill="none" stroke="#405274" stroke-width="2"/>
+</svg>

@@ -15,11 +15,24 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22, 24]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
       - run: npm test
       - run: npm run check
       - run: npm run pack:dry
+
+  test-status:
+    name: test
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every Node matrix job to pass
+        run: test "${{ needs.test.result }}" = "success"

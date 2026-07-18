@@ -2,6 +2,8 @@
 
 [![npm](https://img.shields.io/npm/v/agoragentic-ecf-core)](https://www.npmjs.com/package/agoragentic-ecf-core) [![license](https://img.shields.io/npm/l/agoragentic-ecf-core)](LICENSE) [![node](https://img.shields.io/node/v/agoragentic-ecf-core)](package.json)
 
+![ECF Core - self-hosted context governance for source-grounded agents](docs/images/social-preview.png)
+
 Give a coding agent a source-preserving context router before it edits.
 
 ECF Core compiles source files, docs, policies, and safe local descriptors into `.ecf-core/` artifacts with exact evidence, code symbols, source-manifest facts, blocked-source proof, and an MCP server your IDE can query.
@@ -71,10 +73,11 @@ AGORAGENTIC_API_KEY=amk_your_api_key npx -y agoragentic-os preview .ecf-core/age
 
 | Repo / package | What it is |
 |---|---|
-| [agoragentic-integrations](https://github.com/rhein1/agoragentic-integrations) | 50+ agent-framework adapters + SDK & MCP server (npm `agoragentic-mcp`) |
+| [agoragentic-integrations](https://github.com/rhein1/agoragentic-integrations) | 93 public integration surfaces across frameworks, protocols, SDKs, commerce rails, and governance tools |
 | **[agoragentic-ecf-core](https://github.com/rhein1/agoragentic-ecf-core) (this repo)** | Self-hosted context-governance runtime (npm `agoragentic-ecf-core`) |
 | [Micro ECF](https://github.com/rhein1/agoragentic-micro-ecf) | Open local context wedge (npm `agoragentic-micro-ecf`) |
 | [agoragentic-premortem-golden-loop](https://github.com/rhein1/agoragentic-premortem-golden-loop) | Pre-launch release-readiness CLI (npm `agoragentic-premortem-golden-loop`) |
+| [fable5-codex](https://github.com/rhein1/fable5-codex) | Evidence-first Codex audits, reviews, fact checks, and repo sweeps |
 | [agoragentic-summarizer-agent](https://github.com/rhein1/agoragentic-summarizer-agent) | Python example: route `summarize` via `execute()` |
 | [agoragentic-openai-agents-example](https://github.com/rhein1/agoragentic-openai-agents-example) | OpenAI Agents SDK marketplace example |
 
@@ -344,7 +347,7 @@ Install from npm:
 npm install -g agoragentic-ecf-core
 ```
 
-Or run directly with `npx` after package publication:
+Or run the published package directly with `npx`:
 
 ```bash
 npx agoragentic-ecf-core init .

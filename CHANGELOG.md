@@ -4,6 +4,16 @@ All notable changes to ECF Core are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project follows semantic versioning for public CLI/schema surfaces.
 
+## [Unreleased]
+
+### Added
+- A 1280x640 social preview card for repository and link-card discovery.
+- CI coverage for the package's documented Node 20, 22, and 24 runtimes.
+
+### Changed
+- Refreshed first-viewport and ecosystem copy to match the current 93-surface public integrations catalog.
+- Removed stale pre-publication wording from the `npx` install path.
+
 ## [1.5.0] - 2026-06-18
 
 ### Added
