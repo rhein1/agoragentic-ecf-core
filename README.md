@@ -82,6 +82,16 @@ Home: **[agoragentic.com](https://agoragentic.com)** · all packages: `npm view 
 
 Agent workflow contracts: [governed agent runs](./docs/agent-workflow-contracts.md) and [Fable review output](./docs/fable-review-contract.md).
 
+## Choose Your Path
+
+| I want to… | Start here | What comes next |
+|---|---|---|
+| Set a local policy and export a small context packet | [Micro ECF](https://github.com/rhein1/agoragentic-micro-ecf) | Use the [Micro ECF to ECF Core guide](./docs/MICRO_ECF_TO_ECF_CORE.md) if static artifacts stop being enough. |
+| Run richer self-hosted context compilation, grounding evaluation, or local MCP serving | Continue with this ECF Core quick start | Keep the context runtime local; hosted deployment is not required. |
+| Check a governed Agent OS handoff before a hosted request | [Agent OS preview handoff](./examples/workflows/agent-os-preview-handoff.md) | Follow [Agent OS import](./docs/AGENT_OS_IMPORT.md); preview is not runtime provisioning, funding, public exposure, or settlement. |
+
+For an integration, payment, or marketplace route, use the [ecosystem quick navigator](https://github.com/rhein1/agoragentic-integrations#start-here--choose-one-path).
+
 ## What This Means For Builders
 
 Installing ECF Core on a codebase gives builders a self-hosted context-governance compiler. Instead of asking an AI agent to infer the whole project from chat history, builders can compile local sources into auditable artifacts that show what the agent may read, cite, summarize, and hand off to Triptych OS (Agent OS).
