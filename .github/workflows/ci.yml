@@ -27,3 +27,12 @@ jobs:
       - run: npm test
       - run: npm run check
       - run: npm run pack:dry
+
+  test-status:
+    name: test
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every Node matrix job to pass
+        run: test "${{ needs.test.result }}" = "success"
