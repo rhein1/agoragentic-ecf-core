@@ -6,10 +6,17 @@ This example shows the smallest copyable adapter shape ECF Core accepts. It uses
 const { compileProject } = require('agoragentic-ecf-core');
 const { CustomKeywordAdapter } = require('./custom-keyword-adapter');
 
-await compileProject({
-  projectRoot: process.cwd(),
-  emitAgentOs: true,
-  adapters: [new CustomKeywordAdapter(['safe local context'])]
+async function main() {
+  await compileProject({
+    projectRoot: process.cwd(),
+    emitAgentOs: true,
+    adapters: [new CustomKeywordAdapter(['safe local context'])]
+  });
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
 });
 ```
 

@@ -26,7 +26,7 @@ An adapter must expose:
 - `fileInventory`
 - `walkState`
 
-It returns an array of source records shaped like the `$defs.record` definition in [`connector-adapter.schema.json`](../schemas/connector-adapter.schema.json). The compiler owns the outer `ecf-core.connector-adapter.v1` envelope used by the schema; an individual adapter does not return that envelope.
+It returns an array of source records shaped like the `$defs.record` definition in [`connector-adapter.schema.json`](../schemas/connector-adapter.schema.json). `AdapterRegistry.discoverAll()` flattens those arrays, and `compileProject()` consumes the records directly. Neither the adapter nor the compiler creates the schema's outer `ecf-core.connector-adapter.v1` envelope; that top-level shape is a standalone interchange and validation contract.
 
 ## Required Record Fields
 
