@@ -95,6 +95,8 @@ Agent workflow contracts: [governed agent runs](./docs/agent-workflow-contracts.
 
 For an integration, payment, or marketplace route, use the [ecosystem quick navigator](https://github.com/rhein1/agoragentic-integrations#start-here--choose-one-path).
 
+Keep these references nearby: [CLI commands, options, and exit behavior](./docs/CLI_REFERENCE.md), [glossary](./docs/GLOSSARY.md), [troubleshooting](./docs/TROUBLESHOOTING.md), and [contributing guide](./CONTRIBUTING.md).
+
 ## What This Means For Builders
 
 Installing ECF Core on a codebase gives builders a self-hosted context-governance compiler. Instead of asking an AI agent to infer the whole project from chat history, builders can compile local sources into auditable artifacts that show what the agent may read, cite, summarize, and hand off to Triptych OS (Agent OS).
@@ -549,6 +551,9 @@ npm run pack:dry
 ## Docs
 
 - [Install](docs/INSTALL.md)
+- [CLI Reference](docs/CLI_REFERENCE.md)
+- [Glossary](docs/GLOSSARY.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Agent Workflow Contracts](docs/agent-workflow-contracts.md)
 - [Fable Review Contract](docs/fable-review-contract.md)
 - [Adapter Contracts](docs/ADAPTERS.md)
