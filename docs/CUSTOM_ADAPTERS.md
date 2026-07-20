@@ -23,8 +23,10 @@ An adapter must expose:
 
 - `projectRoot`
 - `config`
+- `fileInventory`
+- `walkState`
 
-It returns source records shaped like `ecf-core.connector-adapter.v1`.
+It returns an array of source records shaped like the `$defs.record` definition in [`connector-adapter.schema.json`](../schemas/connector-adapter.schema.json). `AdapterRegistry.discoverAll()` flattens those arrays, and `compileProject()` consumes the records directly. Neither the adapter nor the compiler creates the schema's outer `ecf-core.connector-adapter.v1` envelope; that top-level shape is a standalone interchange and validation contract.
 
 ## Required Record Fields
 
@@ -42,4 +44,4 @@ It returns source records shaped like `ecf-core.connector-adapter.v1`.
 
 Public adapters should summarize context. They should not copy secrets, connect to private customer systems by default, deploy agents, route marketplace calls, or handle wallets/settlement.
 
-See [`examples/custom-adapter/custom-keyword-adapter.js`](../examples/custom-adapter/custom-keyword-adapter.js).
+See the [custom adapter example](../examples/custom-adapter/README.md) and its [`custom-keyword-adapter.js`](../examples/custom-adapter/custom-keyword-adapter.js) implementation.
