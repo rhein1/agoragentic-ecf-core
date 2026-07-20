@@ -30,9 +30,19 @@ function withoutFencedCode(markdown) {
   }).join('\n');
 }
 
+function withoutHtmlTags(value) {
+  let output = '';
+  let insideTag = false;
+  for (const character of value) {
+    if (character === '<') insideTag = true;
+    else if (character === '>') insideTag = false;
+    else if (!insideTag) output += character;
+  }
+  return output;
+}
+
 function slugBase(heading) {
-  return heading
-    .replace(/<[^>]*>/g, '')
+  return withoutHtmlTags(heading)
     .replace(/!?(?:\[([^\]]*)\])\([^)]*\)/g, '$1')
     .replace(/[`*_~]/g, '')
     .trim()
