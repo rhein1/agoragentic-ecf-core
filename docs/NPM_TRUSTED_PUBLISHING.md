@@ -29,9 +29,9 @@ After one successful trusted publish, set package publishing access to require t
 Release tag convention:
 
 ```text
-v1.4.1
+v<package.json version>
 ```
 
-The workflow is tokenless. It grants only `id-token: write` and `contents: read`, uses GitHub-hosted runners, uses Node 24, disables release-build package-manager caching, runs tests/checks, performs an npm pack dry-run, and then calls `npm publish --access public`.
+The workflow is tokenless. It grants only `id-token: write` and `contents: read`, uses GitHub-hosted runners, uses Node 24, disables release-build package-manager caching, requires the release tag to equal the package version exactly, installs from the committed lockfile, runs the complete release gate, and then calls `npm publish --access public --provenance`.
 
 If the npm Trusted Publisher is not configured, the publish step should fail closed rather than falling back to `NPM_TOKEN` or `NODE_AUTH_TOKEN`.
