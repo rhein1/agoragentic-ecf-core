@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use ECF Core, please cite this repository."
 title: "ECF Core"
-version: "1.5.0"
-date-released: "2026-06-18"
+version: "1.5.1"
+date-released: "2026-07-22"
 url: "https://github.com/rhein1/agoragentic-ecf-core"
 repository-code: "https://github.com/rhein1/agoragentic-ecf-core"
 license: "Apache-2.0"

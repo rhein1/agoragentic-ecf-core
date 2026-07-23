@@ -5,6 +5,7 @@ Use this checklist before any tagged release or package publication.
 ## Required Checks
 
 ```bash
+npm ci
 npm test
 npm run check
 npm run pack:dry
@@ -32,14 +33,12 @@ Publishing this package does not publish Agent OS, Router, marketplace, settleme
 
 ## Publish
 
-```bash
-npm publish --access public
-git tag vX.Y.Z
-git push origin vX.Y.Z
-```
+After the release PR is reviewed, approved, and merged, create a GitHub release whose tag exactly matches `v<package.json version>`. The tokenless `publish-npm.yml` workflow verifies the tag, runs `npm ci` plus `npm run release:dry`, and publishes with npm provenance.
 
-If publishing from GitHub Actions with trusted publishing enabled, prefer:
+For 1.5.1, the exact tag is:
 
 ```bash
-npm publish --access public --provenance
+v1.5.1
 ```
+
+Do not publish from a local npm token or create the tag before the reviewed release commit is on `main`.
