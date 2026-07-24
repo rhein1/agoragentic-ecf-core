@@ -18,11 +18,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - run: npm test
-      - run: npm run check
+      - run: npm ci
+      - name: Verify exact release tag
+        if: github.event_name == 'release'
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          expected="v${version}"
+          test "${GITHUB_REF_NAME}" = "${expected}"
+      - run: npm run release:dry
       - run: npm pack
       - name: Write SHA-256 checksums
         run: sha256sum agoragentic-ecf-core-*.tgz > SHA256SUMS.txt

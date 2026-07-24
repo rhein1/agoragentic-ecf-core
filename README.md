@@ -2,6 +2,8 @@
 
 [![npm](https://img.shields.io/npm/v/agoragentic-ecf-core)](https://www.npmjs.com/package/agoragentic-ecf-core) [![license](https://img.shields.io/npm/l/agoragentic-ecf-core)](LICENSE) [![node](https://img.shields.io/node/v/agoragentic-ecf-core)](package.json)
 
+![ECF Core - self-hosted context governance for source-grounded agents](docs/images/social-preview.png)
+
 Give a coding agent a source-preserving context router before it edits.
 
 ECF Core compiles source files, docs, policies, and safe local descriptors into `.ecf-core/` artifacts with exact evidence, code symbols, source-manifest facts, blocked-source proof, and an MCP server your IDE can query.
@@ -71,16 +73,29 @@ AGORAGENTIC_API_KEY=amk_your_api_key npx -y agoragentic-os preview .ecf-core/age
 
 | Repo / package | What it is |
 |---|---|
-| [agoragentic-integrations](https://github.com/rhein1/agoragentic-integrations) | 50+ agent-framework adapters + SDK & MCP server (npm `agoragentic-mcp`) |
+| [agoragentic-integrations](https://github.com/rhein1/agoragentic-integrations) | 93 public integration surfaces across frameworks, protocols, SDKs, commerce rails, and governance tools |
 | **[agoragentic-ecf-core](https://github.com/rhein1/agoragentic-ecf-core) (this repo)** | Self-hosted context-governance runtime (npm `agoragentic-ecf-core`) |
 | [Micro ECF](https://github.com/rhein1/agoragentic-micro-ecf) | Open local context wedge (npm `agoragentic-micro-ecf`) |
 | [agoragentic-premortem-golden-loop](https://github.com/rhein1/agoragentic-premortem-golden-loop) | Pre-launch release-readiness CLI (npm `agoragentic-premortem-golden-loop`) |
+| [fable5-codex](https://github.com/rhein1/fable5-codex) | Evidence-first Codex audits, reviews, fact checks, and repo sweeps |
 | [agoragentic-summarizer-agent](https://github.com/rhein1/agoragentic-summarizer-agent) | Python example: route `summarize` via `execute()` |
 | [agoragentic-openai-agents-example](https://github.com/rhein1/agoragentic-openai-agents-example) | OpenAI Agents SDK marketplace example |
 
 Home: **[agoragentic.com](https://agoragentic.com)** · all packages: `npm view <name>`
 
 Agent workflow contracts: [governed agent runs](./docs/agent-workflow-contracts.md) and [Fable review output](./docs/fable-review-contract.md).
+
+## Choose Your Path
+
+| I want to… | Start here | What comes next |
+|---|---|---|
+| Set a local policy and export a small context packet | [Micro ECF](https://github.com/rhein1/agoragentic-micro-ecf) | Use the [Micro ECF to ECF Core guide](./docs/MICRO_ECF_TO_ECF_CORE.md) if static artifacts stop being enough. |
+| Run richer self-hosted context compilation, grounding evaluation, or local MCP serving | Continue with this ECF Core quick start | Keep the context runtime local; hosted deployment is not required. |
+| Check a governed Agent OS handoff before a hosted request | [Agent OS preview handoff](./examples/workflows/agent-os-preview-handoff.md) | Follow [Agent OS import](./docs/AGENT_OS_IMPORT.md); preview is not runtime provisioning, funding, public exposure, or settlement. |
+
+For an integration, payment, or marketplace route, use the [ecosystem quick navigator](https://github.com/rhein1/agoragentic-integrations#start-here--choose-one-path).
+
+Keep these references nearby: [CLI commands, options, and exit behavior](./docs/CLI_REFERENCE.md), [glossary](./docs/GLOSSARY.md), [troubleshooting](./docs/TROUBLESHOOTING.md), and [contributing guide](./CONTRIBUTING.md).
 
 ## What This Means For Builders
 
@@ -334,7 +349,7 @@ Install from npm:
 npm install -g agoragentic-ecf-core
 ```
 
-Or run directly with `npx` after package publication:
+Or run the published package directly with `npx`:
 
 ```bash
 npx agoragentic-ecf-core init .
@@ -536,6 +551,9 @@ npm run pack:dry
 ## Docs
 
 - [Install](docs/INSTALL.md)
+- [CLI Reference](docs/CLI_REFERENCE.md)
+- [Glossary](docs/GLOSSARY.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Agent Workflow Contracts](docs/agent-workflow-contracts.md)
 - [Fable Review Contract](docs/fable-review-contract.md)
 - [Adapter Contracts](docs/ADAPTERS.md)

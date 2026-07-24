@@ -5,6 +5,9 @@ Use this index when navigating the public ECF Core docs.
 ## Start Here
 
 - [Install](INSTALL.md)
+- [CLI Reference](CLI_REFERENCE.md)
+- [Glossary](GLOSSARY.md)
+- [Troubleshooting](TROUBLESHOOTING.md)
 - [LLM-Assisted Install](LLM_INSTALL.md)
 - [Agent Workflow Contracts](agent-workflow-contracts.md)
 - [Fable Review Contract](fable-review-contract.md)

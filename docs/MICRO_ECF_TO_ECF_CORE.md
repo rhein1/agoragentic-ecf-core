@@ -21,16 +21,13 @@ Micro ECF is ideal for one repo, one local agent, one small database, or one dep
 
 ## ECF Core
 
-ECF Core is the self-hosted runtime layer.
+ECF Core is the self-hosted runtime layer. It provides:
 
-It should eventually provide:
-
-- durable local context store
-- connector adapter registry
-- context compilation API
-- evaluation reports
-- citation/provenance preservation
-- optional Agent OS export
+- durable local context artifacts and MCP serving
+- context compilation with citation and provenance records
+- deterministic grounding evaluation reports
+- adapter contracts for bounded source inputs
+- optional Agent OS preview/import artifacts
 
 ECF Core is ideal when a builder outgrows static artifacts but does not need a hosted Agent OS deployment yet.
 

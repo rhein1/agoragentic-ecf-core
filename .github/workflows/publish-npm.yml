@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Setup Node for npm trusted publishing
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
@@ -27,14 +27,21 @@ jobs:
           node --version
           npm --version
 
-      - name: Test ECF Core
-        run: npm test
+      - name: Verify exact release tag
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          expected="v${version}"
+          if [ "${GITHUB_REF_NAME}" != "${expected}" ]; then
+            echo "Expected release tag ${expected}, got ${GITHUB_REF_NAME}" >&2
+            exit 1
+          fi
 
-      - name: Check ECF Core syntax
-        run: npm run check
+      - name: Install locked package metadata
+        run: npm ci
 
-      - name: Dry-run package contents
-        run: npm pack --dry-run
+      - name: Run release gate
+        run: npm run release:dry
 
       - name: Publish ECF Core with npm trusted publishing
-        run: npm publish --access public
+        run: npm publish --access public --provenance
