@@ -34,6 +34,8 @@ Expected local outputs include:
 
 A blocked source such as `.env` is recorded as policy evidence; its raw contents are not served as context.
 
+**No cloud account. No wallet. No marketplace route. No hosted runtime.** Those are separate products and owner decisions.
+
 <p>
   <a href="#five-minute-proof"><strong>Run the proof</strong></a>
   ·
