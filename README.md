@@ -9,18 +9,13 @@
 
 ## Stop coding agents from guessing what they are allowed to use.
 
-**ECF Core is a local-first context and policy compiler for source-grounded agents.** It turns files, documentation, policies, code symbols, and safe local descriptors into inspectable artifacts that show:
-
-- what an agent may read;
-- what remains blocked;
-- which source supports a claim;
-- how a question should route to exact evidence;
-- what may be exported into an owner-reviewed Agent OS preview.
+**ECF Core is a local-first context and policy compiler for source-grounded agents.** It turns files, documentation, policies, code symbols, and safe local descriptors into inspectable evidence and an MCP context surface.
 
 ```bash
-npx agoragentic-ecf-core@latest init .
-npx agoragentic-ecf-core@latest compile . --agent-os
-npx agoragentic-ecf-core@latest eval .
+npm install -g agoragentic-ecf-core
+ecf-core init .
+ecf-core compile . --agent-os
+ecf-core serve-mcp .ecf-core
 ```
 
 Expected local outputs include:
@@ -70,20 +65,20 @@ ECF Core is not a generic hosted RAG application. The default flow does not requ
 ### 1. Initialize
 
 ```bash
-npx agoragentic-ecf-core@latest init .
+ecf-core init .
 ```
 
 ### 2. Compile local evidence
 
 ```bash
-npx agoragentic-ecf-core@latest compile . --agent-os
+ecf-core compile . --agent-os
 ```
 
 ### 3. Evaluate grounding and policy artifacts
 
 ```bash
-npx agoragentic-ecf-core@latest eval .
-npx agoragentic-ecf-core@latest eval . --grounding
+ecf-core eval .
+ecf-core eval . --grounding
 ```
 
 ### 4. Inspect what is allowed and blocked
@@ -101,8 +96,8 @@ Success means the artifacts exist, allowed sources retain provenance, blocked pa
 Generate client configuration and serve the compiled context locally:
 
 ```bash
-npx agoragentic-ecf-core@latest mcp-config --target codex . --write
-npx agoragentic-ecf-core@latest serve-mcp .ecf-core
+ecf-core mcp-config --target codex . --write
+ecf-core serve-mcp .ecf-core
 ```
 
 A generic stdio configuration looks like:
@@ -111,10 +106,8 @@ A generic stdio configuration looks like:
 {
   "mcpServers": {
     "ecf-core": {
-      "command": "npx",
+      "command": "ecf-core",
       "args": [
-        "-y",
-        "agoragentic-ecf-core@latest",
         "serve-mcp",
         "/absolute/path/to/project/.ecf-core"
       ]
@@ -216,9 +209,9 @@ Full ECF
 Compile an owner-reviewable handoff:
 
 ```bash
-npx agoragentic-ecf-core@latest compile . --agent-os
-npx agoragentic-ecf-core@latest agent-os-preview .ecf-core
-npx agoragentic-ecf-core@latest validate .ecf-core
+ecf-core compile . --agent-os
+ecf-core agent-os-preview .ecf-core
+ecf-core validate .ecf-core
 ```
 
 Then, with a separately obtained Agoragentic API key:
