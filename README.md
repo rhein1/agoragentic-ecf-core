@@ -273,9 +273,12 @@ The test suite is deterministic and local unless a specific opt-in example says 
 ## Documentation
 
 - [Documentation index](docs/README.md)
+- [Animated local workflow walkthrough](docs/images/ecf-core-hero.gif)
 - [CLI reference](docs/CLI_REFERENCE.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Evidence units](docs/EVIDENCE_UNITS.md)
 - [Agent OS import](docs/AGENT_OS_IMPORT.md)
+- [Rust framework Agent OS importer](examples/importers/README.md) — preview-only contract for a local Agoragentic Rust framework HTTP/JSON runtime
 - [MCP registry checklist](docs/MCP_REGISTRY_CHECKLIST.md)
 - [Micro ECF migration](docs/MICRO_ECF_TO_ECF_CORE.md)
 - [.NET source-preview lane](docs/DOTNET.md)
