@@ -5,6 +5,7 @@ Use this index when navigating the public ECF Core docs.
 ## Start Here
 
 - [Install](INSTALL.md)
+- [Architecture](ARCHITECTURE.md)
 - [CLI Reference](CLI_REFERENCE.md)
 - [Glossary](GLOSSARY.md)
 - [Troubleshooting](TROUBLESHOOTING.md)
