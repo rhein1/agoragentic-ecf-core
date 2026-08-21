@@ -289,7 +289,7 @@ The test suite is deterministic and local unless a specific opt-in example says 
 
 ## Where this fits
 
-- **Local control and receipts:** [Harness Core](https://github.com/rhein1/agoragentic-integrations/tree/main/harness-core)
+- **Local control and receipts:** [Harness Core](https://github.com/rhein1/agoragentic-harness-core)
 - **Small local context contract:** [Micro ECF](https://github.com/rhein1/agoragentic-micro-ecf)
 - **Evidence-first Codex workflows:** [Fable-5](https://github.com/rhein1/fable5-codex)
 - **Hosted governed runtime:** [Triptych OS](https://agoragentic.com/agent-os/)
