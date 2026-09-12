@@ -39,7 +39,7 @@ function directory(filename, create = false) {
 function captureSnapshot(projectRoot, config) {
   const root = directory(path.resolve(projectRoot));
   let entries = 0, total = 0;
-  const files = [];
+  const files = [], restrictedInventory = [];
   const walk = (dir, prefix = '') => {
     const handle = fs.opendirSync(dir);
     try {
@@ -47,17 +47,25 @@ function captureSnapshot(projectRoot, config) {
         const entry = handle.readSync(); if (!entry) break;
         if (++entries > MAX_ENTRIES) fail('inventory_limit');
         const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
-        if (relative.split('/').some(x => x === '.ecf-core' || x === '.micro-ecf') || shouldSkipDirectory(relative, config)) continue;
         const full = path.join(dir, entry.name);
         if (entry.isSymbolicLink()) fail('symlink_rejected');
         if (entry.isDirectory()) {
-          if (fs.existsSync(path.join(full, '.git'))) continue;
+          // Match the canonical filesystem walker: directory rules must never
+          // exclude a regular file merely named temp-context.js or temp_*.js.
+          if (shouldSkipDirectory(relative, config) || fs.existsSync(path.join(full, '.git'))) continue;
           directory(full); walk(full, relative); continue;
         }
         if (!entry.isFile()) fail('non_regular_source');
-        // Blocked and review-only source contents are never read to establish freshness.
-        const classification = classifyPath(relative, config).classification;
-        if (classification !== 'allowed' && relative !== 'ecf.config.json') continue;
+        const policy = classifyPath(relative, config);
+        if (policy.classification !== 'allowed' && relative !== 'ecf.config.json') {
+          // Canonical source maps retain restricted path/classification/size/time
+          // metadata. Seal those fields without opening or hashing the contents.
+          const stat = fs.lstatSync(full);
+          if (stat.isSymbolicLink()) fail('symlink_rejected');
+          if (!stat.isFile()) fail('non_regular_source');
+          restrictedInventory.push([relative, policy.classification, policy.reason, stat.size, Math.trunc(stat.mtimeMs)]);
+          continue;
+        }
         const bytes = readBounded(full);
         total += bytes.length;
         if (total > MAX_TOTAL) fail('total_byte_limit');
@@ -66,10 +74,16 @@ function captureSnapshot(projectRoot, config) {
     } finally { handle.closeSync(); }
   };
   walk(root);
-  files.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
+  const byPath = (a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0;
+  files.sort(byPath);
+  restrictedInventory.sort(byPath);
+  // Metadata shares the existing entry limit and has a separate serialized bound.
+  if (Buffer.byteLength(JSON.stringify([files, restrictedInventory])) > MAX_FILE / 2) fail('inventory_limit');
   const configHash = hash(JSON.stringify(config));
   return { workspace_hash: hash(root), config_hash: configHash, files,
-    source_digest: hash(JSON.stringify(files)), digest: hash(JSON.stringify([hash(root), configHash, files])) };
+    restricted_inventory: restrictedInventory,
+    source_digest: hash(JSON.stringify([files, restrictedInventory])),
+    digest: hash(JSON.stringify([hash(root), configHash, files, restrictedInventory])) };
 }
 function currentConfig(root) {
   const configFile = path.join(root, 'ecf.config.json');
