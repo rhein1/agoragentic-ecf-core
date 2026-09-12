@@ -2,7 +2,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { createHash, randomUUID } = require('node:crypto');
-const { classifyPath, shouldSkipDirectory } = require('./core/policy');
+const { shouldSkipDirectory } = require('./core/policy');
+const { metadataDisposition } = require('./adapters/filesystem');
 const hash = value => createHash('sha256').update(value).digest('hex');
 const fail = code => { throw Object.assign(new Error(code), { code }); };
 const MAX_FILE = 2 * 1024 * 1024;
@@ -56,17 +57,23 @@ function captureSnapshot(projectRoot, config) {
           directory(full); walk(full, relative); continue;
         }
         if (!entry.isFile()) fail('non_regular_source');
-        const policy = classifyPath(relative, config);
-        if (policy.classification !== 'allowed' && relative !== 'ecf.config.json') {
-          // Canonical source maps retain restricted path/classification/size/time
-          // metadata. Seal those fields without opening or hashing the contents.
-          const stat = fs.lstatSync(full);
-          if (stat.isSymbolicLink()) fail('symlink_rejected');
-          if (!stat.isFile()) fail('non_regular_source');
-          restrictedInventory.push([relative, policy.classification, policy.reason, stat.size, Math.trunc(stat.mtimeMs)]);
-          continue;
+        const stat = fs.lstatSync(full);
+        if (stat.isSymbolicLink()) fail('symlink_rejected');
+        if (!stat.isFile()) fail('non_regular_source');
+        const disposition = metadataDisposition(relative, config, stat);
+        if (disposition) {
+          // Effective canonical disposition includes allowed non-text/oversize
+          // sources. Bind the canonical metadata fingerprint without content I/O.
+          restrictedInventory.push([relative, disposition.classification, disposition.reason,
+            stat.size, Math.trunc(stat.mtimeMs), disposition.hash]);
+          if (relative !== 'ecf.config.json') continue;
         }
+        // Configuration is independently consumed even when metadata-only as a
+        // source. Retain its content hash as well as its canonical disposition.
         const bytes = readBounded(full);
+        const current = fs.lstatSync(full);
+        if (!current.isFile() || current.isSymbolicLink() ||
+            ['dev', 'ino', 'size', 'mtimeMs', 'ctimeMs'].some(k => stat[k] !== current[k])) fail('file_changed_during_read');
         total += bytes.length;
         if (total > MAX_TOTAL) fail('total_byte_limit');
         files.push([relative, hash(bytes)]);

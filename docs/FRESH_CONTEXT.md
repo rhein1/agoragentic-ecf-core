@@ -16,11 +16,13 @@ node scripts/fresh-context.cjs read /path/to/project
 
 `status` checks the selected generation without returning source content. `read` additionally returns its ordinary `ecf-core.context-packet.v1` only when the checks pass. Neither command refreshes or changes the selected generation. Stale or unavailable evidence returns `context:null`; non-fresh CLI results exit 2. Compilation failures exit 1.
 
-A same-size edit with a restored timestamp, an allowed-source addition/deletion, changed configuration, or changed JavaScript compiler source invalidates the corresponding fingerprint. Artifact substitution invalidates the selected generation. Old snapshots are not silently relabeled current. A dependency-injected test compiler is marked test-only and is refused by current-context retrieval.
+For **content-hashed sources**, same-size edits are detected even when timestamps are restored. Source additions/deletions, changed configuration, changed canonical source metadata or changed JavaScript compiler source invalidate the corresponding fingerprint. Artifact substitution invalidates the selected generation. Old snapshots are not silently relabeled current. A dependency-injected test compiler is marked test-only and is refused by current-context retrieval.
+
+For **metadata-only sources**, content is deliberately not hashed: a same-size content edit with the canonical modification timestamp restored can remain undetected. This includes blocked/review-only paths and policy-allowed files that the canonical filesystem adapter downgrades because they are non-text or exceed `max_file_bytes`. Their effective classification, reason, size, truncated modification time and canonical metadata fingerprint are sealed. An mtime-only change therefore invalidates their generation even when bytes stay the same. This is metadata consistency, not verification of restricted content.
 
 ## Scope and limits
 
-The source inventory reuses Core's allow/block and directory-skip functions. It hashes allowed local source files plus the local configuration; it does not read blocked/review-only content. Nested Git repositories and generated ECF directories are excluded. Limits are 10,000 encountered entries, 2 MiB per inventoried source, and 64 MiB total source bytes. Output verification is bounded to 32 JSON artifacts of at most 8 MiB each. Oversized or unreadable inputs fail rather than silently becoming fresh.
+The source inventory reuses Core's allow/block and directory-skip functions and the canonical filesystem adapter's `metadataDisposition` helper. Only effectively content-admitted files are content-hashed. Metadata-only sources are inventoried without opening their contents; the local configuration is independently content-hashed because compilation consumes it even when its source disposition is restricted. Nested Git repositories and generated ECF directories are excluded. Limits are 10,000 encountered entries, 2 MiB per content-hashed source, and 64 MiB total content-read bytes, with a separate bounded metadata inventory. A large metadata-only file does not require content allocation. Unreadable content-admitted inputs or exceeded freshness bounds fail rather than silently becoming fresh. Output verification is bounded to 32 JSON artifacts of at most 8 MiB each.
 
 The compiler fingerprint covers installed `src/**/*.js`, package metadata, and a lockfile when present. It is not a signed package attestation or a complete operating-system/dependency inventory. Only the canonical built-in local compilation path is supported; custom/external adapters, alternate config paths, distributed filesystems, and hostile concurrent filesystem writers are not qualified.
 
@@ -35,12 +37,12 @@ Only one cooperating refresh may own `.ecf-core/fresh/.lock`. A conflicting refr
 ## Verification and next integration
 
 ```sh
-node --test tests/freshness-snapshot.test.js tests/freshness-compile.test.js
+node --test tests/freshness-snapshot.test.js tests/freshness-compile.test.js tests/freshness-review.test.js tests/freshness-disposition.test.js
 npm test
 npm run check
 npm run docs:check
 ```
 
-Eight source-snapshot tests passed locally on Linux / Node 22.16.0 using the exact existing Core policy module (blob `9925b908f3d0222988c4d1473687cd96bcd8a79d`). The canonical compile/refresh tests were added to the existing test glob but could not be run in the source-subset environment. Full current-head CI and independent review are required before merge.
+The disposition regressions compare real canonical records against snapshot metadata hashes, exercise binary/oversized mtime-only stale-read refusal, forbid metadata-only content opens, cover sources above the content-read ceiling, retain post-read growth checks, and explicitly test the restored-timestamp limitation. Full current-head CI and independent review are required before merge; earlier local source-subset test counts are historical, not current-head execution evidence.
 
-The next integration is an explicitly selected MCP current-context mode reusing `inspectFresh`, with host-consumption evidence and compatibility tests. Do not claim the current MCP cache issue is fully fixed by this opt-in CLI. Memory may consume the bounded status/generation reference through its existing explicit evidence path; this patch does not silently inject or write Memory context.
+Before long-lived MCP embedding, resolve compiler execution isolation in issue #46; an on-disk digest does not invalidate Node's already loaded module graph. Use fresh CLI processes for this opt-in path. The next integration is an explicitly selected MCP current-context mode with host-consumption evidence and compatibility tests. Do not claim the current MCP cache issue is fully fixed by this opt-in CLI. Memory may consume the bounded status/generation reference through its existing explicit evidence path; this patch does not silently inject or write Memory context.

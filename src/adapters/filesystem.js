@@ -53,6 +53,33 @@ function isTextFile(filePath) {
     return TEXT_EXTENSIONS.has(path.extname(filePath).toLowerCase());
 }
 
+// One effective metadata disposition shared by compilation and freshness.
+// A policy allow does not imply content admission: format and size still apply.
+function metadataDisposition(relativePath, config, stat, actualSize = stat.size) {
+    const policy = classifyPath(relativePath, config);
+    const stamp = `${relativePath}:${stat.size}:${Math.trunc(stat.mtimeMs)}`;
+    if (policy.classification !== 'allowed') {
+        return { ...policy, hash: sha256(`${policy.classification}:${stamp}`), summary: policy.reason };
+    }
+    if (!isTextFile(relativePath)) {
+        return {
+            classification: 'review_required',
+            reason: 'allowed path matched, but file type is not text-readable by the baseline adapter',
+            hash: sha256(`review:${stamp}`),
+            summary: 'Non-text file requires an explicit adapter.',
+        };
+    }
+    if (actualSize > config.max_file_bytes) {
+        return {
+            classification: 'review_required',
+            reason: `file exceeds max_file_bytes=${config.max_file_bytes}`,
+            hash: sha256(`oversize:${stamp}`),
+            summary: 'Oversized file requires explicit review or a specialized adapter.',
+        };
+    }
+    return null;
+}
+
 function summarizeJson(text) {
     try {
         const parsed = JSON.parse(text);
@@ -265,23 +292,9 @@ class FilesystemAdapter extends ContextAdapter {
                 },
             };
 
-            if (policy.classification !== 'allowed') {
-                records.push({
-                    ...baseRecord,
-                    hash: sha256(`${policy.classification}:${relativePath}:${stat.size}:${Math.trunc(stat.mtimeMs)}`),
-                    summary: policy.reason,
-                });
-                continue;
-            }
-
-            if (!isTextFile(relativePath)) {
-                records.push({
-                    ...baseRecord,
-                    classification: 'review_required',
-                    reason: 'allowed path matched, but file type is not text-readable by the baseline adapter',
-                    hash: sha256(`review:${relativePath}:${stat.size}:${Math.trunc(stat.mtimeMs)}`),
-                    summary: 'Non-text file requires an explicit adapter.',
-                });
+            const disposition = metadataDisposition(relativePath, config, stat);
+            if (disposition) {
+                records.push({ ...baseRecord, ...disposition });
                 continue;
             }
 
@@ -298,14 +311,10 @@ class FilesystemAdapter extends ContextAdapter {
                 });
                 continue;
             }
-            if (raw.length > config.max_file_bytes) {
-                records.push({
-                    ...baseRecord,
-                    classification: 'review_required',
-                    reason: `file exceeds max_file_bytes=${config.max_file_bytes}`,
-                    hash: sha256(`oversize:${relativePath}:${stat.size}:${Math.trunc(stat.mtimeMs)}`),
-                    summary: 'Oversized file requires explicit review or a specialized adapter.',
-                });
+            // Retain the post-read check: a file can grow after stat admission.
+            const afterRead = metadataDisposition(relativePath, config, stat, raw.length);
+            if (afterRead) {
+                records.push({ ...baseRecord, ...afterRead });
                 continue;
             }
 
@@ -329,6 +338,7 @@ module.exports = {
     FilesystemAdapter,
     fileType,
     isTextFile,
+    metadataDisposition,
     isGeneratedEcfArtifactPath,
     previewText,
     redactSensitiveText,
