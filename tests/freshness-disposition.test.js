@@ -75,6 +75,7 @@ test('real compile does not open oversized sources handled by summary adapters',
   const root = fixture(t);
   const sizes = new Map([
     ['README.md', 3 * 1024 * 1024],
+    ['AGENTS.md', 65537],
     ['schema.sql', 65537],
     ['openapi.json', 65537],
     ['mcp.json', 65537],
@@ -97,6 +98,35 @@ test('real compile does not open oversized sources handled by summary adapters',
   const packet = JSON.parse(read.call(fs, path.join(outDir, 'context-packet.json'), 'utf8'));
   for (const name of sizes.keys()) {
     assert.equal(sourceMap.sources.find(source => source.path === name).classification, 'review_required');
+    assert.equal(packet.sources.some(source => source.path === name || source.path.startsWith(`${name}#`)), false);
+  }
+});
+test('real compile does not open blocked or review-required generated-marker files', async t => {
+  const root = fixture(t);
+  const restrictedConfig = {
+    ...config,
+    allow: ['README.md', '*.json'],
+    block: [...config.block, 'AGENTS.md'],
+  };
+  fs.writeFileSync(path.join(root, 'ecf.config.json'), JSON.stringify(restrictedConfig));
+  const expected = new Map([
+    ['AGENTS.md', 'blocked'],
+    ['ECF.md', 'review_required'],
+    ['MICRO_ECF_LLM_BOOTSTRAP.md', 'review_required'],
+  ]);
+  for (const name of expected.keys()) fs.writeFileSync(path.join(root, name), '# Restricted fixture\n');
+  const targets = new Set([...expected.keys()].map(name => path.resolve(root, name)));
+  const open = fs.openSync, read = fs.readFileSync;
+  const check = file => assert.equal(targets.has(path.resolve(String(file))), false, 'metadata-only content was opened');
+  t.mock.method(fs, 'openSync', function (file, ...args) { check(file); return open.call(fs, file, ...args); });
+  t.mock.method(fs, 'readFileSync', function (file, ...args) { check(file); return read.call(fs, file, ...args); });
+  const result = await compileFresh(root);
+  assert.equal(result.state, 'fresh');
+  const outDir = path.join(root, '.ecf-core', 'fresh', result.generation);
+  const sourceMap = JSON.parse(read.call(fs, path.join(outDir, 'source-map.json'), 'utf8'));
+  const packet = JSON.parse(read.call(fs, path.join(outDir, 'context-packet.json'), 'utf8'));
+  for (const [name, classification] of expected) {
+    assert.equal(sourceMap.sources.find(source => source.path === name).classification, classification);
     assert.equal(packet.sources.some(source => source.path === name || source.path.startsWith(`${name}#`)), false);
   }
 });
