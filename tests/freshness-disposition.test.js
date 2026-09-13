@@ -130,6 +130,33 @@ test('real compile does not open blocked or review-required generated-marker fil
     assert.equal(packet.sources.some(source => source.path === name || source.path.startsWith(`${name}#`)), false);
   }
 });
+test('generated-marker detection reads an allowed multi-section source only once', async t => {
+  const root = fixture(t);
+  const source = Array.from({ length: 500 }, (_, index) => (
+    `# Section ${index}\n${index === 0 ? 'This project uses Micro ECF as a local context wedge.' : 'Body.'}\n`
+  )).join('\n');
+  const target = path.join(root, 'AGENTS.md');
+  fs.writeFileSync(target, source);
+  const read = fs.readFileSync;
+  let targetReads = 0, targetBytes = 0;
+  t.mock.method(fs, 'readFileSync', function (file, ...args) {
+    const result = read.call(fs, file, ...args);
+    if (path.resolve(String(file)) === path.resolve(target)) {
+      targetReads += 1;
+      targetBytes += Buffer.isBuffer(result) ? result.length : Buffer.byteLength(result);
+    }
+    return result;
+  });
+  const result = await compileFresh(root);
+  assert.equal(result.state, 'fresh');
+  assert.equal(targetReads, 3, 'filesystem, markdown, and marker passes must each read once');
+  assert.equal(targetBytes, Buffer.byteLength(source) * 3);
+  const outDir = path.join(root, '.ecf-core', 'fresh', result.generation);
+  const sourceMap = JSON.parse(read.call(fs, path.join(outDir, 'source-map.json'), 'utf8'));
+  const packet = JSON.parse(read.call(fs, path.join(outDir, 'context-packet.json'), 'utf8'));
+  assert.equal(sourceMap.sources.some(item => item.path === 'AGENTS.md' || item.path.startsWith('AGENTS.md#')), false);
+  assert.equal(packet.sources.some(item => item.path === 'AGENTS.md' || item.path.startsWith('AGENTS.md#')), false);
+});
 function configJsonAtSize(size) {
   const value = {
     project_name: 'large-valid-config',

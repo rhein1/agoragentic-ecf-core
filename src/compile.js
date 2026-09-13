@@ -70,13 +70,17 @@ function looksLikeGeneratedMicroEcfFile(projectRoot, sourcePath, config) {
 function filterGeneratedEcfArtifacts(records, projectRoot, config) {
     const generated = [];
     const kept = [];
+    const markerDecisions = new Map();
     for (const record of records) {
         const sourcePath = rootSourcePath(record.path);
         if (sourcePath.startsWith('.ecf-core/') || sourcePath.startsWith('.micro-ecf/')) {
             generated.push(record);
             continue;
         }
-        if (looksLikeGeneratedMicroEcfFile(projectRoot, record.path, config)) {
+        if (GENERATED_MICRO_ECF_ROOT_FILES.has(sourcePath) && !markerDecisions.has(sourcePath)) {
+            markerDecisions.set(sourcePath, looksLikeGeneratedMicroEcfFile(projectRoot, sourcePath, config));
+        }
+        if (markerDecisions.get(sourcePath)) {
             generated.push(record);
             continue;
         }
