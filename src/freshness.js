@@ -94,7 +94,7 @@ function captureSnapshot(projectRoot, config) {
 }
 function currentConfig(root) {
   const configFile = path.join(root, 'ecf.config.json');
-  if (fs.existsSync(configFile)) readBounded(configFile, 65536);
+  if (fs.existsSync(configFile)) readBounded(configFile);
   return require('./core/config').loadConfig({ projectRoot: root });
 }
 function compilerDigest() {

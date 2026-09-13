@@ -80,6 +80,17 @@ function metadataDisposition(relativePath, config, stat, actualSize = stat.size)
     return null;
 }
 
+// Summary adapters share the baseline adapter's effective content admission.
+// Check metadata before opening, then retain the post-read size check for growth
+// between stat and read. A null result means the source remains metadata-only.
+function readAdmittedSource(fullPath, relativePath, config) {
+    const stat = fs.statSync(fullPath);
+    if (metadataDisposition(relativePath, config, stat)) return null;
+    const raw = fs.readFileSync(fullPath);
+    if (metadataDisposition(relativePath, config, stat, raw.length)) return null;
+    return raw;
+}
+
 function summarizeJson(text) {
     try {
         const parsed = JSON.parse(text);
@@ -339,6 +350,7 @@ module.exports = {
     fileType,
     isTextFile,
     metadataDisposition,
+    readAdmittedSource,
     isGeneratedEcfArtifactPath,
     previewText,
     redactSensitiveText,

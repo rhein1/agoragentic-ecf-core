@@ -6,8 +6,9 @@ const os = require('node:os');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { captureSnapshot, compileFresh, inspectFresh } = require('../src/freshness');
-const { FilesystemAdapter, metadataDisposition } = require('../src/adapters/filesystem');
-const config = { allow: ['*.md', '*.txt', '*.bin', '*.js', '*.json'], block: ['.env'], max_file_bytes: 65536 };
+const { FilesystemAdapter, metadataDisposition, readAdmittedSource } = require('../src/adapters/filesystem');
+const config = { allow: ['*.md', '*.txt', '*.bin', '*.js', '*.json', '*.sql'], block: ['.env'], max_file_bytes: 65536 };
+const FRESHNESS_MAX_FILE_BYTES = 2 * 1024 * 1024;
 const digest = text => createHash('sha256').update(text).digest('hex');
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ecf-disposition-'));
@@ -70,6 +71,62 @@ test('metadata-only oversized file above content-read ceiling is represented wit
   touch(file);
   assert.equal(inspectFresh(root).state, 'stale');
 });
+test('real compile does not open oversized sources handled by summary adapters', async t => {
+  const root = fixture(t);
+  const sizes = new Map([
+    ['README.md', 3 * 1024 * 1024],
+    ['schema.sql', 65537],
+    ['openapi.json', 65537],
+    ['mcp.json', 65537],
+  ]);
+  for (const [name, size] of sizes) {
+    const file = path.join(root, name), fd = fs.openSync(file, 'w');
+    try { fs.ftruncateSync(fd, size); } finally { fs.closeSync(fd); }
+  }
+  const targets = new Set([...sizes.keys()].map(name => path.resolve(root, name)));
+  const open = fs.openSync, read = fs.readFileSync;
+  const check = file => assert.equal(targets.has(path.resolve(String(file))), false, 'metadata-only content was opened');
+  t.mock.method(fs, 'openSync', function (file, ...args) { check(file); return open.call(fs, file, ...args); });
+  t.mock.method(fs, 'readFileSync', function (file, ...args) { check(file); return read.call(fs, file, ...args); });
+  const snapshot = captureSnapshot(root, config);
+  assert.deepEqual(snapshot.restricted_inventory.filter(row => sizes.has(row[0])).map(row => row[0]).sort(), [...sizes.keys()].sort());
+  const result = await compileFresh(root);
+  assert.equal(result.state, 'fresh');
+  const outDir = path.join(root, '.ecf-core', 'fresh', result.generation);
+  const sourceMap = JSON.parse(read.call(fs, path.join(outDir, 'source-map.json'), 'utf8'));
+  const packet = JSON.parse(read.call(fs, path.join(outDir, 'context-packet.json'), 'utf8'));
+  for (const name of sizes.keys()) {
+    assert.equal(sourceMap.sources.find(source => source.path === name).classification, 'review_required');
+    assert.equal(packet.sources.some(source => source.path === name || source.path.startsWith(`${name}#`)), false);
+  }
+});
+function configJsonAtSize(size) {
+  const value = {
+    project_name: 'large-valid-config',
+    allow: ['*.md', '*.json'],
+    block: [],
+    max_file_bytes: FRESHNESS_MAX_FILE_BYTES + 1,
+    padding: '',
+  };
+  const base = JSON.stringify(value);
+  value.padding = 'x'.repeat(size - Buffer.byteLength(base));
+  const json = JSON.stringify(value);
+  assert.equal(Buffer.byteLength(json), size);
+  return json;
+}
+test('configuration uses the documented two MiB bounded-read limit', async t => {
+  const root = fixture(t), file = path.join(root, 'ecf.config.json');
+  fs.writeFileSync(file, configJsonAtSize(FRESHNESS_MAX_FILE_BYTES));
+  const result = await compileFresh(root);
+  assert.equal(result.state, 'fresh');
+  assert.equal(inspectFresh(root).state, 'fresh');
+  fs.writeFileSync(file, configJsonAtSize(FRESHNESS_MAX_FILE_BYTES + 1));
+  await assert.rejects(compileFresh(root), { code: 'file_limit' });
+  const unavailable = inspectFresh(root, { includeContext: true });
+  assert.equal(unavailable.state, 'unknown');
+  assert.equal(unavailable.reason, 'file_limit');
+  assert.equal(unavailable.context, null);
+});
 test('restored timestamps detect edits only for content-hashed sources', t => {
   const root = fixture(t), text = path.join(root, 'small.txt'), binary = path.join(root, 'binary.bin');
   fs.writeFileSync(text, 'AAAA'); fs.writeFileSync(binary, 'AAAA');
@@ -93,6 +150,7 @@ test('effective size threshold uses actual read length as well as initial stat',
   const record = (await records(root)).find(r => r.path === 'small.txt');
   assert.equal(record.classification, 'review_required');
   assert.equal(record.content_preview, undefined);
+  assert.equal(readAdmittedSource(file, 'small.txt', config), null);
 });
 test('configuration changes that alter effective disposition invalidate the snapshot', t => {
   const root = fixture(t), file = path.join(root, 'oversized.txt'); fs.writeFileSync(file, Buffer.alloc(65537, 65));
