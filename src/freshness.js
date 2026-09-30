@@ -136,6 +136,7 @@ function verifyWorker(bytes, identity) {
   if (message.error) fail(/^[a-z_]+$/.test(message.error) ? message.error : 'compiler_child_failed');
   const execution = message.execution;
   if (execution?.compiler_digest !== identity.digest || JSON.stringify(execution.runtime) !== JSON.stringify(identity.runtime) ||
+      execution.lifecycle !== 'node_permission_no_descendants' ||
       !Array.isArray(execution.loaded_modules) || !execution.loaded_modules.length) fail('compiler_identity_mismatch');
   const expected = new Map(identity.files), seen = new Set();
   for (const entry of execution.loaded_modules) {
@@ -168,8 +169,9 @@ function runCompiler(identity, root, outDir, { timeoutMs, signal }, operation = 
       if (diagnosticBytes > 64 * 1024) stop('compiler_output_limit');
     });
     child.on('error', () => { failure ||= 'compiler_child_failed'; });
-    // close, not exit: never release the lock/delete output while the child can
-    // still write. No result (even a complete one) is accepted after a failure.
+    // Node denies process/thread creation before loading compiler modules, so
+    // descendants cannot retain these pipes or write after this worker closes.
+    // No result (even a complete one) is accepted after a failure.
     child.on('close', (code, terminationSignal) => {
       clearTimeout(timer);
       if (signal) AbortSignal.prototype.removeEventListener.call(signal, 'abort', abort);
@@ -271,7 +273,8 @@ function inspectGeneration(projectRoot, { includeContext = false } = {}, compile
     const snapshot = captureSnapshot(root, currentConfig(root));
     if (snapshot.digest !== seal.snapshot?.digest) return { state: 'stale', generation: seal.generation, reason: 'source_or_policy_changed', context: null };
     if (compiler.digest !== seal.compiler_digest) return { state: 'stale', generation: seal.generation, reason: 'compiler_changed', context: null };
-    if (seal.execution?.compiler_digest !== compiler.digest || JSON.stringify(seal.execution.runtime) !== JSON.stringify(compiler.runtime)) fail('compiler_identity_mismatch');
+    if (seal.execution?.compiler_digest !== compiler.digest || JSON.stringify(seal.execution.runtime) !== JSON.stringify(compiler.runtime) ||
+        seal.execution.lifecycle !== 'node_permission_no_descendants') fail('compiler_identity_mismatch');
     const expected = new Map(compiler.files);
     if (!Array.isArray(seal.execution.loaded_modules) || !seal.execution.loaded_modules.some(entry => entry[0] === 'compile.js') ||
         seal.execution.loaded_modules.some(entry => !Array.isArray(entry) || entry.length !== 2 || expected.get(entry[0]) !== entry[1])) fail('compiler_identity_mismatch');
@@ -283,7 +286,8 @@ function inspectGeneration(projectRoot, { includeContext = false } = {}, compile
     return { state: 'fresh', generation: seal.generation, source_digest: snapshot.source_digest,
       host_consumption_verified: false, ...(includeContext ? { context } : {}) };
   } catch (error) {
-    return { state: 'unknown', context: null, reason: /^[a-z_]+$/.test(error.code || '') ? error.code : 'freshness_unavailable' };
+    return { state: 'unknown', context: null, reason: error.code === 'ERR_ACCESS_DENIED' ? 'compiler_capability_denied'
+      : /^[a-z_]+$/.test(error.code || '') ? error.code : 'freshness_unavailable' };
   }
 }
 function inspectFresh(projectRoot, { includeContext = false } = {}) {
@@ -298,7 +302,8 @@ function inspectFresh(projectRoot, { includeContext = false } = {}) {
     if (child.status !== 0) fail('compiler_child_failed');
     return message.result;
   } catch (error) {
-    return { state: 'unknown', context: null, reason: /^[a-z_]+$/.test(error.code || '') ? error.code : 'freshness_unavailable' };
+    return { state: 'unknown', context: null, reason: error.code === 'ERR_ACCESS_DENIED' ? 'compiler_capability_denied'
+      : /^[a-z_]+$/.test(error.code || '') ? error.code : 'freshness_unavailable' };
   }
 }
 module.exports = { readBounded, captureSnapshot, compileFresh, inspectFresh, compileCandidate, snapshotCandidate, inspectGeneration };

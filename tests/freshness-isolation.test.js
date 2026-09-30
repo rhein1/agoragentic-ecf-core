@@ -36,6 +36,7 @@ function assertBound(f, result, filename) {
   assert.equal(seal.execution.runtime.node, process.version);
   assert.match(seal.execution.runtime.executable_sha256, /^[a-f0-9]{64}$/);
   assert.equal(seal.compiler_digest, seal.execution.compiler_digest);
+  assert.equal(seal.execution.lifecycle, 'node_permission_no_descendants');
 }
 test('parent loads compiler A; refresh executes on-disk compiler B with its actual bytes', async t => {
   const f = fixture(t), api = f.load();
@@ -184,4 +185,106 @@ test('child ignores parent NODE_OPTIONS preloads and NODE_PATH', async t => {
     if (oldOptions === undefined) delete process.env.NODE_OPTIONS; else process.env.NODE_OPTIONS = oldOptions;
     if (oldPath === undefined) delete process.env.NODE_PATH; else process.env.NODE_PATH = oldPath;
   }
+});
+
+// These probes use the same OS process APIs on Windows and POSIX. Node refuses
+// creation before stdio inheritance, detachment or a late writer can take effect.
+for (const stdio of ['inherit', 'ignore']) test(`descendant with ${stdio} stdio is refused before creation and preserves replacement lock`, async t => {
+  const f = fixture(t), api = f.load(), first = await api.compileFresh(f.root);
+  const pointer = fs.readFileSync(path.join(f.freshDir, 'current.json'), 'utf8');
+  const marker = path.join(f.temp, 'descendant-wrote');
+  f.wrap(`await canonical(options);
+    fs.writeFileSync(path.join(options.outDir, '..', '.lock', 'owner'), 'replacement-owner');
+    require('node:child_process').spawn(process.execPath, ['-e',
+      ${JSON.stringify(`setTimeout(() => require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'late'), 300);`)}],
+      {detached:true, stdio:${JSON.stringify(stdio)}, windowsHide:true});
+    throw new Error('process creation was allowed');`);
+  await assert.rejects(api.compileFresh(f.root, { timeoutMs: 5000 }), { code: 'compiler_capability_denied' });
+  await delay(500);
+  assert(!fs.existsSync(marker));
+  assert.equal(fs.readFileSync(path.join(f.freshDir, 'current.json'), 'utf8'), pointer);
+  assert.equal(fs.readFileSync(path.join(f.freshDir, '.lock/owner'), 'utf8'), 'replacement-owner');
+  assert.deepEqual(fs.readdirSync(f.freshDir).sort(), ['.lock', 'current.json', first.generation].sort());
+});
+
+for (const cancellation of [false, true]) test(`${cancellation ? 'cancellation' : 'timeout'} settles after denied inherited-pipe and detached descendants`, { timeout: 15000 }, async t => {
+  const f = fixture(t), api = f.load(), first = await api.compileFresh(f.root);
+  const pointer = fs.readFileSync(path.join(f.freshDir, 'current.json'), 'utf8');
+  const marker = path.join(f.temp, 'late-descendant-write');
+  f.wrap(`await canonical(options);
+    const denials = [];
+    for (const stdio of ['inherit', 'ignore']) {
+      try {
+        require('node:child_process').spawn(process.execPath, ['-e',
+          ${JSON.stringify(`setTimeout(() => require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'late'), 300);`)}],
+          {detached:true, stdio, windowsHide:true});
+      } catch (error) { denials.push([error.code, error.permission]); }
+    }
+    fs.writeFileSync(path.join(options.outDir, 'child-started.json'), JSON.stringify({pid:process.pid,denials}));
+    while (true) {}`);
+  const controller = new AbortController(), began = Date.now();
+  const outcome = api.compileFresh(f.root, { timeoutMs: cancellation ? 10000 : 3000, signal: controller.signal })
+    .then(value => ({ value }), error => ({ error }));
+  const child = await started(f, outcome);
+  assert.deepEqual(child.denials, [['ERR_ACCESS_DENIED', 'ChildProcess'], ['ERR_ACCESS_DENIED', 'ChildProcess']]);
+  if (cancellation) controller.abort();
+  const result = await outcome;
+  assert.equal(result.error?.code, cancellation ? 'compile_cancelled' : 'compile_timeout');
+  assert(Date.now() - began < 10000, 'termination must settle without inherited descendant pipes');
+  assert.throws(() => process.kill(child.pid, 0), { code: 'ESRCH' });
+  await delay(500);
+  assert(!fs.existsSync(marker));
+  assert.equal(fs.readFileSync(path.join(f.freshDir, 'current.json'), 'utf8'), pointer);
+  assert.deepEqual(fs.readdirSync(f.freshDir).sort(), ['current.json', first.generation].sort());
+});
+
+test('Node denies alternate process APIs and worker threads in the captured compiler graph', async t => {
+  const f = fixture(t), api = f.load();
+  f.wrap(`const cp = require('node:child_process'), denials = [];
+    const attempts = [
+      () => cp.execFile(process.execPath, ['-e', '']),
+      () => cp.execFileSync(process.execPath, ['-e', '']),
+      () => cp.spawnSync(process.execPath, ['-e', '']),
+      () => cp.exec('echo ecf-lifecycle-probe'),
+      () => cp.execSync('echo ecf-lifecycle-probe'),
+      () => cp.fork(__filename, [], {stdio:'ignore'}),
+      () => new (require('node:worker_threads').Worker)('', {eval:true}),
+    ];
+    for (const attempt of attempts) { try { attempt(); } catch (error) { denials.push([error.code, error.permission]); } }
+    if (denials.length !== attempts.length) throw new Error('creation API unexpectedly allowed');
+    const result = await canonical(options);
+    fs.writeFileSync(path.join(options.outDir, 'denials.json'), JSON.stringify(denials)); return result;`);
+  const result = await api.compileFresh(f.root);
+  assert.deepEqual(output(f, result, 'denials.json'), [
+    ...Array.from({ length: 6 }, () => ['ERR_ACCESS_DENIED', 'ChildProcess']),
+    ['ERR_ACCESS_DENIED', 'WorkerThreads'],
+  ]);
+  assert.equal(api.inspectFresh(f.root).state, 'fresh');
+  assertBound(f, result, 'compile.js');
+});
+
+for (const operation of ['snapshot', 'inspect']) test(`${operation} dependencies also cannot create descendants`, async t => {
+  const f = fixture(t), api = f.load(), first = await api.compileFresh(f.root);
+  const pointer = fs.readFileSync(path.join(f.freshDir, 'current.json'), 'utf8');
+  const config = path.join(f.copy, 'src/core/config.js');
+  fs.appendFileSync(config, `\nif (process.argv[3] === ${JSON.stringify(operation)}) require('node:child_process').spawn(process.execPath, ['-e', ''], {stdio:'ignore', detached:true, windowsHide:true});\n`);
+  if (operation === 'inspect') {
+    const inspection = api.inspectFresh(f.root);
+    assert.equal(inspection.state, 'unknown'); assert.equal(inspection.context, null);
+    assert.equal(inspection.reason, 'compiler_capability_denied');
+  } else await assert.rejects(api.compileFresh(f.root), { code: 'compiler_capability_denied' });
+  assert.equal(fs.readFileSync(path.join(f.freshDir, 'current.json'), 'utf8'), pointer);
+  assert.deepEqual(fs.readdirSync(f.freshDir).sort(), ['current.json', first.generation].sort());
+});
+
+test('worker bootstrap refuses execution without the runtime lifecycle restriction', t => {
+  const f = fixture(t), marker = path.join(f.temp, 'compiler-module-loaded');
+  fs.appendFileSync(path.join(f.copy, 'src/core/config.js'), `\nfs.writeFileSync(${JSON.stringify(marker)}, 'loaded');\n`);
+  const bootstrap = fs.readFileSync(path.join(f.copy, 'src/freshness-worker.js'), 'utf8');
+  const child = require('node:child_process').spawnSync(process.execPath,
+    ['--eval', bootstrap, '--', 'ecf-fresh-worker', path.join(f.copy, 'src'), 'compile', f.root, path.join(f.temp, 'output')],
+    { env: require('../src/freshness-worker').childEnvironment(), encoding: 'utf8', timeout: 5000, windowsHide: true });
+  assert.equal(child.status, 1);
+  assert.equal(JSON.parse(child.stdout).error, 'worker_lifecycle_not_restricted');
+  assert(!fs.existsSync(marker));
 });

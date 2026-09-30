@@ -86,9 +86,17 @@ function childEnvironment() {
 function workerArgs(identity, sourceRoot, operation, root, outDir = '') {
   const bytes = identity.buffers.get(path.join(sourceRoot, 'freshness-worker.js'));
   if (!bytes) fail('missing_worker');
-  return ['--eval', bytes.toString('utf8'), '--', 'ecf-fresh-worker', sourceRoot, operation, root, outDir];
+  // The canonical compiler never starts other processes or threads. Enforce
+  // that supported boundary in Node, before any captured module is executed.
+  // Node 20 uses the experimental spelling; newer runtimes use --permission.
+  const permission = ['--permission', '--experimental-permission']
+    .find(flag => process.allowedNodeEnvironmentFlags.has(flag));
+  if (!permission) fail('unsupported_worker_runtime');
+  return [permission, '--allow-fs-read=*', '--allow-fs-write=*',
+    '--eval', bytes.toString('utf8'), '--', 'ecf-fresh-worker', sourceRoot, operation, root, outDir];
 }
 async function main() {
+  if (!process.permission || process.permission.has('child') || process.permission.has('worker')) fail('worker_lifecycle_not_restricted');
   const [, , sourceRoot, operation, root, outDir] = process.argv;
   const identity = captureCompiler(sourceRoot), loaded = new Map();
   const bootstrap = path.join(sourceRoot, 'freshness-worker.js');
@@ -119,12 +127,13 @@ async function main() {
   else if (operation === 'inspect' || operation === 'read') result = api.inspectGeneration(root, { includeContext: operation === 'read' }, identity);
   else fail('invalid_worker_operation');
   if (identity.digest !== captureCompiler(sourceRoot).digest) fail('source_changed_during_compile');
-  const execution = { compiler_digest: identity.digest, runtime: identity.runtime,
+  const execution = { compiler_digest: identity.digest, runtime: identity.runtime, lifecycle: 'node_permission_no_descendants',
     loaded_modules: [...loaded].sort((a, b) => a[0] < b[0] ? -1 : 1) };
   process.stdout.write(JSON.stringify({ result, execution }));
 }
 if (process.argv[1] === 'ecf-fresh-worker' && module.id === '[eval]') main().catch(error => {
-  const code = /^[a-z_]+$/.test(error.code || '') ? error.code : 'compiler_child_failed';
+  const code = error.code === 'ERR_ACCESS_DENIED' ? 'compiler_capability_denied'
+    : /^[a-z_]+$/.test(error.code || '') ? error.code : 'compiler_child_failed';
   process.stdout.write(JSON.stringify({ error: code })); process.exitCode = 1;
 });
 module.exports = { captureCompiler, childEnvironment, workerArgs };
