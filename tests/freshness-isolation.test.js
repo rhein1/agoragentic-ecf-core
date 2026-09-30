@@ -196,7 +196,7 @@ for (const stdio of ['inherit', 'ignore']) test(`descendant with ${stdio} stdio 
   f.wrap(`await canonical(options);
     fs.writeFileSync(path.join(options.outDir, '..', '.lock', 'owner'), 'replacement-owner');
     require('node:child_process').spawn(process.execPath, ['-e',
-      ${JSON.stringify(`setTimeout(() => require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'late'), 300);`)}],
+      "setTimeout(() => require('node:fs').writeFileSync(process.argv[1], 'late'), 300);", ${JSON.stringify(marker)}],
       {detached:true, stdio:${JSON.stringify(stdio)}, windowsHide:true});
     throw new Error('process creation was allowed');`);
   await assert.rejects(api.compileFresh(f.root, { timeoutMs: 5000 }), { code: 'compiler_capability_denied' });
@@ -216,7 +216,7 @@ for (const cancellation of [false, true]) test(`${cancellation ? 'cancellation' 
     for (const stdio of ['inherit', 'ignore']) {
       try {
         require('node:child_process').spawn(process.execPath, ['-e',
-          ${JSON.stringify(`setTimeout(() => require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'late'), 300);`)}],
+          "setTimeout(() => require('node:fs').writeFileSync(process.argv[1], 'late'), 300);", ${JSON.stringify(marker)}],
           {detached:true, stdio, windowsHide:true});
       } catch (error) { denials.push([error.code, error.permission]); }
     }
