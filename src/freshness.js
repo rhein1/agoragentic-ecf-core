@@ -2,6 +2,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { createHash, randomUUID } = require('node:crypto');
+const { spawn, spawnSync } = require('node:child_process');
+const { captureCompiler, childEnvironment, workerArgs } = require('./freshness-worker');
 const { shouldSkipDirectory } = require('./core/policy');
 const { metadataDisposition } = require('./adapters/filesystem');
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -97,25 +99,6 @@ function currentConfig(root) {
   if (fs.existsSync(configFile)) readBounded(configFile);
   return require('./core/config').loadConfig({ projectRoot: root });
 }
-function compilerDigest() {
-  const files = [];
-  const walk = dir => {
-    for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
-      const p = path.join(dir, item.name);
-      if (item.isSymbolicLink()) fail('compiler_symlink');
-      if (item.isDirectory()) walk(p);
-      else if (item.isFile() && item.name.endsWith('.js')) files.push([path.relative(__dirname, p).replace(/\\/g, '/'), hash(readBounded(p))]);
-      if (files.length > 2000) fail('compiler_limit');
-    }
-  };
-  walk(__dirname);
-  for (const name of ['package.json', 'package-lock.json']) {
-    const p = path.join(__dirname, '..', name);
-    if (fs.existsSync(p)) files.push([name, hash(readBounded(p))]);
-  }
-  files.sort((a, b) => a[0] < b[0] ? -1 : 1);
-  return hash(JSON.stringify(files));
-}
 function generationArtifacts(dir) {
   const files = [];
   for (const item of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -135,34 +118,144 @@ function atomicJson(filename, value) {
   try { fs.renameSync(temp, filename); }
   catch (error) { fs.unlinkSync(temp); throw error; }
 }
-async function compileFresh(projectRoot, dependencies = {}) {
+// Called only inside the fresh graph for canonical refresh. Injection remains
+// explicitly test-only; it can never create a retrievable current generation.
+async function compileCandidate(root, outDir, compile = require('./compile').compileProject) {
+  const before = captureSnapshot(root, currentConfig(root));
+  await compile({ projectRoot: root, outDir, emitAgentOs: true });
+  const snapshot = captureSnapshot(root, currentConfig(root));
+  if (before.digest !== snapshot.digest) fail('source_changed_during_compile');
+  return { snapshot, artifacts: generationArtifacts(outDir) };
+}
+function snapshotCandidate(root, outDir) {
+  return { snapshot: captureSnapshot(root, currentConfig(root)), artifacts: generationArtifacts(outDir) };
+}
+function verifyWorker(bytes, identity) {
+  let message;
+  try { message = JSON.parse(bytes); } catch { fail('invalid_compiler_response'); }
+  if (message.error) fail(/^[a-z_]+$/.test(message.error) ? message.error : 'compiler_child_failed');
+  const execution = message.execution;
+  if (execution?.compiler_digest !== identity.digest || JSON.stringify(execution.runtime) !== JSON.stringify(identity.runtime) ||
+      !Array.isArray(execution.loaded_modules) || !execution.loaded_modules.length) fail('compiler_identity_mismatch');
+  const expected = new Map(identity.files), seen = new Set();
+  for (const entry of execution.loaded_modules) {
+    if (!Array.isArray(entry) || entry.length !== 2 || expected.get(entry[0]) !== entry[1] || seen.has(entry[0])) fail('compiler_identity_mismatch');
+    seen.add(entry[0]);
+  }
+  if (!seen.has('freshness.js') || !seen.has('freshness-worker.js')) fail('compiler_identity_mismatch');
+  if (captureCompiler().digest !== identity.digest) fail('source_changed_during_compile');
+  return message;
+}
+function runCompiler(identity, root, outDir, { timeoutMs, signal }, operation = 'compile') {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, workerArgs(identity, __dirname, operation, root, outDir), {
+      env: childEnvironment(), stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
+    });
+    const chunks = [];
+    let outputBytes = 0, diagnosticBytes = 0, failure;
+    const stop = code => { failure ||= code; child.kill('SIGKILL'); };
+    const abort = () => stop('compile_cancelled');
+    const timer = setTimeout(() => stop('compile_timeout'), timeoutMs);
+    if (signal) AbortSignal.prototype.addEventListener.call(signal, 'abort', abort, { once: true });
+    if (signal?.aborted) abort();
+    child.stdout.on('data', bytes => {
+      outputBytes += bytes.length;
+      if (outputBytes > 2 * MAX_FILE) stop('compiler_output_limit');
+      else if (!failure) chunks.push(bytes);
+    });
+    child.stderr.on('data', bytes => {
+      diagnosticBytes += bytes.length;
+      if (diagnosticBytes > 64 * 1024) stop('compiler_output_limit');
+    });
+    child.on('error', () => { failure ||= 'compiler_child_failed'; });
+    // close, not exit: never release the lock/delete output while the child can
+    // still write. No result (even a complete one) is accepted after a failure.
+    child.on('close', (code, terminationSignal) => {
+      clearTimeout(timer);
+      if (signal) AbortSignal.prototype.removeEventListener.call(signal, 'abort', abort);
+      try {
+        if (failure) fail(failure);
+        if (terminationSignal) fail('compiler_child_failed');
+        const message = verifyWorker(Buffer.concat(chunks).toString('utf8'), identity);
+        if (code !== 0) fail('compiler_child_failed');
+        if (operation === 'compile' && !message.execution.loaded_modules.some(entry => entry[0] === 'compile.js')) fail('compiler_identity_mismatch');
+        resolve(message);
+      } catch (error) { reject(error); }
+    });
+  });
+}
+function sameDirectory(filename, original) {
+  try {
+    const current = fs.lstatSync(filename);
+    return current.isDirectory() && !current.isSymbolicLink() && current.dev === original.dev && current.ino === original.ino;
+  } catch { return false; }
+}
+async function compileFresh(projectRoot, options = {}) {
+  const { signal, timeoutMs = 30000 } = options;
+  if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 300000) fail('invalid_compile_timeout');
+  if (signal !== undefined && !(signal instanceof AbortSignal)) fail('invalid_compile_signal');
+  if (signal?.aborted) fail('compile_cancelled');
   const root = directory(path.resolve(projectRoot));
-  const config = currentConfig(root);
-  const before = captureSnapshot(root, config);
-  const compiler = compilerDigest();
+  const compiler = captureCompiler();
   const artifactRoot = path.join(root, '.ecf-core'); directory(artifactRoot, true);
   const generations = path.join(artifactRoot, 'fresh'); directory(generations, true);
   const lock = path.join(generations, '.lock');
   try { fs.mkdirSync(lock, { mode: 0o700 }); } catch (error) { if (error.code === 'EEXIST') fail('refresh_locked'); throw error; }
+  const lockStat = fs.lstatSync(lock), token = randomUUID(), owner = path.join(lock, 'owner');
   const generation = `gen-${randomUUID()}`;
   const outDir = path.join(generations, generation);
+  let outStat, selected = false, ownerWritten = false;
+  const ownsLock = () => {
+    try { return sameDirectory(lock, lockStat) && readBounded(owner, 128).toString() === token; }
+    catch { return false; }
+  };
   try {
+    fs.writeFileSync(owner, token, { flag: 'wx', mode: 0o600 });
+    ownerWritten = true;
     directory(outDir, true);
-    const compile = dependencies.compile || require('./compile').compileProject;
-    await compile({ projectRoot: root, outDir, emitAgentOs: true });
-    const after = captureSnapshot(root, currentConfig(root));
-    if (before.digest !== after.digest || compiler !== compilerDigest()) fail('source_changed_during_compile');
+    outStat = fs.lstatSync(outDir);
+    const deadline = Date.now() + timeoutMs;
+    const remaining = () => {
+      const ms = deadline - Date.now();
+      if (ms <= 0) fail('compile_timeout');
+      return ms;
+    };
+    const message = options.compile
+      ? { result: await compileCandidate(root, outDir, options.compile), execution: null }
+      : await runCompiler(compiler, root, outDir, { timeoutMs: remaining(), signal });
+    if (!options.compile) {
+      // Compilation can leave pending callbacks. Only verify after it closes,
+      // using another fresh graph that does not invoke the compiler again.
+      const verified = await runCompiler(compiler, root, outDir, { timeoutMs: remaining(), signal }, 'snapshot');
+      if (message.result.snapshot.digest !== verified.result.snapshot.digest) fail('source_changed_during_compile');
+      if (JSON.stringify(message.result.artifacts) !== JSON.stringify(verified.result.artifacts)) fail('artifact_changed');
+      remaining();
+    }
+    if (signal?.aborted) fail('compile_cancelled');
+    if (compiler.digest !== captureCompiler().digest) fail('source_changed_during_compile');
+    if (!ownsLock()) fail('refresh_lock_lost');
+    const { snapshot } = message.result;
     const artifacts = generationArtifacts(outDir);
-    const seal = { schema_version: 'ecf-core.freshness.v1', generation, snapshot: after,
-      compiler_digest: compiler, artifacts, created_at: new Date().toISOString(),
-      compiler_mode: dependencies.compile ? 'injected_test_only' : 'ecf_core',
+    if (JSON.stringify(artifacts) !== JSON.stringify(message.result.artifacts)) fail('artifact_changed');
+    const seal = { schema_version: 'ecf-core.freshness.v1', generation, snapshot,
+      compiler_digest: compiler.digest, execution: message.execution, artifacts, created_at: new Date().toISOString(),
+      compiler_mode: options.compile ? 'injected_test_only' : 'ecf_core',
       host_consumption_verified: false };
     atomicJson(path.join(outDir, 'freshness.json'), seal);
+    if (!ownsLock()) fail('refresh_lock_lost');
     atomicJson(path.join(generations, 'current.json'), { generation, seal_hash: hash(readBounded(path.join(outDir, 'freshness.json'))) });
-    return { state: dependencies.compile ? 'test_only' : 'fresh', generation, compiler_mode: seal.compiler_mode, host_consumption_verified: false };
-  } finally { fs.rmdirSync(lock); }
+    selected = true;
+    return { state: options.compile ? 'test_only' : 'fresh', generation, compiler_mode: seal.compiler_mode, host_consumption_verified: false };
+  } finally {
+    try {
+      if (!selected && outStat && sameDirectory(outDir, outStat)) fs.rmSync(outDir, { recursive: true });
+    } finally {
+      if (ownsLock()) { fs.unlinkSync(owner); fs.rmdirSync(lock); }
+      else if (!ownerWritten && sameDirectory(lock, lockStat) && fs.readdirSync(lock).length === 0) fs.rmdirSync(lock);
+    }
+  }
 }
-function inspectFresh(projectRoot, { includeContext = false } = {}) {
+function inspectGeneration(projectRoot, { includeContext = false } = {}, compiler = captureCompiler()) {
   try {
     const root = directory(path.resolve(projectRoot));
     directory(path.join(root, '.ecf-core'));
@@ -177,7 +270,11 @@ function inspectFresh(projectRoot, { includeContext = false } = {}) {
     if (seal.compiler_mode !== 'ecf_core') fail('test_generation_not_current_context');
     const snapshot = captureSnapshot(root, currentConfig(root));
     if (snapshot.digest !== seal.snapshot?.digest) return { state: 'stale', generation: seal.generation, reason: 'source_or_policy_changed', context: null };
-    if (compilerDigest() !== seal.compiler_digest) return { state: 'stale', generation: seal.generation, reason: 'compiler_changed', context: null };
+    if (compiler.digest !== seal.compiler_digest) return { state: 'stale', generation: seal.generation, reason: 'compiler_changed', context: null };
+    if (seal.execution?.compiler_digest !== compiler.digest || JSON.stringify(seal.execution.runtime) !== JSON.stringify(compiler.runtime)) fail('compiler_identity_mismatch');
+    const expected = new Map(compiler.files);
+    if (!Array.isArray(seal.execution.loaded_modules) || !seal.execution.loaded_modules.some(entry => entry[0] === 'compile.js') ||
+        seal.execution.loaded_modules.some(entry => !Array.isArray(entry) || entry.length !== 2 || expected.get(entry[0]) !== entry[1])) fail('compiler_identity_mismatch');
     if (JSON.stringify(generationArtifacts(outDir)) !== JSON.stringify(seal.artifacts)) fail('artifact_changed');
     const context = includeContext ? JSON.parse(readBounded(path.join(outDir, 'context-packet.json'), 8 * 1024 * 1024)) : undefined;
     // Recheck after reading; never serve a cached generation following detected drift.
@@ -189,4 +286,19 @@ function inspectFresh(projectRoot, { includeContext = false } = {}) {
     return { state: 'unknown', context: null, reason: /^[a-z_]+$/.test(error.code || '') ? error.code : 'freshness_unavailable' };
   }
 }
-module.exports = { readBounded, captureSnapshot, compileFresh, inspectFresh };
+function inspectFresh(projectRoot, { includeContext = false } = {}) {
+  try {
+    const compiler = captureCompiler();
+    const child = spawnSync(process.execPath, workerArgs(compiler, __dirname, includeContext ? 'read' : 'inspect', path.resolve(projectRoot)), {
+      env: childEnvironment(), encoding: 'utf8', windowsHide: true,
+      timeout: 30000, killSignal: 'SIGKILL', maxBuffer: 10 * 1024 * 1024,
+    });
+    if (child.error || child.signal) fail('compiler_child_failed');
+    const message = verifyWorker(child.stdout, compiler);
+    if (child.status !== 0) fail('compiler_child_failed');
+    return message.result;
+  } catch (error) {
+    return { state: 'unknown', context: null, reason: /^[a-z_]+$/.test(error.code || '') ? error.code : 'freshness_unavailable' };
+  }
+}
+module.exports = { readBounded, captureSnapshot, compileFresh, inspectFresh, compileCandidate, snapshotCandidate, inspectGeneration };

@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const { captureSnapshot, compileFresh, inspectFresh } = require('../src/freshness');
+const { compileProject } = require('../src/compile');
 const { FilesystemAdapter, metadataDisposition, readAdmittedSource } = require('../src/adapters/filesystem');
 const config = { allow: ['*.md', '*.txt', '*.bin', '*.js', '*.json', '*.sql'], block: ['.env'], max_file_bytes: 65536 };
 const FRESHNESS_MAX_FILE_BYTES = 2 * 1024 * 1024;
@@ -91,6 +92,9 @@ test('real compile does not open oversized sources handled by summary adapters',
   t.mock.method(fs, 'readFileSync', function (file, ...args) { check(file); return read.call(fs, file, ...args); });
   const snapshot = captureSnapshot(root, config);
   assert.deepEqual(snapshot.restricted_inventory.filter(row => sizes.has(row[0])).map(row => row[0]).sort(), [...sizes.keys()].sort());
+  // Exercise the real compiler with the filesystem boundary spies in this
+  // process too; parent spies cannot observe an isolated child's file reads.
+  await compileProject({ projectRoot: root, outDir: path.join(root, '.ecf-core', 'canonical'), emitAgentOs: true });
   const result = await compileFresh(root);
   assert.equal(result.state, 'fresh');
   const outDir = path.join(root, '.ecf-core', 'fresh', result.generation);
@@ -120,6 +124,7 @@ test('real compile does not open blocked or review-required generated-marker fil
   const check = file => assert.equal(targets.has(path.resolve(String(file))), false, 'metadata-only content was opened');
   t.mock.method(fs, 'openSync', function (file, ...args) { check(file); return open.call(fs, file, ...args); });
   t.mock.method(fs, 'readFileSync', function (file, ...args) { check(file); return read.call(fs, file, ...args); });
+  await compileProject({ projectRoot: root, outDir: path.join(root, '.ecf-core', 'canonical'), emitAgentOs: true });
   const result = await compileFresh(root);
   assert.equal(result.state, 'fresh');
   const outDir = path.join(root, '.ecf-core', 'fresh', result.generation);
@@ -147,10 +152,12 @@ test('generated-marker detection reads an allowed multi-section source only once
     }
     return result;
   });
-  const result = await compileFresh(root);
-  assert.equal(result.state, 'fresh');
+  const canonicalOut = path.join(root, '.ecf-core', 'canonical');
+  await compileProject({ projectRoot: root, outDir: canonicalOut, emitAgentOs: true });
   assert.equal(targetReads, 3, 'filesystem, markdown, and marker passes must each read once');
   assert.equal(targetBytes, Buffer.byteLength(source) * 3);
+  const result = await compileFresh(root);
+  assert.equal(result.state, 'fresh');
   const outDir = path.join(root, '.ecf-core', 'fresh', result.generation);
   const sourceMap = JSON.parse(read.call(fs, path.join(outDir, 'source-map.json'), 'utf8'));
   const packet = JSON.parse(read.call(fs, path.join(outDir, 'context-packet.json'), 'utf8'));
